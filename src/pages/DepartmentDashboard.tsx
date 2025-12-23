@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDepartmentEstablishments, useDepartmentStats } from '@/hooks/use-dashboard-data';
+import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrend } from '@/hooks/use-dashboard-data';
+import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
 
 export default function DepartmentDashboard() {
   const { userContext, signOut } = useAuth();
@@ -12,6 +13,7 @@ export default function DepartmentDashboard() {
 
   const { data: establishments, isLoading: estLoading } = useDepartmentEstablishments(userContext?.departmentId);
   const { data: stats, isLoading: statsLoading } = useDepartmentStats(userContext?.departmentId);
+  const { data: trendData, isLoading: trendLoading } = useDepartmentAttendanceTrend(userContext?.departmentId, 7);
 
   const handleLogout = async () => {
     await signOut();
@@ -109,6 +111,21 @@ export default function DepartmentDashboard() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <AttendanceChart 
+            data={trendData || []} 
+            isLoading={trendLoading} 
+            title="Department Attendance (Last 7 Days)" 
+            type="bar"
+          />
+          <AttendanceRateChart 
+            data={trendData || []} 
+            isLoading={trendLoading} 
+            title="Attendance Rate Trend" 
+          />
         </div>
 
         {/* Establishments List */}

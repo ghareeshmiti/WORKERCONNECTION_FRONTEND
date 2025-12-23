@@ -15,9 +15,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useEstablishmentWorkers, useEstablishmentTodayAttendance } from '@/hooks/use-dashboard-data';
+import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrend } from '@/hooks/use-dashboard-data';
 import { useUnmapWorker } from '@/hooks/use-worker-mapping';
 import { MapWorkerDialog } from '@/components/MapWorkerDialog';
+import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
 
 export default function EstablishmentDashboard() {
   const { userContext, signOut, user } = useAuth();
@@ -30,6 +31,7 @@ export default function EstablishmentDashboard() {
 
   const { data: workers, isLoading: workersLoading } = useEstablishmentWorkers(userContext?.establishmentId);
   const { data: todayStats, isLoading: statsLoading } = useEstablishmentTodayAttendance(userContext?.establishmentId);
+  const { data: trendData, isLoading: trendLoading } = useEstablishmentAttendanceTrend(userContext?.establishmentId, 7);
   const unmapWorker = useUnmapWorker();
 
   const handleLogout = async () => {
@@ -146,6 +148,21 @@ export default function EstablishmentDashboard() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <AttendanceChart 
+            data={trendData || []} 
+            isLoading={trendLoading} 
+            title="Daily Attendance (Last 7 Days)" 
+            type="bar"
+          />
+          <AttendanceRateChart 
+            data={trendData || []} 
+            isLoading={trendLoading} 
+            title="Attendance Rate Trend" 
+          />
         </div>
 
         {/* Worker List */}
