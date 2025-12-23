@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin, Activity } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrendByRange, useDepartmentWorkers } from '@/hooks/use-dashboard-data';
 import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
@@ -79,9 +79,17 @@ export default function DepartmentDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Department Dashboard</h1>
-          <EditDepartmentProfileDialog departmentId={userContext?.departmentId} />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/overview">
+                <Activity className="w-4 h-4 mr-2" />
+                System Overview
+              </Link>
+            </Button>
+            <EditDepartmentProfileDialog departmentId={userContext?.departmentId} />
+          </div>
         </div>
         
         {/* KPI Cards */}

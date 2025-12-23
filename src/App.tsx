@@ -18,6 +18,7 @@ const WorkerRegister = lazy(() => import("@/pages/WorkerRegister"));
 const EstablishmentRegister = lazy(() => import("@/pages/EstablishmentRegister"));
 const DepartmentRegister = lazy(() => import("@/pages/DepartmentRegister"));
 const RemoteAttendance = lazy(() => import("@/pages/RemoteAttendance"));
+const OverviewDashboard = lazy(() => import("@/pages/OverviewDashboard"));
 const WorkerDashboard = lazy(() => import("@/pages/WorkerDashboard"));
 const EstablishmentDashboard = lazy(() => import("@/pages/EstablishmentDashboard"));
 const DepartmentDashboard = lazy(() => import("@/pages/DepartmentDashboard"));
@@ -55,6 +56,13 @@ const App = () => (
               <Route path="/thales-auth" element={
                 <ProtectedRoute>
                   <MockThalesAuth />
+                </ProtectedRoute>
+              } />
+              
+              {/* Overview Dashboard - accessible to department admins */}
+              <Route path="/overview" element={
+                <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']}>
+                  <OverviewDashboard />
                 </ProtectedRoute>
               } />
               
