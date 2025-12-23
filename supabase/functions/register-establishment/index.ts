@@ -7,26 +7,54 @@ const corsHeaders = {
 };
 
 interface EstablishmentRegistrationRequest {
+  // Step 1: Establishment Details
   name: string;
-  code: string;
-  description?: string;
-  establishmentType?: string;
+  contactPerson?: string;
   email: string;
+  phone: string;
   password: string;
-  phone?: string;
-  state: string;
+  // Step 2: Address Details
+  doorNo?: string;
+  street?: string;
   district: string;
   mandal?: string;
+  village?: string;
   pincode?: string;
   addressLine?: string;
-  licenseNumber?: string;
+  // Step 3: Business Details
+  hasPlanApproval?: string;
+  category?: string;
+  natureOfWork?: string;
+  commencementDate?: string;
+  completionDate?: string;
   departmentId: string;
+  // Step 4: Construction Details
+  estimatedCost?: string;
+  constructionArea?: string;
+  builtUpArea?: string;
+  basicEstimationCost?: string;
+  maleWorkers?: string;
+  femaleWorkers?: string;
+  // Legacy fields for compatibility
+  code?: string;
+  description?: string;
+  establishmentType?: string;
+  state?: string;
+  licenseNumber?: string;
   constructionType?: string;
   projectName?: string;
   contractorName?: string;
   estimatedWorkers?: number;
   startDate?: string;
   expectedEndDate?: string;
+}
+
+// Generate establishment code from name
+function generateCode(name: string): string {
+  const cleanName = name.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const prefix = cleanName.substring(0, 3) || 'EST';
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
+  return `${prefix}-${timestamp}`;
 }
 
 serve(async (req) => {
@@ -46,9 +74,26 @@ serve(async (req) => {
     console.log('Establishment registration request:', { email: body.email, name: body.name });
 
     // Validate required fields
-    if (!body.email || !body.password || !body.name || !body.code || !body.state || !body.district || !body.departmentId) {
+    if (!body.email || !body.password || !body.name || !body.phone || !body.district || !body.departmentId) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing required fields' }),
+        JSON.stringify({ success: false, message: 'Missing required fields: name, email, phone, password, district, departmentId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(body.email)) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Invalid email format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate phone number (10 digits)
+    if (!/^\d{10}$/.test(body.phone)) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Phone number must be exactly 10 digits' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -67,6 +112,16 @@ serve(async (req) => {
       );
     }
 
+    // Generate code if not provided
+    const code = body.code || generateCode(body.name);
+    // Default state to Andhra Pradesh
+    const state = body.state || 'Andhra Pradesh';
+
+    // Calculate total estimated workers
+    const maleWorkers = parseInt(body.maleWorkers || '0') || 0;
+    const femaleWorkers = parseInt(body.femaleWorkers || '0') || 0;
+    const totalWorkers = body.estimatedWorkers || (maleWorkers + femaleWorkers) || null;
+
     let authUserId: string | null = null;
     let establishmentId: string | null = null;
     let profileId: string | null = null;
@@ -81,6 +136,12 @@ serve(async (req) => {
 
       if (authError) {
         console.error('Auth user creation failed:', authError);
+        if (authError.message.includes('already been registered')) {
+          return new Response(
+            JSON.stringify({ success: false, message: 'This email is already registered. Please login.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         return new Response(
           JSON.stringify({ success: false, message: authError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -90,29 +151,33 @@ serve(async (req) => {
       authUserId = authData.user.id;
       console.log('Auth user created:', authUserId);
 
+      // Build full address
+      const addressParts = [body.doorNo, body.street, body.village, body.mandal, body.district, body.pincode].filter(Boolean);
+      const fullAddress = body.addressLine || addressParts.join(', ');
+
       // Step 2: Insert establishment record
       const { data: estData, error: estError } = await supabase
         .from('establishments')
         .insert({
           department_id: body.departmentId,
-          name: body.name,
-          code: body.code,
-          description: body.description || null,
-          establishment_type: body.establishmentType || null,
-          state: body.state,
+          name: body.name.trim(),
+          code: code,
+          description: body.description || body.contactPerson || null,
+          establishment_type: body.establishmentType || body.category || null,
+          state: state,
           district: body.district,
           mandal: body.mandal || null,
           pincode: body.pincode || null,
-          address_line: body.addressLine || null,
-          phone: body.phone || null,
-          email: body.email,
-          license_number: body.licenseNumber || null,
-          construction_type: body.constructionType || null,
-          project_name: body.projectName || null,
-          contractor_name: body.contractorName || null,
-          estimated_workers: body.estimatedWorkers || null,
-          start_date: body.startDate || null,
-          expected_end_date: body.expectedEndDate || null,
+          address_line: fullAddress || null,
+          phone: body.phone,
+          email: body.email.toLowerCase(),
+          license_number: body.licenseNumber || (body.hasPlanApproval === 'yes' ? 'APPROVED' : null),
+          construction_type: body.constructionType || body.natureOfWork || null,
+          project_name: body.projectName || body.village || null,
+          contractor_name: body.contractorName || body.contactPerson || null,
+          estimated_workers: totalWorkers,
+          start_date: body.startDate || body.commencementDate || null,
+          expected_end_date: body.expectedEndDate || body.completionDate || null,
           is_active: true,
         })
         .select('id')
@@ -130,7 +195,7 @@ serve(async (req) => {
         .from('profiles')
         .insert({
           auth_user_id: authUserId,
-          full_name: body.name,
+          full_name: body.contactPerson || body.name.trim(),
           establishment_id: establishmentId,
         })
         .select('id')
@@ -161,6 +226,7 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           message: 'Establishment registered successfully',
+          establishment_code: code,
           profile_context: {
             auth_user_id: authUserId,
             role: 'ESTABLISHMENT_ADMIN',
