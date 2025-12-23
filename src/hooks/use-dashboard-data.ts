@@ -255,12 +255,14 @@ export function useEstablishmentTodayAttendance(establishmentId: string | undefi
 
 // Department Dashboard Hooks
 export function useDepartmentEstablishments(departmentId: string | undefined) {
+  const today = getTodayDate();
+  
   return useQuery({
-    queryKey: ['department-establishments', departmentId],
+    queryKey: ['department-establishments', departmentId, today],
     queryFn: async () => {
       if (!departmentId) return [];
       
-      const { data, error } = await supabase
+      const { data: establishments, error } = await supabase
         .from('establishments')
         .select('*')
         .eq('department_id', departmentId)
@@ -268,9 +270,47 @@ export function useDepartmentEstablishments(departmentId: string | undefined) {
         .order('name');
       
       if (error) throw error;
-      return data || [];
+      if (!establishments || establishments.length === 0) return [];
+      
+      // Fetch worker counts and attendance stats for each establishment
+      const enrichedEstablishments = await Promise.all(
+        establishments.map(async (est) => {
+          // Get worker count
+          const { count: workerCount } = await supabase
+            .from('worker_mappings')
+            .select('*', { count: 'exact', head: true })
+            .eq('establishment_id', est.id)
+            .eq('is_active', true);
+          
+          // Get today's attendance
+          const { data: attendanceData } = await supabase
+            .from('attendance_daily_rollups')
+            .select('status')
+            .eq('establishment_id', est.id)
+            .eq('attendance_date', today);
+          
+          const present = attendanceData?.filter(a => a.status === 'PRESENT').length || 0;
+          const partial = attendanceData?.filter(a => a.status === 'PARTIAL').length || 0;
+          const total = workerCount || 0;
+          const absent = total - present - partial;
+          
+          return {
+            ...est,
+            workerCount: total,
+            todayStats: {
+              present,
+              partial,
+              absent,
+              rate: total > 0 ? Math.round((present / total) * 100) : 0,
+            },
+          };
+        })
+      );
+      
+      return enrichedEstablishments;
     },
     enabled: !!departmentId,
+    refetchInterval: 60000,
   });
 }
 

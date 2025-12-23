@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin, Activity, Download } from 'lucide-react';
+import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin, Activity, Download, UserX, AlertCircle } from 'lucide-react';
 import { generateCSV, workerWithEstablishmentColumns, establishmentColumns, attendanceTrendColumns } from '@/lib/csv-export';
 import { toast } from 'sonner';
 import { useNavigate, Link } from 'react-router-dom';
@@ -230,19 +230,57 @@ export default function DepartmentDashboard() {
                     <tr className="border-b">
                       <th className="text-left py-2 font-medium">Code</th>
                       <th className="text-left py-2 font-medium">Name</th>
-                      <th className="text-left py-2 font-medium">Type</th>
                       <th className="text-left py-2 font-medium">Location</th>
+                      <th className="text-center py-2 font-medium">Workers</th>
+                      <th className="text-center py-2 font-medium">
+                        <span className="flex items-center justify-center gap-1">
+                          <UserCheck className="w-3 h-3 text-success" />
+                          Present
+                        </span>
+                      </th>
+                      <th className="text-center py-2 font-medium">
+                        <span className="flex items-center justify-center gap-1">
+                          <AlertCircle className="w-3 h-3 text-warning" />
+                          Partial
+                        </span>
+                      </th>
+                      <th className="text-center py-2 font-medium">
+                        <span className="flex items-center justify-center gap-1">
+                          <UserX className="w-3 h-3 text-destructive" />
+                          Absent
+                        </span>
+                      </th>
+                      <th className="text-center py-2 font-medium">Rate</th>
                       <th className="text-left py-2 font-medium">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {establishments.map((est: any) => (
-                      <tr key={est.id} className="border-b border-muted">
+                      <tr key={est.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
                         <td className="py-2 font-mono text-xs">{est.code}</td>
                         <td className="py-2 font-medium">{est.name}</td>
-                        <td className="py-2 capitalize">{est.establishment_type || 'N/A'}</td>
                         <td className="py-2">
                           {est.district}, {est.state}
+                        </td>
+                        <td className="py-2 text-center">
+                          <Badge variant="outline">{est.workerCount || 0}</Badge>
+                        </td>
+                        <td className="py-2 text-center">
+                          <span className="text-success font-medium">{est.todayStats?.present || 0}</span>
+                        </td>
+                        <td className="py-2 text-center">
+                          <span className="text-warning font-medium">{est.todayStats?.partial || 0}</span>
+                        </td>
+                        <td className="py-2 text-center">
+                          <span className="text-destructive font-medium">{est.todayStats?.absent || 0}</span>
+                        </td>
+                        <td className="py-2 text-center">
+                          <Badge 
+                            variant={est.todayStats?.rate >= 80 ? 'default' : est.todayStats?.rate >= 50 ? 'secondary' : 'outline'}
+                            className={est.todayStats?.rate >= 80 ? 'bg-success' : ''}
+                          >
+                            {est.todayStats?.rate || 0}%
+                          </Badge>
                         </td>
                         <td className="py-2">
                           <Badge variant={est.is_active ? 'default' : 'secondary'}>
