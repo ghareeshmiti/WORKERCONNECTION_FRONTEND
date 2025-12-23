@@ -24,6 +24,7 @@ import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker'
 import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
 import { EditEstablishmentProfileDialog } from '@/components/EditEstablishmentProfileDialog';
+import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
 
 export default function EstablishmentDashboard() {
   const { userContext, signOut, user } = useAuth();
@@ -33,6 +34,7 @@ export default function EstablishmentDashboard() {
     mappingId: '',
     workerName: '',
   });
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   
   // Default to last 7 days for charts
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -267,7 +269,11 @@ export default function EstablishmentDashboard() {
                   </thead>
                   <tbody>
                     {filteredWorkers.map((mapping: any) => (
-                      <tr key={mapping.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
+                      <tr 
+                        key={mapping.id} 
+                        className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => setSelectedWorkerId(mapping.workers?.id)}
+                      >
                         <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
                         <td className="py-3">
                           {mapping.workers?.first_name} {mapping.workers?.last_name}
@@ -286,11 +292,14 @@ export default function EstablishmentDashboard() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => setUnmapDialog({
-                              open: true,
-                              mappingId: mapping.id,
-                              workerName: `${mapping.workers?.first_name} ${mapping.workers?.last_name}`,
-                            })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setUnmapDialog({
+                                open: true,
+                                mappingId: mapping.id,
+                                workerName: `${mapping.workers?.first_name} ${mapping.workers?.last_name}`,
+                              });
+                            }}
                           >
                             <UserMinus className="w-4 h-4 mr-1" />
                             Unmap
@@ -344,6 +353,12 @@ export default function EstablishmentDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Worker Details Dialog */}
+      <WorkerDetailsDialog
+        workerId={selectedWorkerId}
+        onClose={() => setSelectedWorkerId(null)}
+      />
     </div>
   );
 }
