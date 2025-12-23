@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import {
 import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
+import { useEstablishmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
 import { useUnmapWorker } from '@/hooks/use-worker-mapping';
 import { MapWorkerDialog } from '@/components/MapWorkerDialog';
 import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
@@ -27,6 +28,8 @@ import { EditEstablishmentProfileDialog } from '@/components/EditEstablishmentPr
 import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
 
 export default function EstablishmentDashboard() {
+  // Enable real-time updates
+  useEstablishmentDashboardRealtime();
   const { userContext, signOut, user } = useAuth();
   const navigate = useNavigate();
   const [unmapDialog, setUnmapDialog] = useState<{ open: boolean; mappingId: string; workerName: string }>({

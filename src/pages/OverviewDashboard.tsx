@@ -1,17 +1,19 @@
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { 
   Landmark, Building2, Users, UserCheck, UserX, AlertCircle, 
   TrendingUp, Clock, LogOut, Loader2, Activity, ArrowRight
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useOverviewStats, useRecentActivity, useAttendanceTrendOverview } from '@/hooks/use-overview-data';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { useOverviewDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
 export default function OverviewDashboard() {
+  // Enable real-time updates
+  useOverviewDashboardRealtime();
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
   

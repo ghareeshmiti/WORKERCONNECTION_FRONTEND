@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin, Activity } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrendByRange, useDepartmentWorkers } from '@/hooks/use-dashboard-data';
+import { useDepartmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
 import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
@@ -15,6 +16,8 @@ import { EditDepartmentProfileDialog } from '@/components/EditDepartmentProfileD
 import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
 
 export default function DepartmentDashboard() {
+  // Enable real-time updates
+  useDepartmentDashboardRealtime();
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
   
