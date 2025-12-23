@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Clock, Loader2, CheckCircle, ArrowLeft, AlertCircle, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { INDIA_STATES } from '@/lib/types';
 
@@ -106,6 +106,16 @@ export default function RemoteAttendance() {
               </Button>
             </form>
 
+            {result && !result.success && (
+              <div className="mt-6 p-4 bg-destructive/10 rounded-lg animate-fade-in">
+                <div className="flex items-center gap-2 text-destructive mb-2">
+                  <AlertCircle className="w-5 h-5" />
+                  <span className="font-medium">Attendance Failed</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{result.message}</p>
+              </div>
+            )}
+
             {result?.success && result.data && (
               <div className="mt-6 p-4 bg-success/10 rounded-lg animate-fade-in">
                 <div className="flex items-center gap-2 text-success mb-2">
@@ -115,6 +125,12 @@ export default function RemoteAttendance() {
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p><strong>Worker:</strong> {result.data.workerName}</p>
                   <p><strong>ID:</strong> {result.data.workerId}</p>
+                  {result.data.establishmentName && (
+                    <p className="flex items-center gap-1">
+                      <Building2 className="w-3 h-3" />
+                      <strong>Establishment:</strong> {result.data.establishmentName}
+                    </p>
+                  )}
                   <p><strong>Time:</strong> {new Date(result.data.occurredAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                 </div>
               </div>
