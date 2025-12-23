@@ -3,7 +3,9 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loader2, Download } from 'lucide-react';
+import { generateCSV, attendanceColumns } from '@/lib/csv-export';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats, useWorkerAttendanceTrend } from '@/hooks/use-dashboard-data';
 import { useWorkerDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
@@ -170,12 +172,28 @@ export default function WorkerDashboard() {
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <CardTitle>Attendance History</CardTitle>
-              <div className="flex flex-col gap-2">
-                <DateRangePicker 
-                  dateRange={dateRange} 
-                  onDateRangeChange={setDateRange} 
-                />
-                <DateRangePresets onSelect={setDateRange} />
+              <div className="flex flex-col md:flex-row md:items-end gap-2">
+                <div className="flex flex-col gap-2">
+                  <DateRangePicker 
+                    dateRange={dateRange} 
+                    onDateRangeChange={setDateRange} 
+                  />
+                  <DateRangePresets onSelect={setDateRange} />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (history && history.length > 0) {
+                      generateCSV(history, attendanceColumns, `attendance-history-${format(new Date(), 'yyyy-MM-dd')}`);
+                      toast.success('Export Complete', { description: 'Attendance history exported to CSV' });
+                    }
+                  }}
+                  disabled={!history || history.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Export
+                </Button>
               </div>
             </div>
           </CardHeader>

@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin, Activity } from 'lucide-react';
+import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin, Activity, Download } from 'lucide-react';
+import { generateCSV, workerWithEstablishmentColumns, establishmentColumns, attendanceTrendColumns } from '@/lib/csv-export';
+import { toast } from 'sonner';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrendByRange, useDepartmentWorkers } from '@/hooks/use-dashboard-data';
 import { useDepartmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
@@ -199,8 +201,22 @@ export default function DepartmentDashboard() {
 
         {/* Establishments List */}
         <Card className="mb-8">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Establishments Overview</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (establishments && establishments.length > 0) {
+                  generateCSV(establishments, establishmentColumns, `establishments-${format(new Date(), 'yyyy-MM-dd')}`);
+                  toast.success('Export Complete', { description: 'Establishments exported to CSV' });
+                }
+              }}
+              disabled={!establishments || establishments.length === 0}
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Export
+            </Button>
           </CardHeader>
           <CardContent>
             {estLoading ? (
@@ -257,24 +273,40 @@ export default function DepartmentDashboard() {
                 <Users className="w-5 h-5" />
                 All Workers
               </CardTitle>
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by ID, name, phone, or establishment..."
-                  value={workerSearch}
-                  onChange={(e) => setWorkerSearch(e.target.value)}
-                  className="pl-10 pr-10"
-                />
-                {workerSearch && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                    onClick={() => setWorkerSearch('')}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (filteredWorkers && filteredWorkers.length > 0) {
+                      generateCSV(filteredWorkers, workerWithEstablishmentColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
+                      toast.success('Export Complete', { description: 'Worker list exported to CSV' });
+                    }
+                  }}
+                  disabled={!filteredWorkers || filteredWorkers.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Export
+                </Button>
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by ID, name, phone, or establishment..."
+                    value={workerSearch}
+                    onChange={(e) => setWorkerSearch(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {workerSearch && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setWorkerSearch('')}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardHeader>
