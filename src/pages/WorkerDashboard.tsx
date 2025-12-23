@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats, useWorkerAttendanceTrend } from '@/hooks/use-dashboard-data';
+import { useWorkerDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
 import { AttendanceChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
@@ -13,6 +14,8 @@ import { EditWorkerProfileDialog } from '@/components/EditWorkerProfileDialog';
 import { format, subDays } from 'date-fns';
 
 export default function WorkerDashboard() {
+  // Enable real-time updates
+  useWorkerDashboardRealtime();
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
   
