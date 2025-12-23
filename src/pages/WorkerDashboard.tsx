@@ -9,6 +9,7 @@ import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory,
 import { AttendanceChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
+import { EditWorkerProfileDialog } from '@/components/EditWorkerProfileDialog';
 import { format, subDays } from 'date-fns';
 
 export default function WorkerDashboard() {
@@ -77,7 +78,10 @@ export default function WorkerDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-display font-bold mb-6">Worker Dashboard</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-display font-bold">Worker Dashboard</h1>
+          <EditWorkerProfileDialog worker={profile} />
+        </div>
         
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
