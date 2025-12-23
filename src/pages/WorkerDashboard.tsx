@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats } from '@/hooks/use-dashboard-data';
+import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats, useWorkerAttendanceTrend } from '@/hooks/use-dashboard-data';
+import { AttendanceChart } from '@/components/AttendanceChart';
 
 export default function WorkerDashboard() {
   const { userContext, signOut } = useAuth();
@@ -14,6 +15,7 @@ export default function WorkerDashboard() {
   const { data: todayAttendance, isLoading: todayLoading } = useWorkerTodayAttendance(userContext?.workerId);
   const { data: history, isLoading: historyLoading } = useWorkerAttendanceHistory(userContext?.workerId, 30);
   const { data: monthlyStats } = useWorkerMonthlyStats(userContext?.workerId);
+  const { data: trendData, isLoading: trendLoading } = useWorkerAttendanceTrend(userContext?.workerId, 14);
 
   const handleLogout = async () => {
     await signOut();
@@ -131,6 +133,16 @@ export default function WorkerDashboard() {
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Attendance Trend Chart */}
+        <div className="mb-8">
+          <AttendanceChart 
+            data={trendData || []} 
+            isLoading={trendLoading} 
+            title="Attendance Trend (Last 14 Days)" 
+            type="area"
+          />
         </div>
 
         {/* Attendance History */}

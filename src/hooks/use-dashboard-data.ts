@@ -24,10 +24,26 @@ interface WorkerProfile {
   is_active: boolean;
 }
 
+export interface TrendDataPoint {
+  date: string;
+  present: number;
+  partial: number;
+  absent: number;
+  total: number;
+  rate: number;
+}
+
 // Get today's date in YYYY-MM-DD format for Asia/Kolkata
 const getTodayDate = () => {
   const now = new Date();
   return now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+};
+
+// Get date N days ago in YYYY-MM-DD format
+const getDateDaysAgo = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().split('T')[0];
 };
 
 // Worker Dashboard Hooks
@@ -306,5 +322,188 @@ export function useUnmappedWorkers() {
       if (error) throw error;
       return data || [];
     },
+  });
+}
+
+// Worker Attendance Trend (last 7 days)
+export function useWorkerAttendanceTrend(workerId: string | undefined, days: number = 7) {
+  return useQuery({
+    queryKey: ['worker-attendance-trend', workerId, days],
+    queryFn: async (): Promise<TrendDataPoint[]> => {
+      if (!workerId) return [];
+      
+      const startDate = getDateDaysAgo(days);
+      
+      const { data, error } = await supabase
+        .from('attendance_daily_rollups')
+        .select('attendance_date, status')
+        .eq('worker_id', workerId)
+        .gte('attendance_date', startDate)
+        .order('attendance_date', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Build trend data - group by date
+      const trendMap = new Map<string, TrendDataPoint>();
+      
+      // Initialize all days in range
+      for (let i = days; i >= 0; i--) {
+        const date = getDateDaysAgo(i);
+        trendMap.set(date, { date, present: 0, partial: 0, absent: 0, total: 1, rate: 0 });
+      }
+      
+      // Fill in actual data
+      data?.forEach(row => {
+        const point = trendMap.get(row.attendance_date);
+        if (point) {
+          if (row.status === 'PRESENT') {
+            point.present = 1;
+            point.rate = 100;
+          } else if (row.status === 'PARTIAL') {
+            point.partial = 1;
+            point.rate = 50;
+          } else {
+            point.absent = 1;
+            point.rate = 0;
+          }
+        }
+      });
+      
+      return Array.from(trendMap.values());
+    },
+    enabled: !!workerId,
+  });
+}
+
+// Establishment Attendance Trend (last 7 days)
+export function useEstablishmentAttendanceTrend(establishmentId: string | undefined, days: number = 7) {
+  return useQuery({
+    queryKey: ['establishment-attendance-trend', establishmentId, days],
+    queryFn: async (): Promise<TrendDataPoint[]> => {
+      if (!establishmentId) return [];
+      
+      const startDate = getDateDaysAgo(days);
+      
+      // Get total worker count for this establishment
+      const { count: totalWorkers } = await supabase
+        .from('worker_mappings')
+        .select('*', { count: 'exact', head: true })
+        .eq('establishment_id', establishmentId)
+        .eq('is_active', true);
+      
+      const total = totalWorkers || 0;
+      
+      const { data, error } = await supabase
+        .from('attendance_daily_rollups')
+        .select('attendance_date, status')
+        .eq('establishment_id', establishmentId)
+        .gte('attendance_date', startDate)
+        .order('attendance_date', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Build trend data - group by date
+      const trendMap = new Map<string, TrendDataPoint>();
+      
+      // Initialize all days in range
+      for (let i = days; i >= 0; i--) {
+        const date = getDateDaysAgo(i);
+        trendMap.set(date, { date, present: 0, partial: 0, absent: total, total, rate: 0 });
+      }
+      
+      // Fill in actual data
+      data?.forEach(row => {
+        const point = trendMap.get(row.attendance_date);
+        if (point) {
+          if (row.status === 'PRESENT') {
+            point.present++;
+            point.absent--;
+          } else if (row.status === 'PARTIAL') {
+            point.partial++;
+            point.absent--;
+          }
+        }
+      });
+      
+      // Calculate rates
+      trendMap.forEach(point => {
+        point.rate = point.total > 0 ? Math.round((point.present / point.total) * 100) : 0;
+      });
+      
+      return Array.from(trendMap.values());
+    },
+    enabled: !!establishmentId,
+  });
+}
+
+// Department Attendance Trend (last 7 days)
+export function useDepartmentAttendanceTrend(departmentId: string | undefined, days: number = 7) {
+  return useQuery({
+    queryKey: ['department-attendance-trend', departmentId, days],
+    queryFn: async (): Promise<TrendDataPoint[]> => {
+      if (!departmentId) return [];
+      
+      const startDate = getDateDaysAgo(days);
+      
+      // Get establishment IDs for this department
+      const { data: establishments } = await supabase
+        .from('establishments')
+        .select('id')
+        .eq('department_id', departmentId)
+        .eq('is_active', true);
+      
+      const estIds = establishments?.map(e => e.id) || [];
+      
+      if (estIds.length === 0) return [];
+      
+      // Get total worker count
+      const { count: totalWorkers } = await supabase
+        .from('worker_mappings')
+        .select('*', { count: 'exact', head: true })
+        .in('establishment_id', estIds)
+        .eq('is_active', true);
+      
+      const total = totalWorkers || 0;
+      
+      const { data, error } = await supabase
+        .from('attendance_daily_rollups')
+        .select('attendance_date, status')
+        .in('establishment_id', estIds)
+        .gte('attendance_date', startDate)
+        .order('attendance_date', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Build trend data - group by date
+      const trendMap = new Map<string, TrendDataPoint>();
+      
+      // Initialize all days in range
+      for (let i = days; i >= 0; i--) {
+        const date = getDateDaysAgo(i);
+        trendMap.set(date, { date, present: 0, partial: 0, absent: total, total, rate: 0 });
+      }
+      
+      // Fill in actual data
+      data?.forEach(row => {
+        const point = trendMap.get(row.attendance_date);
+        if (point) {
+          if (row.status === 'PRESENT') {
+            point.present++;
+            point.absent--;
+          } else if (row.status === 'PARTIAL') {
+            point.partial++;
+            point.absent--;
+          }
+        }
+      });
+      
+      // Calculate rates
+      trendMap.forEach(point => {
+        point.rate = point.total > 0 ? Math.round((point.present / point.total) * 100) : 0;
+      });
+      
+      return Array.from(trendMap.values());
+    },
+    enabled: !!departmentId,
   });
 }
