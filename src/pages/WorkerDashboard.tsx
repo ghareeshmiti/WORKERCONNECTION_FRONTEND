@@ -1,16 +1,43 @@
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, LogOut, User, Calendar, CheckCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats } from '@/hooks/use-dashboard-data';
 
 export default function WorkerDashboard() {
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
 
+  const { data: profile, isLoading: profileLoading } = useWorkerProfile(userContext?.workerId);
+  const { data: todayAttendance, isLoading: todayLoading } = useWorkerTodayAttendance(userContext?.workerId);
+  const { data: history, isLoading: historyLoading } = useWorkerAttendanceHistory(userContext?.workerId, 30);
+  const { data: monthlyStats } = useWorkerMonthlyStats(userContext?.workerId);
+
   const handleLogout = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const getStatusBadge = (status: string | undefined) => {
+    switch (status) {
+      case 'PRESENT':
+        return <Badge className="bg-success text-success-foreground">Present</Badge>;
+      case 'PARTIAL':
+        return <Badge className="bg-warning text-warning-foreground">Partial</Badge>;
+      default:
+        return <Badge variant="secondary">Absent</Badge>;
+    }
+  };
+
+  const formatTime = (timestamp: string | null) => {
+    if (!timestamp) return '--:--';
+    return new Date(timestamp).toLocaleTimeString('en-IN', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'Asia/Kolkata'
+    });
   };
 
   return (
@@ -24,7 +51,9 @@ export default function WorkerDashboard() {
             <span className="text-xl font-display font-bold">Worker Connect</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{userContext?.fullName}</span>
+            <span className="text-sm text-muted-foreground">
+              {profile ? `${profile.first_name} ${profile.last_name}` : userContext?.fullName}
+            </span>
             <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="w-5 h-5" />
             </Button>
@@ -35,15 +64,32 @@ export default function WorkerDashboard() {
       <main className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-display font-bold mb-6">Worker Dashboard</h1>
         
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        {/* KPI Cards */}
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Today's Status</CardTitle>
-              <CheckCircle className="w-4 h-4 text-success" />
+              {todayAttendance?.status === 'PRESENT' ? (
+                <CheckCircle className="w-4 h-4 text-success" />
+              ) : todayAttendance?.status === 'PARTIAL' ? (
+                <AlertCircle className="w-4 h-4 text-warning" />
+              ) : (
+                <XCircle className="w-4 h-4 text-muted-foreground" />
+              )}
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">Present</div>
-              <p className="text-xs text-muted-foreground">Check-in: 9:00 AM</p>
+              {todayLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">
+                    {getStatusBadge(todayAttendance?.status)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    In: {formatTime(todayAttendance?.first_checkin_at ?? null)} | Out: {formatTime(todayAttendance?.last_checkout_at ?? null)}
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -53,8 +99,19 @@ export default function WorkerDashboard() {
               <Calendar className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">22 / 24</div>
+              <div className="text-2xl font-bold">{monthlyStats?.present || 0} / {monthlyStats?.total || 0}</div>
               <p className="text-xs text-muted-foreground">Days present</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Partial Days</CardTitle>
+              <AlertCircle className="w-4 h-4 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">{monthlyStats?.partial || 0}</div>
+              <p className="text-xs text-muted-foreground">Incomplete attendance</p>
             </CardContent>
           </Card>
 
@@ -64,18 +121,64 @@ export default function WorkerDashboard() {
               <User className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold font-mono">{userContext?.workerId?.slice(0, 12) || 'N/A'}</div>
-              <p className="text-xs text-muted-foreground">Your unique ID</p>
+              {profileLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <div className="text-lg font-bold font-mono">{profile?.worker_id || 'N/A'}</div>
+                  <p className="text-xs text-muted-foreground">Use for remote check-in</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
 
+        {/* Attendance History */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Attendance</CardTitle>
+            <CardTitle>Attendance History (Last 30 Days)</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">Attendance history will be displayed here.</p>
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : history && history.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 font-medium">Date</th>
+                      <th className="text-left py-2 font-medium">Check-in</th>
+                      <th className="text-left py-2 font-medium">Check-out</th>
+                      <th className="text-left py-2 font-medium">Hours</th>
+                      <th className="text-left py-2 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((record) => (
+                      <tr key={record.id} className="border-b border-muted">
+                        <td className="py-2">
+                          {new Date(record.attendance_date).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </td>
+                        <td className="py-2">{formatTime(record.first_checkin_at)}</td>
+                        <td className="py-2">{formatTime(record.last_checkout_at)}</td>
+                        <td className="py-2">
+                          {record.total_hours ? `${record.total_hours.toFixed(1)}h` : '--'}
+                        </td>
+                        <td className="py-2">{getStatusBadge(record.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">No attendance records found.</p>
+            )}
           </CardContent>
         </Card>
       </main>
