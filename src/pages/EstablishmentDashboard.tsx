@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download } from 'lucide-react';
+import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download, UserX2 } from 'lucide-react';
 import { generateCSV, workerColumns, attendanceTrendColumns } from '@/lib/csv-export';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishm
 import { useEstablishmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
 import { useUnmapWorker } from '@/hooks/use-worker-mapping';
 import { MapWorkerDialog } from '@/components/MapWorkerDialog';
+import { AddWorkerByIdDialog } from '@/components/AddWorkerByIdDialog';
 import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
@@ -115,10 +116,16 @@ export default function EstablishmentDashboard() {
           <div className="flex items-center gap-2">
             <EditEstablishmentProfileDialog establishmentId={userContext?.establishmentId} />
             {userContext?.establishmentId && user && (
-              <MapWorkerDialog 
-                establishmentId={userContext.establishmentId} 
-                mappedBy={user.id} 
-              />
+              <>
+                <AddWorkerByIdDialog 
+                  establishmentId={userContext.establishmentId} 
+                  mappedBy={user.id} 
+                />
+                <MapWorkerDialog 
+                  establishmentId={userContext.establishmentId} 
+                  mappedBy={user.id} 
+                />
+              </>
             )}
           </div>
         </div>
@@ -322,8 +329,8 @@ export default function EstablishmentDashboard() {
                               });
                             }}
                           >
-                            <UserMinus className="w-4 h-4 mr-1" />
-                            Unmap
+                            <UserX2 className="w-4 h-4 mr-1" />
+                            Relieve
                           </Button>
                         </td>
                       </tr>
@@ -353,9 +360,9 @@ export default function EstablishmentDashboard() {
       <AlertDialog open={unmapDialog.open} onOpenChange={(open) => setUnmapDialog(prev => ({ ...prev, open }))}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unmap Worker</AlertDialogTitle>
+            <AlertDialogTitle>Relieve Worker</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to unmap <strong>{unmapDialog.workerName}</strong> from this establishment? 
+              Are you sure you want to relieve <strong>{unmapDialog.workerName}</strong> from this establishment? 
               They will no longer appear in your worker list and their attendance will not be tracked under this establishment.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -369,7 +376,7 @@ export default function EstablishmentDashboard() {
               {unmapWorker.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : null}
-              Unmap Worker
+              Relieve Worker
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
