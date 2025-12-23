@@ -1,19 +1,32 @@
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrend } from '@/hooks/use-dashboard-data';
+import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
 import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
+import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
+import { DateRange } from 'react-day-picker';
+import { format, subDays } from 'date-fns';
 
 export default function DepartmentDashboard() {
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
+  
+  // Default to last 7 days for charts
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 7),
+    to: new Date(),
+  });
+
+  const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
+  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
   const { data: establishments, isLoading: estLoading } = useDepartmentEstablishments(userContext?.departmentId);
   const { data: stats, isLoading: statsLoading } = useDepartmentStats(userContext?.departmentId);
-  const { data: trendData, isLoading: trendLoading } = useDepartmentAttendanceTrend(userContext?.departmentId, 7);
+  const { data: trendData, isLoading: trendLoading } = useDepartmentAttendanceTrendByRange(userContext?.departmentId, startDate, endDate);
 
   const handleLogout = async () => {
     await signOut();
@@ -113,12 +126,28 @@ export default function DepartmentDashboard() {
           </Card>
         </div>
 
+        {/* Date Range Filter for Charts */}
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Attendance Analytics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <DateRangePicker 
+                dateRange={dateRange} 
+                onDateRangeChange={setDateRange} 
+              />
+              <DateRangePresets onSelect={setDateRange} />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Charts Section */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <AttendanceChart 
             data={trendData || []} 
             isLoading={trendLoading} 
-            title="Department Attendance (Last 7 Days)" 
+            title="Department Attendance" 
             type="bar"
           />
           <AttendanceRateChart 
