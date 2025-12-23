@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -8,40 +8,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, ArrowRight, Check, Landmark } from 'lucide-react';
-import { INDIA_STATES } from '@/lib/types';
+import { Loader2, ArrowLeft, ArrowRight, Check, Landmark, Eye, EyeOff } from 'lucide-react';
+import { getDistricts, getMandalsForDistrict } from '@/data/india-locations';
+
+// Password validation regex
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 // Validation schemas
 const detailsSchema = z.object({
-  name: z.string().trim().min(3, 'Name must be at least 3 characters').max(100),
-  code: z.string().trim().min(3, 'Code must be at least 3 characters').max(20).regex(/^[A-Z0-9-]+$/i, 'Only letters, numbers, and hyphens'),
-  description: z.string().max(500).optional(),
+  name: z.string().trim().min(3, 'Department name must be at least 3 characters').max(100),
   email: z.string().trim().email('Invalid email address').max(255),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(72),
+  phone: z.string().regex(/^\d{10}$/, 'Phone must be exactly 10 digits'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(passwordRegex, 'Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character (@$!%*?&)'),
   confirmPassword: z.string(),
-  phone: z.string().regex(/^(\+91)?[6-9]\d{9}$/, 'Invalid Indian phone number').optional().or(z.literal('')),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
 const addressSchema = z.object({
-  state: z.string().min(1, 'State is required'),
-  district: z.string().trim().min(2, 'District is required').max(100),
-  mandal: z.string().max(100).optional(),
+  district: z.string().min(1, 'District is required'),
+  mandal: z.string().min(1, 'Mandal/City is required'),
   pincode: z.string().regex(/^\d{6}$/, 'Must be 6 digits').optional().or(z.literal('')),
   addressLine: z.string().max(500).optional(),
 });
 
 type FormData = {
   name: string;
-  code: string;
-  description: string;
   email: string;
+  phone: string;
   password: string;
   confirmPassword: string;
-  phone: string;
-  state: string;
   district: string;
   mandal: string;
   pincode: string;
@@ -53,18 +52,37 @@ const STEPS = ['Details', 'Address', 'Review'];
 export default function DepartmentRegister() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<FormData>({
-    name: '', code: '', description: '',
-    email: '', password: '', confirmPassword: '', phone: '',
-    state: '', district: '', mandal: '', pincode: '', addressLine: '',
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    district: '',
+    mandal: '',
+    pincode: '',
+    addressLine: '',
   });
   
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Memoized location data
+  const districts = useMemo(() => getDistricts(), []);
+  const mandals = useMemo(() => getMandalsForDistrict(formData.district), [formData.district]);
+
   const updateField = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      // Reset mandal when district changes
+      if (field === 'district') {
+        newData.mandal = '';
+      }
+      return newData;
+    });
     setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
@@ -75,17 +93,14 @@ export default function DepartmentRegister() {
         case 0:
           detailsSchema.parse({
             name: formData.name,
-            code: formData.code,
-            description: formData.description,
             email: formData.email,
+            phone: formData.phone,
             password: formData.password,
             confirmPassword: formData.confirmPassword,
-            phone: formData.phone,
           });
           break;
         case 1:
           addressSchema.parse({
-            state: formData.state,
             district: formData.district,
             mandal: formData.mandal,
             pincode: formData.pincode,
@@ -114,6 +129,14 @@ export default function DepartmentRegister() {
 
   const prevStep = () => setStep(prev => Math.max(prev - 1, 0));
 
+  // Generate department code from name
+  const generateCode = (name: string): string => {
+    const cleanName = name.trim().toUpperCase().replace(/[^A-Z]/g, '');
+    const prefix = cleanName.substring(0, 4) || 'DEPT';
+    const random = Math.floor(1000 + Math.random() * 9000);
+    return `${prefix}-${random}`;
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -124,14 +147,13 @@ export default function DepartmentRegister() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: formData.name.trim(),
-            code: formData.code.trim().toUpperCase(),
-            description: formData.description.trim() || null,
+            code: generateCode(formData.name),
             email: formData.email.trim().toLowerCase(),
             password: formData.password,
-            phone: formData.phone || null,
-            state: formData.state,
-            district: formData.district.trim(),
-            mandal: formData.mandal.trim() || null,
+            phone: formData.phone,
+            state: 'Andhra Pradesh', // All locations in JSON are AP
+            district: formData.district,
+            mandal: formData.mandal,
             pincode: formData.pincode || null,
             addressLine: formData.addressLine.trim() || null,
           }),
@@ -205,45 +227,87 @@ export default function DepartmentRegister() {
             {/* Step 0: Details */}
             {step === 0 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Department Name *</Label>
-                    <Input id="name" value={formData.name} onChange={e => updateField('name', e.target.value)} />
-                    {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="code">Unique Code *</Label>
-                    <Input id="code" placeholder="DEPT-001" value={formData.code} onChange={e => updateField('code', e.target.value.toUpperCase())} />
-                    {errors.code && <p className="text-sm text-destructive">{errors.code}</p>}
-                  </div>
-                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" value={formData.description} onChange={e => updateField('description', e.target.value)} placeholder="Brief description of the department..." />
+                  <Label htmlFor="name">Department Name *</Label>
+                  <Input 
+                    id="name" 
+                    value={formData.name} 
+                    onChange={e => updateField('name', e.target.value)} 
+                    placeholder="Enter department name"
+                  />
+                  {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Admin Email *</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={e => updateField('email', e.target.value)} />
-                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input id="phone" placeholder="9876543210" value={formData.phone} onChange={e => updateField('phone', e.target.value)} />
-                    {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-                  </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={formData.email} 
+                    onChange={e => updateField('email', e.target.value)} 
+                    placeholder="example@domain.com"
+                  />
+                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password *</Label>
-                    <Input id="password" type="password" value={formData.password} onChange={e => updateField('password', e.target.value)} />
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone *</Label>
+                  <Input 
+                    id="phone" 
+                    value={formData.phone} 
+                    onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))} 
+                    placeholder="9876543210"
+                    maxLength={10}
+                  />
+                  <p className="text-xs text-muted-foreground">Exactly 10 digits, numeric only</p>
+                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password *</Label>
+                  <div className="relative">
+                    <Input 
+                      id="password" 
+                      type={showPassword ? 'text' : 'password'} 
+                      value={formData.password} 
+                      onChange={e => updateField('password', e.target.value)} 
+                      placeholder="Enter password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                    <Input id="confirmPassword" type="password" value={formData.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} />
-                    {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+                  <p className="text-xs text-muted-foreground">Min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char (@$!%*?&)</p>
+                  {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                  <div className="relative">
+                    <Input 
+                      id="confirmPassword" 
+                      type={showConfirmPassword ? 'text' : 'password'} 
+                      value={formData.confirmPassword} 
+                      onChange={e => updateField('confirmPassword', e.target.value)} 
+                      placeholder="Re-enter password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
                   </div>
+                  {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
                 </div>
               </div>
             )}
@@ -251,39 +315,60 @@ export default function DepartmentRegister() {
             {/* Step 1: Address */}
             {step === 1 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="state">State *</Label>
-                    <Select value={formData.state} onValueChange={v => updateField('state', v)}>
-                      <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                      <SelectContent>
-                        {INDIA_STATES.map(state => (
-                          <SelectItem key={state} value={state}>{state}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.state && <p className="text-sm text-destructive">{errors.state}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="district">District *</Label>
-                    <Input id="district" value={formData.district} onChange={e => updateField('district', e.target.value)} />
-                    {errors.district && <p className="text-sm text-destructive">{errors.district}</p>}
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="district">District *</Label>
+                  <Select value={formData.district} onValueChange={v => updateField('district', v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select district" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {districts.map(d => (
+                        <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.district && <p className="text-sm text-destructive">{errors.district}</p>}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="mandal">Mandal/Taluk</Label>
-                    <Input id="mandal" value={formData.mandal} onChange={e => updateField('mandal', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pincode">Pincode</Label>
-                    <Input id="pincode" maxLength={6} placeholder="500001" value={formData.pincode} onChange={e => updateField('pincode', e.target.value.replace(/\D/g, ''))} />
-                    {errors.pincode && <p className="text-sm text-destructive">{errors.pincode}</p>}
-                  </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mandal">Mandal / City *</Label>
+                  <Select 
+                    value={formData.mandal} 
+                    onValueChange={v => updateField('mandal', v)}
+                    disabled={!formData.district}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={formData.district ? "Select mandal/city" : "Select district first"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50 max-h-60">
+                      {mandals.map(m => (
+                        <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.mandal && <p className="text-sm text-destructive">{errors.mandal}</p>}
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input 
+                    id="pincode" 
+                    maxLength={6} 
+                    placeholder="500001" 
+                    value={formData.pincode} 
+                    onChange={e => updateField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                  />
+                  {errors.pincode && <p className="text-sm text-destructive">{errors.pincode}</p>}
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="addressLine">Full Address</Label>
-                  <Textarea id="addressLine" value={formData.addressLine} onChange={e => updateField('addressLine', e.target.value)} />
+                  <Textarea 
+                    id="addressLine" 
+                    value={formData.addressLine} 
+                    onChange={e => updateField('addressLine', e.target.value)} 
+                    placeholder="Enter complete address"
+                  />
                 </div>
               </div>
             )}
@@ -295,39 +380,23 @@ export default function DepartmentRegister() {
                   <div className="p-4 rounded-lg bg-muted">
                     <h4 className="font-medium mb-2">Department Information</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <span className="text-muted-foreground">Name:</span>
+                      <span className="text-muted-foreground">Department Name:</span>
                       <span>{formData.name}</span>
-                      <span className="text-muted-foreground">Code:</span>
-                      <span>{formData.code}</span>
                       <span className="text-muted-foreground">Email:</span>
                       <span>{formData.email}</span>
-                      {formData.phone && (
-                        <>
-                          <span className="text-muted-foreground">Phone:</span>
-                          <span>{formData.phone}</span>
-                        </>
-                      )}
-                      {formData.description && (
-                        <>
-                          <span className="text-muted-foreground">Description:</span>
-                          <span>{formData.description}</span>
-                        </>
-                      )}
+                      <span className="text-muted-foreground">Phone:</span>
+                      <span>{formData.phone}</span>
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-muted">
                     <h4 className="font-medium mb-2">Location</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <span className="text-muted-foreground">State:</span>
-                      <span>{formData.state}</span>
+                      <span>Andhra Pradesh</span>
                       <span className="text-muted-foreground">District:</span>
                       <span>{formData.district}</span>
-                      {formData.mandal && (
-                        <>
-                          <span className="text-muted-foreground">Mandal:</span>
-                          <span>{formData.mandal}</span>
-                        </>
-                      )}
+                      <span className="text-muted-foreground">Mandal/City:</span>
+                      <span>{formData.mandal}</span>
                       {formData.pincode && (
                         <>
                           <span className="text-muted-foreground">Pincode:</span>
