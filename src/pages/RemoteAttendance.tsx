@@ -34,16 +34,27 @@ export default function RemoteAttendance() {
         }
       );
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = { 
+          success: false, 
+          message: 'Server returned an invalid response. Please try again.',
+          code: 'PARSE_ERROR'
+        };
+      }
+      
       setResult(data);
       
       if (data.success) {
         toast({ title: 'Success', description: data.message });
         setWorkerIdentifier('');
       } else {
-        toast({ title: 'Error', description: data.message, variant: 'destructive' });
+        toast({ title: 'Attendance Failed', description: data.message, variant: 'destructive' });
       }
     } catch (err) {
+      console.error('Attendance submission error:', err);
       const errorResult = { 
         success: false, 
         message: 'Failed to submit attendance. Please check your connection and try again.',
