@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 type TableName = 'attendance_events' | 'attendance_daily_rollups' | 'worker_mappings' | 'workers' | 'establishments' | 'departments';
 
@@ -61,14 +61,42 @@ const TABLE_QUERY_KEYS: Record<TableName, string[]> = {
   ],
 };
 
-// Human-readable table names for toast
-const TABLE_LABELS: Record<TableName, string> = {
-  attendance_events: 'Attendance',
-  attendance_daily_rollups: 'Attendance',
-  worker_mappings: 'Worker mapping',
-  workers: 'Worker',
-  establishments: 'Establishment',
-  departments: 'Department',
+// Toast configuration by table type
+const TABLE_TOAST_CONFIG: Record<TableName, { 
+  title: string; 
+  description: string;
+  icon: string;
+}> = {
+  attendance_events: {
+    title: '✓ Attendance Updated',
+    description: 'New attendance event recorded',
+    icon: '🕐',
+  },
+  attendance_daily_rollups: {
+    title: '✓ Attendance Synced',
+    description: 'Daily attendance data refreshed',
+    icon: '📊',
+  },
+  worker_mappings: {
+    title: '✓ Mapping Changed',
+    description: 'Worker assignment updated',
+    icon: '🔗',
+  },
+  workers: {
+    title: '✓ Worker Updated',
+    description: 'Worker information changed',
+    icon: '👷',
+  },
+  establishments: {
+    title: '✓ Establishment Updated',
+    description: 'Establishment data refreshed',
+    icon: '🏢',
+  },
+  departments: {
+    title: '✓ Department Updated',
+    description: 'Department information changed',
+    icon: '🏛️',
+  },
 };
 
 export function useRealtimeSubscriptions({ tables, showToast = true }: UseRealtimeOptions) {
@@ -84,10 +112,13 @@ export function useRealtimeSubscriptions({ tables, showToast = true }: UseRealti
     
     lastToastTime.current = now;
     
-    toast({
-      title: "Data updated",
-      description: `${TABLE_LABELS[table]} data refreshed`,
-      duration: 2000,
+    const config = TABLE_TOAST_CONFIG[table];
+    
+    toast.success(config.title, {
+      description: config.description,
+      icon: config.icon,
+      duration: 2500,
+      position: 'bottom-right',
     });
   }, [showToast]);
 
