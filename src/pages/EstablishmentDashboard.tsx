@@ -14,7 +14,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X } from 'lucide-react';
+import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download } from 'lucide-react';
+import { generateCSV, workerColumns, attendanceTrendColumns } from '@/lib/csv-export';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
 import { useEstablishmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
@@ -231,7 +233,22 @@ export default function EstablishmentDashboard() {
                 <Users className="w-5 h-5" />
                 Mapped Workers
               </CardTitle>
-              <div className="relative w-full md:w-80">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (filteredWorkers && filteredWorkers.length > 0) {
+                      generateCSV(filteredWorkers, workerColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
+                      toast.success('Export Complete', { description: 'Worker list exported to CSV' });
+                    }
+                  }}
+                  disabled={!filteredWorkers || filteredWorkers.length === 0}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Export
+                </Button>
+                <div className="relative w-full md:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by ID, name, or phone..."
@@ -249,6 +266,7 @@ export default function EstablishmentDashboard() {
                     <X className="w-4 h-4" />
                   </Button>
                 )}
+                </div>
               </div>
             </div>
           </CardHeader>
