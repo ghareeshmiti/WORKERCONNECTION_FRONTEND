@@ -1,12 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 type TableName = 'attendance_events' | 'attendance_daily_rollups' | 'worker_mappings' | 'workers' | 'establishments' | 'departments';
 
 interface UseRealtimeOptions {
   tables: TableName[];
-  onUpdate?: () => void;
+  showToast?: boolean;
 }
 
 // Query key mappings for each table
@@ -60,8 +61,35 @@ const TABLE_QUERY_KEYS: Record<TableName, string[]> = {
   ],
 };
 
-export function useRealtimeSubscriptions({ tables, onUpdate }: UseRealtimeOptions) {
+// Human-readable table names for toast
+const TABLE_LABELS: Record<TableName, string> = {
+  attendance_events: 'Attendance',
+  attendance_daily_rollups: 'Attendance',
+  worker_mappings: 'Worker mapping',
+  workers: 'Worker',
+  establishments: 'Establishment',
+  departments: 'Department',
+};
+
+export function useRealtimeSubscriptions({ tables, showToast = true }: UseRealtimeOptions) {
   const queryClient = useQueryClient();
+  const lastToastTime = useRef<number>(0);
+  const toastDebounceMs = 3000; // Debounce toasts to avoid spam
+
+  const showUpdateToast = useCallback((table: TableName) => {
+    if (!showToast) return;
+    
+    const now = Date.now();
+    if (now - lastToastTime.current < toastDebounceMs) return;
+    
+    lastToastTime.current = now;
+    
+    toast({
+      title: "Data updated",
+      description: `${TABLE_LABELS[table]} data refreshed`,
+      duration: 2000,
+    });
+  }, [showToast]);
 
   useEffect(() => {
     const channels = tables.map((table) => {
@@ -81,8 +109,8 @@ export function useRealtimeSubscriptions({ tables, onUpdate }: UseRealtimeOption
               queryClient.invalidateQueries({ queryKey: [key] });
             });
             
-            // Call optional callback
-            onUpdate?.();
+            // Show toast notification
+            showUpdateToast(table);
           }
         )
         .subscribe();
@@ -95,7 +123,7 @@ export function useRealtimeSubscriptions({ tables, onUpdate }: UseRealtimeOption
         supabase.removeChannel(channel);
       });
     };
-  }, [queryClient, tables, onUpdate]);
+  }, [queryClient, tables, showUpdateToast]);
 }
 
 // Convenience hooks for specific dashboard types
