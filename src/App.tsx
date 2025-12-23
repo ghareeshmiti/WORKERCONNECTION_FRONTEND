@@ -16,6 +16,7 @@ const LandingPage = lazy(() => import("@/pages/Landing"));
 const AuthPage = lazy(() => import("@/pages/Auth"));
 const WorkerRegister = lazy(() => import("@/pages/WorkerRegister"));
 const EstablishmentRegister = lazy(() => import("@/pages/EstablishmentRegister"));
+const DepartmentRegister = lazy(() => import("@/pages/DepartmentRegister"));
 const RemoteAttendance = lazy(() => import("@/pages/RemoteAttendance"));
 const WorkerDashboard = lazy(() => import("@/pages/WorkerDashboard"));
 const EstablishmentDashboard = lazy(() => import("@/pages/EstablishmentDashboard"));
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/register/worker" element={<WorkerRegister />} />
               <Route path="/register/establishment" element={<EstablishmentRegister />} />
+              <Route path="/register/department" element={<DepartmentRegister />} />
               <Route path="/attendance" element={<RemoteAttendance />} />
               
               {/* Mock THALES auth screen */}
