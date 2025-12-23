@@ -1,21 +1,50 @@
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2 } from 'lucide-react';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEstablishmentWorkers, useEstablishmentTodayAttendance } from '@/hooks/use-dashboard-data';
+import { useUnmapWorker } from '@/hooks/use-worker-mapping';
+import { MapWorkerDialog } from '@/components/MapWorkerDialog';
 
 export default function EstablishmentDashboard() {
-  const { userContext, signOut } = useAuth();
+  const { userContext, signOut, user } = useAuth();
   const navigate = useNavigate();
+  const [unmapDialog, setUnmapDialog] = useState<{ open: boolean; mappingId: string; workerName: string }>({
+    open: false,
+    mappingId: '',
+    workerName: '',
+  });
 
   const { data: workers, isLoading: workersLoading } = useEstablishmentWorkers(userContext?.establishmentId);
   const { data: todayStats, isLoading: statsLoading } = useEstablishmentTodayAttendance(userContext?.establishmentId);
+  const unmapWorker = useUnmapWorker();
 
   const handleLogout = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleUnmap = async () => {
+    if (unmapDialog.mappingId && user) {
+      await unmapWorker.mutateAsync({
+        mappingId: unmapDialog.mappingId,
+        unmappedBy: user.id,
+      });
+      setUnmapDialog({ open: false, mappingId: '', workerName: '' });
+    }
   };
 
   return (
@@ -38,7 +67,15 @@ export default function EstablishmentDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-display font-bold mb-6">Establishment Dashboard</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-display font-bold">Establishment Dashboard</h1>
+          {userContext?.establishmentId && user && (
+            <MapWorkerDialog 
+              establishmentId={userContext.establishmentId} 
+              mappedBy={user.id} 
+            />
+          )}
+        </div>
         
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -114,7 +151,10 @@ export default function EstablishmentDashboard() {
         {/* Worker List */}
         <Card>
           <CardHeader>
-            <CardTitle>Mapped Workers</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Mapped Workers
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {workersLoading ? (
@@ -126,28 +166,44 @@ export default function EstablishmentDashboard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 font-medium">Worker ID</th>
-                      <th className="text-left py-2 font-medium">Name</th>
-                      <th className="text-left py-2 font-medium">Phone</th>
-                      <th className="text-left py-2 font-medium">Location</th>
-                      <th className="text-left py-2 font-medium">Status</th>
+                      <th className="text-left py-3 font-medium">Worker ID</th>
+                      <th className="text-left py-3 font-medium">Name</th>
+                      <th className="text-left py-3 font-medium">Phone</th>
+                      <th className="text-left py-3 font-medium">Location</th>
+                      <th className="text-left py-3 font-medium">Status</th>
+                      <th className="text-right py-3 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {workers.map((mapping: any) => (
-                      <tr key={mapping.id} className="border-b border-muted">
-                        <td className="py-2 font-mono text-xs">{mapping.workers?.worker_id}</td>
-                        <td className="py-2">
+                      <tr key={mapping.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
+                        <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
+                        <td className="py-3">
                           {mapping.workers?.first_name} {mapping.workers?.last_name}
                         </td>
-                        <td className="py-2">{mapping.workers?.phone || '--'}</td>
-                        <td className="py-2">
+                        <td className="py-3">{mapping.workers?.phone || '--'}</td>
+                        <td className="py-3">
                           {mapping.workers?.district}, {mapping.workers?.state}
                         </td>
-                        <td className="py-2">
+                        <td className="py-3">
                           <Badge variant={mapping.workers?.is_active ? 'default' : 'secondary'}>
                             {mapping.workers?.is_active ? 'Active' : 'Inactive'}
                           </Badge>
+                        </td>
+                        <td className="py-3 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setUnmapDialog({
+                              open: true,
+                              mappingId: mapping.id,
+                              workerName: `${mapping.workers?.first_name} ${mapping.workers?.last_name}`,
+                            })}
+                          >
+                            <UserMinus className="w-4 h-4 mr-1" />
+                            Unmap
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -156,15 +212,42 @@ export default function EstablishmentDashboard() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No workers mapped to this establishment yet.</p>
+                <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground mb-2">No workers mapped to this establishment yet.</p>
                 <p className="text-sm text-muted-foreground">
-                  Workers can be mapped after registration through the worker management feature.
+                  Click "Map Worker" above to add workers to your establishment.
                 </p>
               </div>
             )}
           </CardContent>
         </Card>
       </main>
+
+      {/* Unmap Confirmation Dialog */}
+      <AlertDialog open={unmapDialog.open} onOpenChange={(open) => setUnmapDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unmap Worker</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unmap <strong>{unmapDialog.workerName}</strong> from this establishment? 
+              They will no longer appear in your worker list and their attendance will not be tracked under this establishment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnmap}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={unmapWorker.isPending}
+            >
+              {unmapWorker.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Unmap Worker
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
