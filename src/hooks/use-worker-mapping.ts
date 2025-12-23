@@ -9,6 +9,12 @@ interface MapWorkerParams {
   notes?: string;
 }
 
+interface BulkMapWorkersParams {
+  workerIds: string[];
+  establishmentId: string;
+  mappedBy: string;
+}
+
 interface UnmapWorkerParams {
   mappingId: string;
   unmappedBy: string;
@@ -46,6 +52,48 @@ export function useMapWorker() {
         title: 'Error', 
         description: error.message.includes('unique') 
           ? 'Worker is already mapped to an establishment' 
+          : error.message,
+        variant: 'destructive' 
+      });
+    },
+  });
+}
+
+export function useBulkMapWorkers() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ workerIds, establishmentId, mappedBy }: BulkMapWorkersParams) => {
+      const mappings = workerIds.map(workerId => ({
+        worker_id: workerId,
+        establishment_id: establishmentId,
+        mapped_by: mappedBy,
+        is_active: true,
+      }));
+
+      const { data, error } = await supabase
+        .from('worker_mappings')
+        .insert(mappings)
+        .select();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['establishment-workers'] });
+      queryClient.invalidateQueries({ queryKey: ['unmapped-workers'] });
+      queryClient.invalidateQueries({ queryKey: ['establishment-today-attendance'] });
+      toast({ 
+        title: 'Success', 
+        description: `${data?.length || 0} workers mapped successfully` 
+      });
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: 'Error', 
+        description: error.message.includes('unique') 
+          ? 'Some workers are already mapped to an establishment' 
           : error.message,
         variant: 'destructive' 
       });
