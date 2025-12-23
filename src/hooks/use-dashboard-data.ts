@@ -301,7 +301,44 @@ export function useDepartmentStats(departmentId: string | undefined) {
   });
 }
 
-// Unmapped workers hook for establishment to map
+// Department Workers hook - fetch all workers mapped to department establishments
+export function useDepartmentWorkers(departmentId: string | undefined) {
+  return useQuery({
+    queryKey: ['department-workers', departmentId],
+    queryFn: async () => {
+      if (!departmentId) return [];
+      
+      // Get establishment IDs for this department
+      const { data: establishments } = await supabase
+        .from('establishments')
+        .select('id')
+        .eq('department_id', departmentId)
+        .eq('is_active', true);
+      
+      const estIds = establishments?.map(e => e.id) || [];
+      
+      if (estIds.length === 0) return [];
+      
+      // Get workers mapped to these establishments
+      const { data, error } = await supabase
+        .from('worker_mappings')
+        .select(`
+          id,
+          establishment_id,
+          establishments!inner(name, code),
+          workers!inner(id, worker_id, first_name, last_name, phone, state, district, is_active)
+        `)
+        .in('establishment_id', estIds)
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!departmentId,
+  });
+}
+
+
 export function useUnmappedWorkers() {
   return useQuery({
     queryKey: ['unmapped-workers'],

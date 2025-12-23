@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus } from 'lucide-react';
+import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
 import { useUnmapWorker } from '@/hooks/use-worker-mapping';
@@ -39,10 +40,30 @@ export default function EstablishmentDashboard() {
     to: new Date(),
   });
 
+  const [workerSearch, setWorkerSearch] = useState('');
+
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
   const { data: workers, isLoading: workersLoading } = useEstablishmentWorkers(userContext?.establishmentId);
+  
+  // Filter workers based on search
+  const filteredWorkers = useMemo(() => {
+    if (!workers) return [];
+    if (!workerSearch.trim()) return workers;
+    
+    const searchLower = workerSearch.toLowerCase();
+    return workers.filter((mapping: any) => {
+      const w = mapping.workers;
+      return (
+        w?.worker_id?.toLowerCase().includes(searchLower) ||
+        w?.first_name?.toLowerCase().includes(searchLower) ||
+        w?.last_name?.toLowerCase().includes(searchLower) ||
+        `${w?.first_name} ${w?.last_name}`.toLowerCase().includes(searchLower) ||
+        (w?.phone && w.phone.includes(workerSearch))
+      );
+    });
+  }, [workers, workerSearch]);
   const { data: todayStats, isLoading: statsLoading } = useEstablishmentTodayAttendance(userContext?.establishmentId);
   const { data: trendData, isLoading: trendLoading } = useEstablishmentAttendanceTrendByRange(userContext?.establishmentId, startDate, endDate);
   const unmapWorker = useUnmapWorker();
@@ -200,17 +221,38 @@ export default function EstablishmentDashboard() {
         {/* Worker List */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Mapped Workers
-            </CardTitle>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Mapped Workers
+              </CardTitle>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by ID, name, or phone..."
+                  value={workerSearch}
+                  onChange={(e) => setWorkerSearch(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {workerSearch && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setWorkerSearch('')}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {workersLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            ) : workers && workers.length > 0 ? (
+            ) : filteredWorkers && filteredWorkers.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -224,7 +266,7 @@ export default function EstablishmentDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {workers.map((mapping: any) => (
+                    {filteredWorkers.map((mapping: any) => (
                       <tr key={mapping.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
                         <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
                         <td className="py-3">
@@ -258,6 +300,11 @@ export default function EstablishmentDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            ) : workers && workers.length > 0 && filteredWorkers.length === 0 ? (
+              <div className="text-center py-8">
+                <Search className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">No workers found matching "{workerSearch}"</p>
               </div>
             ) : (
               <div className="text-center py-8">
