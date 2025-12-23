@@ -106,13 +106,32 @@ serve(async (req) => {
       eventType = 'CHECK_IN';
     }
 
-    // Get worker's current establishment mapping
-    const { data: mappingData } = await supabase
+    // Get worker's current establishment mapping - REQUIRED for attendance
+    const { data: mappingData, error: mappingError } = await supabase
       .from('worker_mappings')
-      .select('establishment_id')
+      .select('establishment_id, establishments(name)')
       .eq('worker_id', workerData.id)
       .eq('is_active', true)
       .maybeSingle();
+
+    if (mappingError) {
+      console.error('Mapping lookup failed:', mappingError);
+      return new Response(
+        JSON.stringify({ success: false, message: 'Error checking worker mapping' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!mappingData) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Worker is not mapped to any establishment. Please contact your establishment administrator to be added.',
+          code: 'NO_ACTIVE_MAPPING'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Insert attendance event
     const { data: eventData, error: insertError } = await supabase
@@ -122,7 +141,7 @@ serve(async (req) => {
         event_type: eventType,
         occurred_at: now.toISOString(),
         region: body.region,
-        establishment_id: mappingData?.establishment_id || null,
+        establishment_id: mappingData.establishment_id,
         meta: { timezone: 'Asia/Kolkata' }
       })
       .select('id, event_type, occurred_at')
@@ -136,6 +155,7 @@ serve(async (req) => {
       );
     }
 
+    const establishmentName = (mappingData.establishments as any)?.name || 'Unknown';
     console.log('Attendance recorded successfully:', eventData);
 
     return new Response(
@@ -148,6 +168,7 @@ serve(async (req) => {
           occurredAt: eventData.occurred_at,
           workerName: `${workerData.first_name} ${workerData.last_name}`,
           workerId: workerData.worker_id,
+          establishmentName,
         }
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
