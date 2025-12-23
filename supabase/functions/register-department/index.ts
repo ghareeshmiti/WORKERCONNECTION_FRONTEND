@@ -7,17 +7,28 @@ const corsHeaders = {
 };
 
 interface DepartmentRegistrationRequest {
+  // Step 1: Details
   name: string;
-  code: string;
-  description?: string;
   email: string;
+  phone: string;
   password: string;
-  phone?: string;
-  state: string;
+  // Step 2: Address
   district: string;
   mandal?: string;
   pincode?: string;
   addressLine?: string;
+  // Auto-generated
+  code?: string;
+  state?: string;
+  description?: string;
+}
+
+// Generate department code from name
+function generateCode(name: string): string {
+  const cleanName = name.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const prefix = cleanName.substring(0, 4) || 'DEPT';
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
+  return `${prefix}-${timestamp}`;
 }
 
 serve(async (req) => {
@@ -37,12 +48,34 @@ serve(async (req) => {
     console.log('Department registration request:', { email: body.email, name: body.name });
 
     // Validate required fields
-    if (!body.email || !body.password || !body.name || !body.code || !body.state || !body.district) {
+    if (!body.email || !body.password || !body.name || !body.phone || !body.district) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing required fields' }),
+        JSON.stringify({ success: false, message: 'Missing required fields: name, email, phone, password, district' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(body.email)) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Invalid email format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate phone number (10 digits)
+    if (!/^\d{10}$/.test(body.phone)) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Phone number must be exactly 10 digits' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generate code if not provided
+    const code = body.code || generateCode(body.name);
+    // Default state to Andhra Pradesh (all districts in JSON are from AP)
+    const state = body.state || 'Andhra Pradesh';
 
     let authUserId: string | null = null;
     let departmentId: string | null = null;
@@ -58,6 +91,12 @@ serve(async (req) => {
 
       if (authError) {
         console.error('Auth user creation failed:', authError);
+        if (authError.message.includes('already been registered')) {
+          return new Response(
+            JSON.stringify({ success: false, message: 'This email is already registered. Please login.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         return new Response(
           JSON.stringify({ success: false, message: authError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -71,16 +110,16 @@ serve(async (req) => {
       const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .insert({
-          name: body.name,
-          code: body.code,
+          name: body.name.trim(),
+          code: code,
           description: body.description || null,
-          state: body.state,
+          state: state,
           district: body.district,
           mandal: body.mandal || null,
           pincode: body.pincode || null,
           address_line: body.addressLine || null,
-          phone: body.phone || null,
-          email: body.email,
+          phone: body.phone,
+          email: body.email.toLowerCase(),
           is_active: true,
         })
         .select('id')
@@ -98,7 +137,7 @@ serve(async (req) => {
         .from('profiles')
         .insert({
           auth_user_id: authUserId,
-          full_name: body.name,
+          full_name: body.name.trim(),
           department_id: departmentId,
         })
         .select('id')
@@ -129,6 +168,7 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           message: 'Department registered successfully',
+          department_code: code,
           profile_context: {
             auth_user_id: authUserId,
             role: 'DEPARTMENT_ADMIN',

@@ -7,19 +7,34 @@ const corsHeaders = {
 };
 
 interface WorkerRegistrationRequest {
+  // Identity
+  aadhaarLastFour: string;
+  eshramId?: string;
+  bocwId?: string;
+  // Personal
   firstName: string;
+  middleName?: string;
   lastName: string;
-  email: string;
+  gender: string;
+  maritalStatus?: string;
+  dateOfBirth: string;
+  fatherHusbandName?: string;
+  caste?: string;
+  subCaste?: string;
+  phone: string;
   password: string;
-  dateOfBirth?: string;
-  gender?: string;
-  phone?: string;
-  aadhaarLastFour?: string;
+  // Address
   state: string;
   district: string;
   mandal?: string;
+  village?: string;
   pincode?: string;
   addressLine?: string;
+  // Other
+  nresMember?: string;
+  tradeUnionMember?: string;
+  // Legacy fields for compatibility
+  email?: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   skills?: string[];
@@ -41,30 +56,49 @@ serve(async (req) => {
     });
 
     const body: WorkerRegistrationRequest = await req.json();
-    console.log('Worker registration request:', { email: body.email, firstName: body.firstName });
+    console.log('Worker registration request:', { phone: body.phone, firstName: body.firstName });
 
     // Validate required fields
-    if (!body.email || !body.password || !body.firstName || !body.lastName || !body.state || !body.district) {
+    if (!body.phone || !body.password || !body.firstName || !body.lastName || !body.state || !body.district) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing required fields' }),
+        JSON.stringify({ success: false, message: 'Missing required fields: phone, password, firstName, lastName, state, district' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Validate phone number format (10 digits starting with 6-9)
+    if (!/^[6-9]\d{9}$/.test(body.phone)) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Invalid phone number format. Must be 10 digits starting with 6-9.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generate email from phone for auth (workers login via mobile)
+    const generatedEmail = `${body.phone}@worker.local`;
+
     let authUserId: string | null = null;
     let workerId: string | null = null;
+    let workerUUID: string | null = null;
     let profileId: string | null = null;
 
     try {
-      // Step 1: Create auth user
+      // Step 1: Create auth user with generated email
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: body.email,
+        email: generatedEmail,
         password: body.password,
         email_confirm: true,
       });
 
       if (authError) {
         console.error('Auth user creation failed:', authError);
+        // Check for duplicate phone
+        if (authError.message.includes('already been registered')) {
+          return new Response(
+            JSON.stringify({ success: false, message: 'This mobile number is already registered. Please login.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         return new Response(
           JSON.stringify({ success: false, message: authError.message }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -79,26 +113,27 @@ serve(async (req) => {
         .from('workers')
         .select('*', { count: 'exact', head: true });
       
-      const workerIdStr = `WKR${String((workerCount ?? 0) + 1).padStart(8, '0')}`;
+      workerId = `WKR${String((workerCount ?? 0) + 1).padStart(8, '0')}`;
+      console.log('Generated worker ID:', workerId);
 
       // Step 3: Insert worker record
       const { data: workerData, error: workerError } = await supabase
         .from('workers')
         .insert({
-          worker_id: workerIdStr,
-          first_name: body.firstName,
-          last_name: body.lastName,
-          email: body.email,
+          worker_id: workerId,
+          first_name: body.firstName.trim(),
+          last_name: body.lastName.trim(),
+          email: body.email || null,
           date_of_birth: body.dateOfBirth || null,
           gender: body.gender || null,
-          phone: body.phone || null,
+          phone: body.phone,
           aadhaar_last_four: body.aadhaarLastFour || null,
           state: body.state,
           district: body.district,
           mandal: body.mandal || null,
           pincode: body.pincode || null,
           address_line: body.addressLine || null,
-          emergency_contact_name: body.emergencyContactName || null,
+          emergency_contact_name: body.emergencyContactName || body.fatherHusbandName || null,
           emergency_contact_phone: body.emergencyContactPhone || null,
           skills: body.skills || [],
           experience_years: body.experienceYears || null,
@@ -111,16 +146,20 @@ serve(async (req) => {
         throw new Error(`Worker creation failed: ${workerError.message}`);
       }
 
-      workerId = workerData.id;
-      console.log('Worker created:', workerId);
+      workerUUID = workerData.id;
+      console.log('Worker created:', workerUUID);
 
       // Step 4: Insert profile
+      const fullName = body.middleName 
+        ? `${body.firstName} ${body.middleName} ${body.lastName}`
+        : `${body.firstName} ${body.lastName}`;
+
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert({
           auth_user_id: authUserId,
-          full_name: `${body.firstName} ${body.lastName}`,
-          worker_id: workerId,
+          full_name: fullName.trim(),
+          worker_id: workerUUID,
         })
         .select('id')
         .single();
@@ -150,10 +189,11 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           message: 'Worker registered successfully',
+          worker_id: workerId,
           profile_context: {
             auth_user_id: authUserId,
             role: 'WORKER',
-            worker_id: workerId,
+            worker_id: workerUUID,
           }
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -168,8 +208,8 @@ serve(async (req) => {
       }
       
       // Rollback: Delete worker if created
-      if (workerId) {
-        await supabase.from('workers').delete().eq('id', workerId);
+      if (workerUUID) {
+        await supabase.from('workers').delete().eq('id', workerUUID);
       }
       
       // Rollback: Delete auth user if created
