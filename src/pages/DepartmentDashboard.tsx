@@ -12,6 +12,7 @@ import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker'
 import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
 import { EditDepartmentProfileDialog } from '@/components/EditDepartmentProfileDialog';
+import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
 
 export default function DepartmentDashboard() {
   const { userContext, signOut } = useAuth();
@@ -24,7 +25,7 @@ export default function DepartmentDashboard() {
   });
   
   const [workerSearch, setWorkerSearch] = useState('');
-
+  const [selectedWorker, setSelectedWorker] = useState<{ id: string; establishment: string } | null>(null);
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
@@ -286,7 +287,14 @@ export default function DepartmentDashboard() {
                   </thead>
                   <tbody>
                     {filteredWorkers.map((mapping: any) => (
-                      <tr key={mapping.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
+                      <tr 
+                        key={mapping.id} 
+                        className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => setSelectedWorker({ 
+                          id: mapping.workers?.id, 
+                          establishment: mapping.establishments?.name 
+                        })}
+                      >
                         <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
                         <td className="py-3">
                           {mapping.workers?.first_name} {mapping.workers?.last_name}
@@ -325,6 +333,13 @@ export default function DepartmentDashboard() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Worker Details Dialog */}
+      <WorkerDetailsDialog
+        workerId={selectedWorker?.id || null}
+        onClose={() => setSelectedWorker(null)}
+        establishmentName={selectedWorker?.establishment}
+      />
     </div>
   );
 }
