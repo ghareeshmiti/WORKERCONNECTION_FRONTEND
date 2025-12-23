@@ -17,6 +17,7 @@ import { format, subDays } from 'date-fns';
 import { EditDepartmentProfileDialog } from '@/components/EditDepartmentProfileDialog';
 import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
 import { EstablishmentDetailsDialog } from '@/components/EstablishmentDetailsDialog';
+import { SortableTableHeader, SortConfig, sortData } from '@/components/SortableTableHeader';
 
 export default function DepartmentDashboard() {
   // Enable real-time updates
@@ -33,6 +34,11 @@ export default function DepartmentDashboard() {
   const [workerSearch, setWorkerSearch] = useState('');
   const [selectedWorker, setSelectedWorker] = useState<{ id: string; establishment: string } | null>(null);
   const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
+  
+  // Sorting state
+  const [estSort, setEstSort] = useState<SortConfig>({ key: '', direction: null });
+  const [workerSort, setWorkerSort] = useState<SortConfig>({ key: '', direction: null });
+  
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
@@ -41,25 +47,83 @@ export default function DepartmentDashboard() {
   const { data: trendData, isLoading: trendLoading } = useDepartmentAttendanceTrendByRange(userContext?.departmentId, startDate, endDate);
   const { data: workers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
 
-  // Filter workers based on search
+  // Sort handlers
+  const handleEstSort = (key: string) => {
+    setEstSort(current => {
+      if (current.key !== key) return { key, direction: 'asc' };
+      if (current.direction === 'asc') return { key, direction: 'desc' };
+      if (current.direction === 'desc') return { key: '', direction: null };
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const handleWorkerSort = (key: string) => {
+    setWorkerSort(current => {
+      if (current.key !== key) return { key, direction: 'asc' };
+      if (current.direction === 'asc') return { key, direction: 'desc' };
+      if (current.direction === 'desc') return { key: '', direction: null };
+      return { key, direction: 'asc' };
+    });
+  };
+
+  // Get establishment value for sorting
+  const getEstValue = (est: any, key: string) => {
+    switch (key) {
+      case 'code': return est.code;
+      case 'name': return est.name;
+      case 'location': return `${est.district}, ${est.state}`;
+      case 'workerCount': return est.workerCount || 0;
+      case 'present': return est.todayStats?.present || 0;
+      case 'partial': return est.todayStats?.partial || 0;
+      case 'absent': return est.todayStats?.absent || 0;
+      case 'rate': return est.todayStats?.rate || 0;
+      case 'status': return est.is_active;
+      default: return null;
+    }
+  };
+
+  // Get worker value for sorting
+  const getWorkerValue = (mapping: any, key: string) => {
+    switch (key) {
+      case 'worker_id': return mapping.workers?.worker_id;
+      case 'name': return `${mapping.workers?.first_name} ${mapping.workers?.last_name}`;
+      case 'phone': return mapping.workers?.phone;
+      case 'location': return `${mapping.workers?.district}, ${mapping.workers?.state}`;
+      case 'establishment': return mapping.establishments?.name;
+      case 'status': return mapping.workers?.is_active;
+      default: return null;
+    }
+  };
+
+  // Sorted establishments
+  const sortedEstablishments = useMemo(() => {
+    if (!establishments) return [];
+    return sortData(establishments, estSort, getEstValue);
+  }, [establishments, estSort]);
+
+  // Filter and sort workers
   const filteredWorkers = useMemo(() => {
     if (!workers) return [];
-    if (!workerSearch.trim()) return workers;
+    let result = workers;
     
-    const searchLower = workerSearch.toLowerCase();
-    return workers.filter((mapping: any) => {
-      const w = mapping.workers;
-      const est = mapping.establishments;
-      return (
-        w?.worker_id?.toLowerCase().includes(searchLower) ||
-        w?.first_name?.toLowerCase().includes(searchLower) ||
-        w?.last_name?.toLowerCase().includes(searchLower) ||
-        `${w?.first_name} ${w?.last_name}`.toLowerCase().includes(searchLower) ||
-        est?.name?.toLowerCase().includes(searchLower) ||
-        (w?.phone && w.phone.includes(workerSearch))
-      );
-    });
-  }, [workers, workerSearch]);
+    if (workerSearch.trim()) {
+      const searchLower = workerSearch.toLowerCase();
+      result = workers.filter((mapping: any) => {
+        const w = mapping.workers;
+        const est = mapping.establishments;
+        return (
+          w?.worker_id?.toLowerCase().includes(searchLower) ||
+          w?.first_name?.toLowerCase().includes(searchLower) ||
+          w?.last_name?.toLowerCase().includes(searchLower) ||
+          `${w?.first_name} ${w?.last_name}`.toLowerCase().includes(searchLower) ||
+          est?.name?.toLowerCase().includes(searchLower) ||
+          (w?.phone && w.phone.includes(workerSearch))
+        );
+      });
+    }
+    
+    return sortData(result, workerSort, getWorkerValue);
+  }, [workers, workerSearch, workerSort]);
 
   const handleLogout = async () => {
     await signOut();
@@ -225,39 +289,45 @@ export default function DepartmentDashboard() {
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
-            ) : establishments && establishments.length > 0 ? (
+            ) : sortedEstablishments && sortedEstablishments.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 font-medium">Code</th>
-                      <th className="text-left py-2 font-medium">Name</th>
-                      <th className="text-left py-2 font-medium">Location</th>
-                      <th className="text-center py-2 font-medium">Workers</th>
-                      <th className="text-center py-2 font-medium">
-                        <span className="flex items-center justify-center gap-1">
-                          <UserCheck className="w-3 h-3 text-success" />
-                          Present
-                        </span>
-                      </th>
-                      <th className="text-center py-2 font-medium">
-                        <span className="flex items-center justify-center gap-1">
-                          <AlertCircle className="w-3 h-3 text-warning" />
-                          Partial
-                        </span>
-                      </th>
-                      <th className="text-center py-2 font-medium">
-                        <span className="flex items-center justify-center gap-1">
-                          <UserX className="w-3 h-3 text-destructive" />
-                          Absent
-                        </span>
-                      </th>
-                      <th className="text-center py-2 font-medium">Rate</th>
-                      <th className="text-left py-2 font-medium">Status</th>
+                      <SortableTableHeader label="Code" sortKey="code" currentSort={estSort} onSort={handleEstSort} />
+                      <SortableTableHeader label="Name" sortKey="name" currentSort={estSort} onSort={handleEstSort} />
+                      <SortableTableHeader label="Location" sortKey="location" currentSort={estSort} onSort={handleEstSort} />
+                      <SortableTableHeader label="Workers" sortKey="workerCount" currentSort={estSort} onSort={handleEstSort} align="center" />
+                      <SortableTableHeader 
+                        label="Present" 
+                        sortKey="present" 
+                        currentSort={estSort} 
+                        onSort={handleEstSort} 
+                        align="center"
+                        icon={<UserCheck className="w-3 h-3 text-success" />}
+                      />
+                      <SortableTableHeader 
+                        label="Partial" 
+                        sortKey="partial" 
+                        currentSort={estSort} 
+                        onSort={handleEstSort} 
+                        align="center"
+                        icon={<AlertCircle className="w-3 h-3 text-warning" />}
+                      />
+                      <SortableTableHeader 
+                        label="Absent" 
+                        sortKey="absent" 
+                        currentSort={estSort} 
+                        onSort={handleEstSort} 
+                        align="center"
+                        icon={<UserX className="w-3 h-3 text-destructive" />}
+                      />
+                      <SortableTableHeader label="Rate" sortKey="rate" currentSort={estSort} onSort={handleEstSort} align="center" />
+                      <SortableTableHeader label="Status" sortKey="status" currentSort={estSort} onSort={handleEstSort} />
                     </tr>
                   </thead>
                   <tbody>
-                    {establishments.map((est: any) => (
+                    {sortedEstablishments.map((est: any) => (
                       <tr 
                         key={est.id} 
                         className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
@@ -364,12 +434,12 @@ export default function DepartmentDashboard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 font-medium">Worker ID</th>
-                      <th className="text-left py-3 font-medium">Name</th>
-                      <th className="text-left py-3 font-medium">Phone</th>
-                      <th className="text-left py-3 font-medium">Location</th>
-                      <th className="text-left py-3 font-medium">Establishment</th>
-                      <th className="text-left py-3 font-medium">Status</th>
+                      <SortableTableHeader label="Worker ID" sortKey="worker_id" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
+                      <SortableTableHeader label="Name" sortKey="name" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
+                      <SortableTableHeader label="Phone" sortKey="phone" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
+                      <SortableTableHeader label="Location" sortKey="location" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
+                      <SortableTableHeader label="Establishment" sortKey="establishment" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
+                      <SortableTableHeader label="Status" sortKey="status" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
                     </tr>
                   </thead>
                   <tbody>
