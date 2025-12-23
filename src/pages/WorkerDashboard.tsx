@@ -3,11 +3,11 @@ import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loader2, Download } from 'lucide-react';
+import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loader2, Download, Building2 } from 'lucide-react';
 import { generateCSV, attendanceColumns } from '@/lib/csv-export';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats, useWorkerAttendanceTrend } from '@/hooks/use-dashboard-data';
+import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats, useWorkerAttendanceTrend, useWorkerEstablishment } from '@/hooks/use-dashboard-data';
 import { useWorkerDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
 import { AttendanceChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
@@ -31,6 +31,7 @@ export default function WorkerDashboard() {
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
   const { data: profile, isLoading: profileLoading } = useWorkerProfile(userContext?.workerId);
+  const { data: establishment, isLoading: establishmentLoading } = useWorkerEstablishment(userContext?.workerId);
   const { data: todayAttendance, isLoading: todayLoading } = useWorkerTodayAttendance(userContext?.workerId);
   const { data: history, isLoading: historyLoading } = useWorkerAttendanceHistory(userContext?.workerId, startDate, endDate);
   const { data: monthlyStats } = useWorkerMonthlyStats(userContext?.workerId);
@@ -87,6 +88,34 @@ export default function WorkerDashboard() {
           <h1 className="text-2xl font-display font-bold">Worker Dashboard</h1>
           <EditWorkerProfileDialog worker={profile} />
         </div>
+
+        {/* Establishment Info Banner */}
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+              {establishmentLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              ) : establishment?.establishments ? (
+                <div>
+                  <p className="text-sm text-muted-foreground">Currently mapped to</p>
+                  <p className="font-semibold">{(establishment.establishments as any).name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(establishment.establishments as any).district}, {(establishment.establishments as any).state}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-muted-foreground">Establishment Status</p>
+                  <p className="font-medium text-warning">Not mapped to any establishment</p>
+                  <p className="text-xs text-muted-foreground">Contact an administrator to be added</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
         
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">

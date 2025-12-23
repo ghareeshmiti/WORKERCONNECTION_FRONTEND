@@ -65,6 +65,37 @@ export function useWorkerProfile(workerId: string | undefined) {
   });
 }
 
+// Fetch worker's current establishment mapping
+export function useWorkerEstablishment(workerId: string | undefined) {
+  return useQuery({
+    queryKey: ['worker-establishment', workerId],
+    queryFn: async () => {
+      if (!workerId) return null;
+      const { data, error } = await supabase
+        .from('worker_mappings')
+        .select(`
+          id,
+          establishment_id,
+          mapped_at,
+          establishments (
+            id,
+            name,
+            code,
+            district,
+            state
+          )
+        `)
+        .eq('worker_id', workerId)
+        .eq('is_active', true)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!workerId,
+  });
+}
+
 export function useWorkerTodayAttendance(workerId: string | undefined) {
   const today = getTodayDate();
   
