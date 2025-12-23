@@ -10,6 +10,7 @@ import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceCha
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
+import { EditDepartmentProfileDialog } from '@/components/EditDepartmentProfileDialog';
 
 export default function DepartmentDashboard() {
   const { userContext, signOut } = useAuth();
@@ -53,7 +54,10 @@ export default function DepartmentDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-display font-bold mb-6">Department Dashboard</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-display font-bold">Department Dashboard</h1>
+          <EditDepartmentProfileDialog departmentId={userContext?.departmentId} />
+        </div>
         
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">

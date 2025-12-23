@@ -22,6 +22,7 @@ import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceCha
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
+import { EditEstablishmentProfileDialog } from '@/components/EditEstablishmentProfileDialog';
 
 export default function EstablishmentDashboard() {
   const { userContext, signOut, user } = useAuth();
@@ -81,14 +82,17 @@ export default function EstablishmentDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Establishment Dashboard</h1>
-          {userContext?.establishmentId && user && (
-            <MapWorkerDialog 
-              establishmentId={userContext.establishmentId} 
-              mappedBy={user.id} 
-            />
-          )}
+          <div className="flex items-center gap-2">
+            <EditEstablishmentProfileDialog establishmentId={userContext?.establishmentId} />
+            {userContext?.establishmentId && user && (
+              <MapWorkerDialog 
+                establishmentId={userContext.establishmentId} 
+                mappedBy={user.id} 
+              />
+            )}
+          </div>
         </div>
         
         {/* KPI Cards */}
