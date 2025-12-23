@@ -63,10 +63,10 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Worker not found with the provided ID',
+          message: 'Worker not found with the provided ID. Please verify your Worker ID or Employee ID.',
           code: 'WORKER_NOT_FOUND'
         }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
