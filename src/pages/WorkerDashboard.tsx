@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,14 +7,26 @@ import { Clock, LogOut, User, Calendar, CheckCircle, AlertCircle, XCircle, Loade
 import { useNavigate } from 'react-router-dom';
 import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats, useWorkerAttendanceTrend } from '@/hooks/use-dashboard-data';
 import { AttendanceChart } from '@/components/AttendanceChart';
+import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
+import { DateRange } from 'react-day-picker';
+import { format, subDays } from 'date-fns';
 
 export default function WorkerDashboard() {
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
+  
+  // Default to last 30 days
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+
+  const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
+  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
   const { data: profile, isLoading: profileLoading } = useWorkerProfile(userContext?.workerId);
   const { data: todayAttendance, isLoading: todayLoading } = useWorkerTodayAttendance(userContext?.workerId);
-  const { data: history, isLoading: historyLoading } = useWorkerAttendanceHistory(userContext?.workerId, 30);
+  const { data: history, isLoading: historyLoading } = useWorkerAttendanceHistory(userContext?.workerId, startDate, endDate);
   const { data: monthlyStats } = useWorkerMonthlyStats(userContext?.workerId);
   const { data: trendData, isLoading: trendLoading } = useWorkerAttendanceTrend(userContext?.workerId, 14);
 
@@ -145,10 +158,19 @@ export default function WorkerDashboard() {
           />
         </div>
 
-        {/* Attendance History */}
+        {/* Attendance History with Date Filter */}
         <Card>
           <CardHeader>
-            <CardTitle>Attendance History (Last 30 Days)</CardTitle>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <CardTitle>Attendance History</CardTitle>
+              <div className="flex flex-col gap-2">
+                <DateRangePicker 
+                  dateRange={dateRange} 
+                  onDateRangeChange={setDateRange} 
+                />
+                <DateRangePresets onSelect={setDateRange} />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {historyLoading ? (
@@ -189,7 +211,7 @@ export default function WorkerDashboard() {
                 </table>
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">No attendance records found.</p>
+              <p className="text-muted-foreground text-center py-8">No attendance records found for selected date range.</p>
             )}
           </CardContent>
         </Card>

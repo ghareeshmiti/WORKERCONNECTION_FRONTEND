@@ -15,10 +15,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrend } from '@/hooks/use-dashboard-data';
+import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
 import { useUnmapWorker } from '@/hooks/use-worker-mapping';
 import { MapWorkerDialog } from '@/components/MapWorkerDialog';
 import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
+import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
+import { DateRange } from 'react-day-picker';
+import { format, subDays } from 'date-fns';
 
 export default function EstablishmentDashboard() {
   const { userContext, signOut, user } = useAuth();
@@ -28,10 +31,19 @@ export default function EstablishmentDashboard() {
     mappingId: '',
     workerName: '',
   });
+  
+  // Default to last 7 days for charts
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 7),
+    to: new Date(),
+  });
+
+  const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
+  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
   const { data: workers, isLoading: workersLoading } = useEstablishmentWorkers(userContext?.establishmentId);
   const { data: todayStats, isLoading: statsLoading } = useEstablishmentTodayAttendance(userContext?.establishmentId);
-  const { data: trendData, isLoading: trendLoading } = useEstablishmentAttendanceTrend(userContext?.establishmentId, 7);
+  const { data: trendData, isLoading: trendLoading } = useEstablishmentAttendanceTrendByRange(userContext?.establishmentId, startDate, endDate);
   const unmapWorker = useUnmapWorker();
 
   const handleLogout = async () => {
@@ -150,12 +162,28 @@ export default function EstablishmentDashboard() {
           </Card>
         </div>
 
+        {/* Date Range Filter for Charts */}
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Attendance Analytics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <DateRangePicker 
+                dateRange={dateRange} 
+                onDateRangeChange={setDateRange} 
+              />
+              <DateRangePresets onSelect={setDateRange} />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Charts Section */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <AttendanceChart 
             data={trendData || []} 
             isLoading={trendLoading} 
-            title="Daily Attendance (Last 7 Days)" 
+            title="Daily Attendance" 
             type="bar"
           />
           <AttendanceRateChart 
