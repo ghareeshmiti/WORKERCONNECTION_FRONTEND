@@ -16,6 +16,7 @@ import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
 import { EditDepartmentProfileDialog } from '@/components/EditDepartmentProfileDialog';
 import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
+import { EstablishmentDetailsDialog } from '@/components/EstablishmentDetailsDialog';
 
 export default function DepartmentDashboard() {
   // Enable real-time updates
@@ -31,6 +32,7 @@ export default function DepartmentDashboard() {
   
   const [workerSearch, setWorkerSearch] = useState('');
   const [selectedWorker, setSelectedWorker] = useState<{ id: string; establishment: string } | null>(null);
+  const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
@@ -256,7 +258,11 @@ export default function DepartmentDashboard() {
                   </thead>
                   <tbody>
                     {establishments.map((est: any) => (
-                      <tr key={est.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
+                      <tr 
+                        key={est.id} 
+                        className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => setSelectedEstablishment(est)}
+                      >
                         <td className="py-2 font-mono text-xs">{est.code}</td>
                         <td className="py-2 font-medium">{est.name}</td>
                         <td className="py-2">
@@ -420,6 +426,12 @@ export default function DepartmentDashboard() {
         workerId={selectedWorker?.id || null}
         onClose={() => setSelectedWorker(null)}
         establishmentName={selectedWorker?.establishment}
+      />
+
+      {/* Establishment Details Dialog */}
+      <EstablishmentDetailsDialog
+        establishment={selectedEstablishment}
+        onClose={() => setSelectedEstablishment(null)}
       />
     </div>
   );
