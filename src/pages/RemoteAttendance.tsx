@@ -3,24 +3,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, Loader2, CheckCircle, ArrowLeft, AlertCircle, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { INDIA_STATES } from '@/lib/types';
 
 export default function RemoteAttendance() {
-  const [workerId, setWorkerId] = useState('');
-  const [region, setRegion] = useState('');
+  const [workerIdentifier, setWorkerIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string; data?: any } | null>(null);
+  const [result, setResult] = useState<{ success: boolean; message: string; code?: string; data?: any } | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!workerId || !region) {
-      toast({ title: 'Error', description: 'Please fill in all fields', variant: 'destructive' });
+    if (!workerIdentifier.trim()) {
+      toast({ title: 'Error', description: 'Please enter your Worker ID or Employee ID', variant: 'destructive' });
       return;
     }
 
@@ -33,7 +30,7 @@ export default function RemoteAttendance() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workerId, region }),
+          body: JSON.stringify({ workerIdentifier: workerIdentifier.trim().toUpperCase() }),
         }
       );
 
@@ -42,12 +39,18 @@ export default function RemoteAttendance() {
       
       if (data.success) {
         toast({ title: 'Success', description: data.message });
-        setWorkerId('');
+        setWorkerIdentifier('');
       } else {
         toast({ title: 'Error', description: data.message, variant: 'destructive' });
       }
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to submit attendance', variant: 'destructive' });
+      const errorResult = { 
+        success: false, 
+        message: 'Failed to submit attendance. Please check your connection and try again.',
+        code: 'NETWORK_ERROR'
+      };
+      setResult(errorResult);
+      toast({ title: 'Error', description: errorResult.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -78,27 +81,14 @@ export default function RemoteAttendance() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="workerId">Worker ID / Employee ID</Label>
+                <Label htmlFor="workerIdentifier">Worker ID / Employee ID</Label>
                 <Input
-                  id="workerId"
+                  id="workerIdentifier"
                   placeholder="e.g., WKR00000001"
-                  value={workerId}
-                  onChange={(e) => setWorkerId(e.target.value.toUpperCase())}
+                  value={workerIdentifier}
+                  onChange={(e) => setWorkerIdentifier(e.target.value.toUpperCase())}
                   disabled={loading}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="region">Region (State)</Label>
-                <Select value={region} onValueChange={setRegion} disabled={loading}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INDIA_STATES.map((state) => (
-                      <SelectItem key={state} value={state}>{state}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -113,6 +103,11 @@ export default function RemoteAttendance() {
                   <span className="font-medium">Attendance Failed</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{result.message}</p>
+                {result.code === 'NO_ACTIVE_MAPPING' && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please contact your establishment administrator to be added to the system.
+                  </p>
+                )}
               </div>
             )}
 
