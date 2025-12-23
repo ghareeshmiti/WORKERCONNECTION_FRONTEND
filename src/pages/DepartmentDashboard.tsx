@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
+import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrendByRange, useDepartmentWorkers } from '@/hooks/use-dashboard-data';
 import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
@@ -21,6 +22,8 @@ export default function DepartmentDashboard() {
     from: subDays(new Date(), 7),
     to: new Date(),
   });
+  
+  const [workerSearch, setWorkerSearch] = useState('');
 
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
@@ -28,6 +31,27 @@ export default function DepartmentDashboard() {
   const { data: establishments, isLoading: estLoading } = useDepartmentEstablishments(userContext?.departmentId);
   const { data: stats, isLoading: statsLoading } = useDepartmentStats(userContext?.departmentId);
   const { data: trendData, isLoading: trendLoading } = useDepartmentAttendanceTrendByRange(userContext?.departmentId, startDate, endDate);
+  const { data: workers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
+
+  // Filter workers based on search
+  const filteredWorkers = useMemo(() => {
+    if (!workers) return [];
+    if (!workerSearch.trim()) return workers;
+    
+    const searchLower = workerSearch.toLowerCase();
+    return workers.filter((mapping: any) => {
+      const w = mapping.workers;
+      const est = mapping.establishments;
+      return (
+        w?.worker_id?.toLowerCase().includes(searchLower) ||
+        w?.first_name?.toLowerCase().includes(searchLower) ||
+        w?.last_name?.toLowerCase().includes(searchLower) ||
+        `${w?.first_name} ${w?.last_name}`.toLowerCase().includes(searchLower) ||
+        est?.name?.toLowerCase().includes(searchLower) ||
+        (w?.phone && w.phone.includes(workerSearch))
+      );
+    });
+  }, [workers, workerSearch]);
 
   const handleLogout = async () => {
     await signOut();
@@ -162,7 +186,7 @@ export default function DepartmentDashboard() {
         </div>
 
         {/* Establishments List */}
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Establishments Overview</CardTitle>
           </CardHeader>
@@ -208,6 +232,94 @@ export default function DepartmentDashboard() {
                 <p className="text-sm text-muted-foreground">
                   Establishments can register and link to this department.
                 </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Workers Search */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                All Workers
+              </CardTitle>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by ID, name, phone, or establishment..."
+                  value={workerSearch}
+                  onChange={(e) => setWorkerSearch(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {workerSearch && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setWorkerSearch('')}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {workersLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : filteredWorkers && filteredWorkers.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 font-medium">Worker ID</th>
+                      <th className="text-left py-3 font-medium">Name</th>
+                      <th className="text-left py-3 font-medium">Phone</th>
+                      <th className="text-left py-3 font-medium">Location</th>
+                      <th className="text-left py-3 font-medium">Establishment</th>
+                      <th className="text-left py-3 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredWorkers.map((mapping: any) => (
+                      <tr key={mapping.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
+                        <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
+                        <td className="py-3">
+                          {mapping.workers?.first_name} {mapping.workers?.last_name}
+                        </td>
+                        <td className="py-3">{mapping.workers?.phone || '--'}</td>
+                        <td className="py-3">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {mapping.workers?.district}, {mapping.workers?.state}
+                          </span>
+                        </td>
+                        <td className="py-3">
+                          <Badge variant="outline">{mapping.establishments?.name}</Badge>
+                        </td>
+                        <td className="py-3">
+                          <Badge variant={mapping.workers?.is_active ? 'default' : 'secondary'}>
+                            {mapping.workers?.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : workers && workers.length > 0 && filteredWorkers.length === 0 ? (
+              <div className="text-center py-8">
+                <Search className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">No workers found matching "{workerSearch}"</p>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">No workers mapped to any establishment yet.</p>
               </div>
             )}
           </CardContent>
