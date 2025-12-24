@@ -113,6 +113,20 @@ export const attendanceColumns: CSVColumn<any>[] = [
     header: 'Hours',
     formatter: (value) => value ? value.toFixed(2) : ''
   },
+  { 
+    key: 'establishments.name', 
+    header: 'Establishment',
+    formatter: (value) => value || '—'
+  },
+  { 
+    key: 'establishments', 
+    header: 'Location',
+    formatter: (value) => {
+      if (!value) return '—';
+      const parts = [value.district, value.mandal].filter(Boolean);
+      return parts.length > 0 ? parts.join(', ') : '—';
+    }
+  },
 ];
 
 export const establishmentColumns: CSVColumn<any>[] = [

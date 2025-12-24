@@ -10,6 +10,17 @@ interface AttendanceRollup {
   last_checkout_at: string | null;
   status: AttendanceStatus;
   total_hours: number | null;
+  establishment_id: string | null;
+}
+
+export interface AttendanceRollupWithEstablishment extends AttendanceRollup {
+  establishments: {
+    id: string;
+    name: string;
+    district: string;
+    mandal: string | null;
+    state: string;
+  } | null;
 }
 
 interface WorkerProfile {
@@ -134,14 +145,23 @@ export function useWorkerAttendanceHistory(
       
       const { data, error } = await supabase
         .from('attendance_daily_rollups')
-        .select('*')
+        .select(`
+          *,
+          establishments (
+            id,
+            name,
+            district,
+            mandal,
+            state
+          )
+        `)
         .eq('worker_id', workerId)
         .gte('attendance_date', start)
         .lte('attendance_date', end)
         .order('attendance_date', { ascending: false });
       
       if (error) throw error;
-      return data as AttendanceRollup[];
+      return data as AttendanceRollupWithEstablishment[];
     },
     enabled: !!workerId,
   });
