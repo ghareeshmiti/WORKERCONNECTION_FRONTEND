@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/lib/auth-context';
-import { getDashboardPath } from './ProtectedRoute';
-import { Shield, Loader2, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
+import { getDashboardPath } from "./ProtectedRoute";
+import { Shield, Loader2, CheckCircle } from "lucide-react";
 
 export function MockThalesAuth() {
   const navigate = useNavigate();
   const { userContext } = useAuth();
-  const [stage, setStage] = useState<'authenticating' | 'verified'>('authenticating');
+  const [stage, setStage] = useState<"authenticating" | "verified">("authenticating");
 
   useEffect(() => {
     // Stage 1: Show authenticating for 1500ms
     const timer1 = setTimeout(() => {
-      setStage('verified');
+      setStage("verified");
     }, 1500);
 
     // Stage 2: Navigate after total 2000ms
@@ -37,19 +37,15 @@ export function MockThalesAuth() {
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
             <Shield className="w-10 h-10 text-primary" />
           </div>
-          
+
           <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">
-              THALES Authentication
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Secure Identity Verification
-            </p>
+            <h1 className="text-2xl font-display font-bold text-foreground mb-2">THALES Authentication</h1>
+            <p className="text-muted-foreground text-sm">Secure Identity Verification</p>
           </div>
 
           {/* Status */}
           <div className="flex flex-col items-center gap-4 py-6">
-            {stage === 'authenticating' ? (
+            {stage === "authenticating" ? (
               <>
                 <Loader2 className="w-12 h-12 text-primary animate-spin" />
                 <div className="text-center">
@@ -64,9 +60,7 @@ export function MockThalesAuth() {
                 <CheckCircle className="w-12 h-12 text-success animate-fade-in" />
                 <div className="text-center">
                   <p className="font-medium text-success">Authentication Successful</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Redirecting to your dashboard...
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">Redirecting to your dashboard...</p>
                 </div>
               </>
             )}
@@ -74,16 +68,16 @@ export function MockThalesAuth() {
 
           {/* Progress bar */}
           <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full bg-primary transition-all duration-2000 ease-out ${
-                stage === 'authenticating' ? 'w-1/2' : 'w-full'
+                stage === "authenticating" ? "w-1/2" : "w-full"
               }`}
             />
           </div>
 
-          <p className="text-xs text-muted-foreground text-center">
+          {/* <p className="text-xs text-muted-foreground text-center">
             Mock authentication for POC demonstration
-          </p>
+          </p> */}
         </div>
       </div>
     </div>
