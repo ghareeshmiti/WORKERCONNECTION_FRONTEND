@@ -1,97 +1,144 @@
-import { useState, useMemo } from 'react';
-import { useAuth } from '@/lib/auth-context';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Clock, LogOut, Building2, Users, UserCheck, TrendingUp, Loader2, Landmark, Search, X, MapPin, Activity, Download, UserX, AlertCircle } from 'lucide-react';
-import { generateCSV, workerWithEstablishmentColumns, establishmentColumns, attendanceTrendColumns } from '@/lib/csv-export';
-import { toast } from 'sonner';
-import { useNavigate, Link } from 'react-router-dom';
-import { useDepartmentEstablishments, useDepartmentStats, useDepartmentAttendanceTrendByRange, useDepartmentWorkers } from '@/hooks/use-dashboard-data';
-import { useDepartmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
-import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
-import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
-import { DateRange } from 'react-day-picker';
-import { format, subDays } from 'date-fns';
-import { EditDepartmentProfileDialog } from '@/components/EditDepartmentProfileDialog';
-import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
-import { EstablishmentDetailsDialog } from '@/components/EstablishmentDetailsDialog';
-import { SortableTableHeader, SortConfig, sortData } from '@/components/SortableTableHeader';
+import { useState, useMemo } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Clock,
+  LogOut,
+  Building2,
+  Users,
+  UserCheck,
+  TrendingUp,
+  Loader2,
+  Landmark,
+  Search,
+  X,
+  MapPin,
+  Activity,
+  Download,
+  UserX,
+  AlertCircle,
+} from "lucide-react";
+import {
+  generateCSV,
+  workerWithEstablishmentColumns,
+  establishmentColumns,
+  attendanceTrendColumns,
+} from "@/lib/csv-export";
+import { toast } from "sonner";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  useDepartmentEstablishments,
+  useDepartmentStats,
+  useDepartmentAttendanceTrendByRange,
+  useDepartmentWorkers,
+} from "@/hooks/use-dashboard-data";
+import { useDepartmentDashboardRealtime } from "@/hooks/use-realtime-subscriptions";
+import { AttendanceChart, AttendanceRateChart } from "@/components/AttendanceChart";
+import { DateRangePicker, DateRangePresets } from "@/components/DateRangePicker";
+import { DateRange } from "react-day-picker";
+import { format, subDays } from "date-fns";
+import { EditDepartmentProfileDialog } from "@/components/EditDepartmentProfileDialog";
+import { WorkerDetailsDialog } from "@/components/WorkerDetailsDialog";
+import { EstablishmentDetailsDialog } from "@/components/EstablishmentDetailsDialog";
+import { SortableTableHeader, SortConfig, sortData } from "@/components/SortableTableHeader";
 
 export default function DepartmentDashboard() {
   // Enable real-time updates
   useDepartmentDashboardRealtime();
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
-  
+
   // Default to last 7 days for charts
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
-  
-  const [workerSearch, setWorkerSearch] = useState('');
+
+  const [workerSearch, setWorkerSearch] = useState("");
   const [selectedWorker, setSelectedWorker] = useState<{ id: string; establishment: string } | null>(null);
   const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
-  
+
   // Sorting state
-  const [estSort, setEstSort] = useState<SortConfig>({ key: '', direction: null });
-  const [workerSort, setWorkerSort] = useState<SortConfig>({ key: '', direction: null });
-  
-  const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
-  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
+  const [estSort, setEstSort] = useState<SortConfig>({ key: "", direction: null });
+  const [workerSort, setWorkerSort] = useState<SortConfig>({ key: "", direction: null });
+
+  const startDate = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+  const endDate = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
 
   const { data: establishments, isLoading: estLoading } = useDepartmentEstablishments(userContext?.departmentId);
   const { data: stats, isLoading: statsLoading } = useDepartmentStats(userContext?.departmentId);
-  const { data: trendData, isLoading: trendLoading } = useDepartmentAttendanceTrendByRange(userContext?.departmentId, startDate, endDate);
+  const { data: trendData, isLoading: trendLoading } = useDepartmentAttendanceTrendByRange(
+    userContext?.departmentId,
+    startDate,
+    endDate,
+  );
   const { data: workers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
 
   // Sort handlers
   const handleEstSort = (key: string) => {
-    setEstSort(current => {
-      if (current.key !== key) return { key, direction: 'asc' };
-      if (current.direction === 'asc') return { key, direction: 'desc' };
-      if (current.direction === 'desc') return { key: '', direction: null };
-      return { key, direction: 'asc' };
+    setEstSort((current) => {
+      if (current.key !== key) return { key, direction: "asc" };
+      if (current.direction === "asc") return { key, direction: "desc" };
+      if (current.direction === "desc") return { key: "", direction: null };
+      return { key, direction: "asc" };
     });
   };
 
   const handleWorkerSort = (key: string) => {
-    setWorkerSort(current => {
-      if (current.key !== key) return { key, direction: 'asc' };
-      if (current.direction === 'asc') return { key, direction: 'desc' };
-      if (current.direction === 'desc') return { key: '', direction: null };
-      return { key, direction: 'asc' };
+    setWorkerSort((current) => {
+      if (current.key !== key) return { key, direction: "asc" };
+      if (current.direction === "asc") return { key, direction: "desc" };
+      if (current.direction === "desc") return { key: "", direction: null };
+      return { key, direction: "asc" };
     });
   };
 
   // Get establishment value for sorting
   const getEstValue = (est: any, key: string) => {
     switch (key) {
-      case 'code': return est.code;
-      case 'name': return est.name;
-      case 'location': return `${est.district}, ${est.state}`;
-      case 'workerCount': return est.workerCount || 0;
-      case 'present': return est.todayStats?.present || 0;
-      case 'partial': return est.todayStats?.partial || 0;
-      case 'absent': return est.todayStats?.absent || 0;
-      case 'rate': return est.todayStats?.rate || 0;
-      case 'status': return est.is_active;
-      default: return null;
+      case "code":
+        return est.code;
+      case "name":
+        return est.name;
+      case "location":
+        return `${est.district}, ${est.state}`;
+      case "workerCount":
+        return est.workerCount || 0;
+      case "present":
+        return est.todayStats?.present || 0;
+      case "partial":
+        return est.todayStats?.partial || 0;
+      case "absent":
+        return est.todayStats?.absent || 0;
+      case "rate":
+        return est.todayStats?.rate || 0;
+      case "status":
+        return est.is_active;
+      default:
+        return null;
     }
   };
 
   // Get worker value for sorting
   const getWorkerValue = (mapping: any, key: string) => {
     switch (key) {
-      case 'worker_id': return mapping.workers?.worker_id;
-      case 'name': return `${mapping.workers?.first_name} ${mapping.workers?.last_name}`;
-      case 'phone': return mapping.workers?.phone;
-      case 'location': return `${mapping.workers?.district}, ${mapping.workers?.state}`;
-      case 'establishment': return mapping.establishments?.name;
-      case 'status': return mapping.workers?.is_active;
-      default: return null;
+      case "worker_id":
+        return mapping.workers?.worker_id;
+      case "name":
+        return `${mapping.workers?.first_name} ${mapping.workers?.last_name}`;
+      case "phone":
+        return mapping.workers?.phone;
+      case "location":
+        return `${mapping.workers?.district}, ${mapping.workers?.state}`;
+      case "establishment":
+        return mapping.establishments?.name;
+      case "status":
+        return mapping.workers?.is_active;
+      default:
+        return null;
     }
   };
 
@@ -105,7 +152,7 @@ export default function DepartmentDashboard() {
   const filteredWorkers = useMemo(() => {
     if (!workers) return [];
     let result = workers;
-    
+
     if (workerSearch.trim()) {
       const searchLower = workerSearch.toLowerCase();
       result = workers.filter((mapping: any) => {
@@ -121,13 +168,13 @@ export default function DepartmentDashboard() {
         );
       });
     }
-    
+
     return sortData(result, workerSort, getWorkerValue);
   }, [workers, workerSearch, workerSort]);
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/');
+    navigate("/");
   };
 
   return (
@@ -153,16 +200,16 @@ export default function DepartmentDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Department Dashboard</h1>
           <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
+            {/* <Button variant="outline" asChild>
               <Link to="/overview">
                 <Activity className="w-4 h-4 mr-2" />
                 System Overview
               </Link>
-            </Button>
+            </Button> */}
             <EditDepartmentProfileDialog departmentId={userContext?.departmentId} />
           </div>
         </div>
-        
+
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -241,10 +288,7 @@ export default function DepartmentDashboard() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <DateRangePicker 
-                dateRange={dateRange} 
-                onDateRangeChange={setDateRange} 
-              />
+              <DateRangePicker dateRange={dateRange} onDateRangeChange={setDateRange} />
               <DateRangePresets onSelect={setDateRange} />
             </div>
           </CardContent>
@@ -252,17 +296,8 @@ export default function DepartmentDashboard() {
 
         {/* Charts Section */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <AttendanceChart 
-            data={trendData || []} 
-            isLoading={trendLoading} 
-            title="Department Attendance" 
-            type="bar"
-          />
-          <AttendanceRateChart 
-            data={trendData || []} 
-            isLoading={trendLoading} 
-            title="Attendance Rate Trend" 
-          />
+          <AttendanceChart data={trendData || []} isLoading={trendLoading} title="Department Attendance" type="bar" />
+          <AttendanceRateChart data={trendData || []} isLoading={trendLoading} title="Attendance Rate Trend" />
         </div>
 
         {/* Establishments List */}
@@ -274,8 +309,12 @@ export default function DepartmentDashboard() {
               size="sm"
               onClick={() => {
                 if (establishments && establishments.length > 0) {
-                  generateCSV(establishments, establishmentColumns, `establishments-${format(new Date(), 'yyyy-MM-dd')}`);
-                  toast.success('Export Complete', { description: 'Establishments exported to CSV' });
+                  generateCSV(
+                    establishments,
+                    establishmentColumns,
+                    `establishments-${format(new Date(), "yyyy-MM-dd")}`,
+                  );
+                  toast.success("Export Complete", { description: "Establishments exported to CSV" });
                 }
               }}
               disabled={!establishments || establishments.length === 0}
@@ -296,40 +335,62 @@ export default function DepartmentDashboard() {
                     <tr className="border-b">
                       <SortableTableHeader label="Code" sortKey="code" currentSort={estSort} onSort={handleEstSort} />
                       <SortableTableHeader label="Name" sortKey="name" currentSort={estSort} onSort={handleEstSort} />
-                      <SortableTableHeader label="Location" sortKey="location" currentSort={estSort} onSort={handleEstSort} />
-                      <SortableTableHeader label="Workers" sortKey="workerCount" currentSort={estSort} onSort={handleEstSort} align="center" />
-                      <SortableTableHeader 
-                        label="Present" 
-                        sortKey="present" 
-                        currentSort={estSort} 
-                        onSort={handleEstSort} 
+                      <SortableTableHeader
+                        label="Location"
+                        sortKey="location"
+                        currentSort={estSort}
+                        onSort={handleEstSort}
+                      />
+                      <SortableTableHeader
+                        label="Workers"
+                        sortKey="workerCount"
+                        currentSort={estSort}
+                        onSort={handleEstSort}
+                        align="center"
+                      />
+                      <SortableTableHeader
+                        label="Present"
+                        sortKey="present"
+                        currentSort={estSort}
+                        onSort={handleEstSort}
                         align="center"
                         icon={<UserCheck className="w-3 h-3 text-success" />}
                       />
-                      <SortableTableHeader 
-                        label="Partial" 
-                        sortKey="partial" 
-                        currentSort={estSort} 
-                        onSort={handleEstSort} 
+                      <SortableTableHeader
+                        label="Partial"
+                        sortKey="partial"
+                        currentSort={estSort}
+                        onSort={handleEstSort}
                         align="center"
                         icon={<AlertCircle className="w-3 h-3 text-warning" />}
                       />
-                      <SortableTableHeader 
-                        label="Absent" 
-                        sortKey="absent" 
-                        currentSort={estSort} 
-                        onSort={handleEstSort} 
+                      <SortableTableHeader
+                        label="Absent"
+                        sortKey="absent"
+                        currentSort={estSort}
+                        onSort={handleEstSort}
                         align="center"
                         icon={<UserX className="w-3 h-3 text-destructive" />}
                       />
-                      <SortableTableHeader label="Rate" sortKey="rate" currentSort={estSort} onSort={handleEstSort} align="center" />
-                      <SortableTableHeader label="Status" sortKey="status" currentSort={estSort} onSort={handleEstSort} />
+                      <SortableTableHeader
+                        label="Rate"
+                        sortKey="rate"
+                        currentSort={estSort}
+                        onSort={handleEstSort}
+                        align="center"
+                      />
+                      <SortableTableHeader
+                        label="Status"
+                        sortKey="status"
+                        currentSort={estSort}
+                        onSort={handleEstSort}
+                      />
                     </tr>
                   </thead>
                   <tbody>
                     {sortedEstablishments.map((est: any) => (
-                      <tr 
-                        key={est.id} 
+                      <tr
+                        key={est.id}
                         className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
                         onClick={() => setSelectedEstablishment(est)}
                       >
@@ -351,16 +412,22 @@ export default function DepartmentDashboard() {
                           <span className="text-destructive font-medium">{est.todayStats?.absent || 0}</span>
                         </td>
                         <td className="py-2 text-center">
-                          <Badge 
-                            variant={est.todayStats?.rate >= 80 ? 'default' : est.todayStats?.rate >= 50 ? 'secondary' : 'outline'}
-                            className={est.todayStats?.rate >= 80 ? 'bg-success' : ''}
+                          <Badge
+                            variant={
+                              est.todayStats?.rate >= 80
+                                ? "default"
+                                : est.todayStats?.rate >= 50
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                            className={est.todayStats?.rate >= 80 ? "bg-success" : ""}
                           >
                             {est.todayStats?.rate || 0}%
                           </Badge>
                         </td>
                         <td className="py-2">
-                          <Badge variant={est.is_active ? 'default' : 'secondary'}>
-                            {est.is_active ? 'Active' : 'Inactive'}
+                          <Badge variant={est.is_active ? "default" : "secondary"}>
+                            {est.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </td>
                       </tr>
@@ -393,8 +460,12 @@ export default function DepartmentDashboard() {
                   size="sm"
                   onClick={() => {
                     if (filteredWorkers && filteredWorkers.length > 0) {
-                      generateCSV(filteredWorkers, workerWithEstablishmentColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
-                      toast.success('Export Complete', { description: 'Worker list exported to CSV' });
+                      generateCSV(
+                        filteredWorkers,
+                        workerWithEstablishmentColumns,
+                        `workers-${format(new Date(), "yyyy-MM-dd")}`,
+                      );
+                      toast.success("Export Complete", { description: "Worker list exported to CSV" });
                     }
                   }}
                   disabled={!filteredWorkers || filteredWorkers.length === 0}
@@ -415,7 +486,7 @@ export default function DepartmentDashboard() {
                       variant="ghost"
                       size="icon"
                       className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => setWorkerSearch('')}
+                      onClick={() => setWorkerSearch("")}
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -434,29 +505,67 @@ export default function DepartmentDashboard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <SortableTableHeader label="Worker ID" sortKey="worker_id" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
-                      <SortableTableHeader label="Name" sortKey="name" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
-                      <SortableTableHeader label="Phone" sortKey="phone" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
-                      <SortableTableHeader label="Location" sortKey="location" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
-                      <SortableTableHeader label="Establishment" sortKey="establishment" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
-                      <SortableTableHeader label="Status" sortKey="status" currentSort={workerSort} onSort={handleWorkerSort} className="py-3" />
+                      <SortableTableHeader
+                        label="Worker ID"
+                        sortKey="worker_id"
+                        currentSort={workerSort}
+                        onSort={handleWorkerSort}
+                        className="py-3"
+                      />
+                      <SortableTableHeader
+                        label="Name"
+                        sortKey="name"
+                        currentSort={workerSort}
+                        onSort={handleWorkerSort}
+                        className="py-3"
+                      />
+                      <SortableTableHeader
+                        label="Phone"
+                        sortKey="phone"
+                        currentSort={workerSort}
+                        onSort={handleWorkerSort}
+                        className="py-3"
+                      />
+                      <SortableTableHeader
+                        label="Location"
+                        sortKey="location"
+                        currentSort={workerSort}
+                        onSort={handleWorkerSort}
+                        className="py-3"
+                      />
+                      <SortableTableHeader
+                        label="Establishment"
+                        sortKey="establishment"
+                        currentSort={workerSort}
+                        onSort={handleWorkerSort}
+                        className="py-3"
+                      />
+                      <SortableTableHeader
+                        label="Status"
+                        sortKey="status"
+                        currentSort={workerSort}
+                        onSort={handleWorkerSort}
+                        className="py-3"
+                      />
                     </tr>
                   </thead>
                   <tbody>
                     {filteredWorkers.map((mapping: any) => (
-                      <tr 
-                        key={mapping.id} 
+                      <tr
+                        key={mapping.id}
                         className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
-                        onClick={() => setSelectedWorker({ 
-                          id: mapping.workers?.id, 
-                          establishment: mapping.establishments?.name 
-                        })}
+                        onClick={() =>
+                          setSelectedWorker({
+                            id: mapping.workers?.id,
+                            establishment: mapping.establishments?.name,
+                          })
+                        }
                       >
                         <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
                         <td className="py-3">
                           {mapping.workers?.first_name} {mapping.workers?.last_name}
                         </td>
-                        <td className="py-3">{mapping.workers?.phone || '--'}</td>
+                        <td className="py-3">{mapping.workers?.phone || "--"}</td>
                         <td className="py-3">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" />
@@ -467,8 +576,8 @@ export default function DepartmentDashboard() {
                           <Badge variant="outline">{mapping.establishments?.name}</Badge>
                         </td>
                         <td className="py-3">
-                          <Badge variant={mapping.workers?.is_active ? 'default' : 'secondary'}>
-                            {mapping.workers?.is_active ? 'Active' : 'Inactive'}
+                          <Badge variant={mapping.workers?.is_active ? "default" : "secondary"}>
+                            {mapping.workers?.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </td>
                       </tr>
