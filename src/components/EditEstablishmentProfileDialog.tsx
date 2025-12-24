@@ -46,7 +46,7 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: establishment } = useQuery({
+  const { data: establishment, isLoading } = useQuery({
     queryKey: ['establishment-profile', establishmentId],
     queryFn: async () => {
       if (!establishmentId) return null;
@@ -74,8 +74,9 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
     },
   });
 
+  // Reset form when establishment data loads or dialog opens
   useEffect(() => {
-    if (establishment) {
+    if (establishment && open) {
       form.reset({
         name: establishment.name || '',
         description: establishment.description || '',
@@ -86,7 +87,23 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
         project_name: establishment.project_name || '',
       });
     }
-  }, [establishment, form]);
+  }, [establishment, open, form]);
+
+  // Reset form state when dialog closes
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      form.reset({
+        name: '',
+        description: '',
+        phone: '',
+        email: '',
+        address_line: '',
+        contractor_name: '',
+        project_name: '',
+      });
+    }
+  };
 
   const onSubmit = async (data: EditEstablishmentFormData) => {
     if (!establishmentId) return;
@@ -121,7 +138,7 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
   if (!establishmentId) return null;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Pencil className="w-4 h-4 mr-2" />
@@ -132,6 +149,11 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
         <DialogHeader>
           <DialogTitle>Edit Establishment Details</DialogTitle>
         </DialogHeader>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
             <FormField
@@ -235,16 +257,17 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isLoading}>
                 {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>
             </div>
           </form>
         </Form>
+        )}
       </DialogContent>
     </Dialog>
   );

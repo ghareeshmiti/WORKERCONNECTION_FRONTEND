@@ -44,7 +44,7 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: department } = useQuery({
+  const { data: department, isLoading } = useQuery({
     queryKey: ['department-profile', departmentId],
     queryFn: async () => {
       if (!departmentId) return null;
@@ -70,8 +70,9 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
     },
   });
 
+  // Reset form when department data loads or dialog opens
   useEffect(() => {
-    if (department) {
+    if (department && open) {
       form.reset({
         name: department.name || '',
         description: department.description || '',
@@ -80,7 +81,21 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
         address_line: department.address_line || '',
       });
     }
-  }, [department, form]);
+  }, [department, open, form]);
+
+  // Reset form state when dialog closes
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      form.reset({
+        name: '',
+        description: '',
+        phone: '',
+        email: '',
+        address_line: '',
+      });
+    }
+  };
 
   const onSubmit = async (data: EditDepartmentFormData) => {
     if (!departmentId) return;
@@ -113,7 +128,7 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
   if (!departmentId) return null;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Pencil className="w-4 h-4 mr-2" />
@@ -124,6 +139,11 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
         <DialogHeader>
           <DialogTitle>Edit Department Details</DialogTitle>
         </DialogHeader>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -199,16 +219,17 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
             />
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || isLoading}>
                 {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>
             </div>
           </form>
         </Form>
+        )}
       </DialogContent>
     </Dialog>
   );
