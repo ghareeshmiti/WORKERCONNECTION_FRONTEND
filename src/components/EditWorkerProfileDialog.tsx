@@ -54,13 +54,27 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
   const form = useForm<EditWorkerFormData>({
     resolver: zodResolver(editWorkerSchema),
     defaultValues: {
-      phone: worker?.phone || '',
-      email: worker?.email || '',
-      address_line: worker?.address_line || '',
-      emergency_contact_name: worker?.emergency_contact_name || '',
-      emergency_contact_phone: worker?.emergency_contact_phone || '',
+      phone: '',
+      email: '',
+      address_line: '',
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
     },
   });
+
+  // Reset form with worker data when dialog opens or worker data changes
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (isOpen && worker) {
+      form.reset({
+        phone: worker.phone || '',
+        email: worker.email || '',
+        address_line: worker.address_line || '',
+        emergency_contact_name: worker.emergency_contact_name || '',
+        emergency_contact_phone: worker.emergency_contact_phone || '',
+      });
+    }
+  };
 
   const onSubmit = async (data: EditWorkerFormData) => {
     if (!worker?.id) return;
@@ -93,7 +107,7 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
   if (!worker) return null;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Pencil className="w-4 h-4 mr-2" />

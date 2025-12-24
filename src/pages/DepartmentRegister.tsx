@@ -176,8 +176,8 @@ export default function DepartmentRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted py-8 px-4">
-      <div className="container mx-auto max-w-2xl">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted py-8 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-2xl mx-auto">
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
           <ArrowLeft className="w-4 h-4" />
           Back to Home
@@ -194,7 +194,7 @@ export default function DepartmentRegister() {
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center justify-center mb-8 flex-wrap gap-y-2">
           {STEPS.map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
