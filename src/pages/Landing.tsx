@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, Landmark, Clock, ArrowRight } from 'lucide-react';
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, Building2, Landmark, Clock, ArrowRight } from "lucide-react";
 
 export default function Landing() {
   return (
@@ -25,12 +25,13 @@ export default function Landing() {
       <section className="py-20 px-4">
         <div className="container mx-auto text-center max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">
-            Real-time Attendance Management for{' '}
-            <span className="text-primary">Indian Workers</span>
+            Real-time Attendance Management
+            {/* for{' '} */}
+            {/* <span className="text-primary">Indian Workers</span> */}
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
-            Streamline attendance tracking across departments and establishments with our secure, 
-            efficient platform designed for the Indian workforce.
+            Streamline attendance tracking across departments and establishments with our secure, efficient platform
+            designed for the workforce.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link to="/attendance">
@@ -52,9 +53,7 @@ export default function Landing() {
       {/* Role Cards */}
       <section className="py-16 px-4 bg-muted/50">
         <div className="container mx-auto">
-          <h2 className="text-2xl font-display font-bold text-center mb-12">
-            Choose Your Role
-          </h2>
+          <h2 className="text-2xl font-display font-bold text-center mb-12">Choose Your Role</h2>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* Worker */}
             <Card className="hover:shadow-lg transition-shadow">
@@ -63,16 +62,18 @@ export default function Landing() {
                   <Users className="w-6 h-6 text-primary" />
                 </div>
                 <CardTitle>Worker</CardTitle>
-                <CardDescription>
-                  Track your attendance, view history, and manage your profile
-                </CardDescription>
+                <CardDescription>Track your attendance, view history, and manage your profile</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link to="/register/worker" className="block">
-                  <Button className="w-full" variant="default">Register</Button>
+                  <Button className="w-full" variant="default">
+                    Register
+                  </Button>
                 </Link>
                 <Link to="/auth?role=worker" className="block">
-                  <Button className="w-full" variant="outline">Login</Button>
+                  <Button className="w-full" variant="outline">
+                    Login
+                  </Button>
                 </Link>
               </CardContent>
             </Card>
@@ -84,16 +85,16 @@ export default function Landing() {
                   <Building2 className="w-6 h-6 text-accent" />
                 </div>
                 <CardTitle>Establishment</CardTitle>
-                <CardDescription>
-                  Manage workers, view attendance reports, and oversee operations
-                </CardDescription>
+                <CardDescription>Manage workers, view attendance reports, and oversee operations</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link to="/register/establishment" className="block">
                   <Button className="w-full bg-accent hover:bg-accent/90">Register</Button>
                 </Link>
                 <Link to="/auth?role=establishment" className="block">
-                  <Button className="w-full" variant="outline">Login</Button>
+                  <Button className="w-full" variant="outline">
+                    Login
+                  </Button>
                 </Link>
               </CardContent>
             </Card>
@@ -105,16 +106,16 @@ export default function Landing() {
                   <Landmark className="w-6 h-6 text-success" />
                 </div>
                 <CardTitle>Department</CardTitle>
-                <CardDescription>
-                  Oversee all establishments, analytics, and workforce management
-                </CardDescription>
+                <CardDescription>Oversee all establishments, analytics, and workforce management</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link to="/register/department" className="block">
                   <Button className="w-full bg-success hover:bg-success/90">Register</Button>
                 </Link>
                 <Link to="/auth?role=department" className="block">
-                  <Button className="w-full" variant="outline">Login</Button>
+                  <Button className="w-full" variant="outline">
+                    Login
+                  </Button>
                 </Link>
               </CardContent>
             </Card>
@@ -125,7 +126,8 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>Worker Connect POC © 2024. India-only system.</p>
+          {/* <p>Worker Connect © 2025. India-only system.</p> */}
+          <p>Worker Connect © 2025.</p>
         </div>
       </footer>
     </div>
