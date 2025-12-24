@@ -233,7 +233,7 @@ export default function WorkerDashboard() {
               </div>
             ) : history && history.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 font-medium">Date</th>
@@ -241,26 +241,36 @@ export default function WorkerDashboard() {
                       <th className="text-left py-2 font-medium">Check-out</th>
                       <th className="text-left py-2 font-medium">Hours</th>
                       <th className="text-left py-2 font-medium">Status</th>
+                      <th className="text-left py-2 font-medium">Establishment</th>
+                      <th className="text-left py-2 font-medium">Location</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {history.map((record) => (
-                      <tr key={record.id} className="border-b border-muted">
-                        <td className="py-2">
-                          {new Date(record.attendance_date).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </td>
-                        <td className="py-2">{formatTime(record.first_checkin_at)}</td>
-                        <td className="py-2">{formatTime(record.last_checkout_at)}</td>
-                        <td className="py-2">
-                          {record.total_hours ? `${record.total_hours.toFixed(1)}h` : '--'}
-                        </td>
-                        <td className="py-2">{getStatusBadge(record.status)}</td>
-                      </tr>
-                    ))}
+                    {history.map((record) => {
+                      const est = record.establishments;
+                      const locationParts = est ? [est.district, est.mandal].filter(Boolean) : [];
+                      const locationStr = locationParts.length > 0 ? locationParts.join(', ') : '—';
+                      
+                      return (
+                        <tr key={record.id} className="border-b border-muted">
+                          <td className="py-2">
+                            {new Date(record.attendance_date).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </td>
+                          <td className="py-2">{formatTime(record.first_checkin_at)}</td>
+                          <td className="py-2">{formatTime(record.last_checkout_at)}</td>
+                          <td className="py-2">
+                            {record.total_hours ? `${record.total_hours.toFixed(1)}h` : '--'}
+                          </td>
+                          <td className="py-2">{getStatusBadge(record.status)}</td>
+                          <td className="py-2">{est?.name || '—'}</td>
+                          <td className="py-2 text-muted-foreground">{locationStr}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
