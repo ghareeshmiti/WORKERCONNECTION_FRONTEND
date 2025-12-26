@@ -19,6 +19,7 @@ const DepartmentRegister = lazy(() => import("@/pages/DepartmentRegister"));
 const OverviewDashboard = lazy(() => import("@/pages/OverviewDashboard"));
 const WorkerDashboard = lazy(() => import("@/pages/WorkerDashboard"));
 const EstablishmentDashboard = lazy(() => import("@/pages/EstablishmentDashboard"));
+const EstablishmentWorkers = lazy(() => import("@/pages/EstablishmentWorkers"));
 const DepartmentDashboard = lazy(() => import("@/pages/DepartmentDashboard"));
 const EstablishmentAttendance = lazy(() => import("@/pages/EstablishmentAttendance"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
@@ -81,6 +82,13 @@ const App = () => (
               <Route path="/establishment/attendance" element={
                 <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
                   <EstablishmentAttendance />
+                </ProtectedRoute>
+              } />
+              
+              {/* Establishment Manage Workers Page */}
+              <Route path="/establishment/workers" element={
+                <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
+                  <EstablishmentWorkers />
                 </ProtectedRoute>
               } />
               

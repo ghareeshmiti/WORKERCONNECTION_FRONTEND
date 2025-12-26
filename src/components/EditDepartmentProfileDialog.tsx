@@ -91,7 +91,7 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
           name: data.name,
           description: data.description || null,
           phone: data.phone || null,
-          email: data.email || null,
+          // Note: email is not updated as it's read-only
           address_line: data.address_line || null,
         })
         .eq("id", departmentId);
@@ -177,9 +177,9 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Email (Read-only)</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="Email" {...field} />
+                        <Input type="email" placeholder="Email" {...field} disabled className="bg-muted" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
