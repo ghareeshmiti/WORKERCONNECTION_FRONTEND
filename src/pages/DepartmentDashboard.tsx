@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Clock,
   LogOut,
@@ -20,6 +21,7 @@ import {
   Download,
   UserX,
   AlertCircle,
+  FileText,
 } from "lucide-react";
 import {
   generateCSV,
@@ -46,6 +48,13 @@ import { EstablishmentDetailsDialog } from "@/components/EstablishmentDetailsDia
 import { EnrollWorkerDialog } from "@/components/EnrollWorkerDialog";
 import { ApproveEstablishmentDialog } from "@/components/ApproveEstablishmentDialog";
 import { SortableTableHeader, SortConfig, sortData } from "@/components/SortableTableHeader";
+import { AttendanceReportTable } from "@/components/AttendanceReportTable";
+import { AttendanceReportFilters } from "@/components/AttendanceReportFilters";
+import { 
+  useDepartmentAttendanceReport, 
+  useDepartmentWorkersList, 
+  useDepartmentEstablishmentsList 
+} from "@/hooks/use-attendance-reports";
 
 export default function DepartmentDashboard() {
   // Enable real-time updates
@@ -54,8 +63,15 @@ export default function DepartmentDashboard() {
   const navigate = useNavigate();
 
   // Default to last 7 days for charts
+  // Chart date range
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 7),
+    to: new Date(),
+  });
+
+  // Report date range (separate from chart)
+  const [reportDateRange, setReportDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
     to: new Date(),
   });
 
@@ -64,12 +80,18 @@ export default function DepartmentDashboard() {
   const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
   const [establishmentToApprove, setEstablishmentToApprove] = useState<any | null>(null);
 
+  // Report filters
+  const [reportEstablishmentFilter, setReportEstablishmentFilter] = useState<string | undefined>(undefined);
+  const [reportWorkerFilter, setReportWorkerFilter] = useState<string | undefined>(undefined);
+
   // Sorting state
   const [estSort, setEstSort] = useState<SortConfig>({ key: "", direction: null });
   const [workerSort, setWorkerSort] = useState<SortConfig>({ key: "", direction: null });
 
   const startDate = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+  const reportStartDate = reportDateRange?.from ? format(reportDateRange.from, "yyyy-MM-dd") : undefined;
+  const reportEndDate = reportDateRange?.to ? format(reportDateRange.to, "yyyy-MM-dd") : undefined;
 
   const { data: establishments, isLoading: estLoading } = useDepartmentEstablishments(userContext?.departmentId);
   const { data: stats, isLoading: statsLoading } = useDepartmentStats(userContext?.departmentId);
@@ -80,7 +102,19 @@ export default function DepartmentDashboard() {
   );
   const { data: workers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
 
-  // Sort handlers
+  // Report data
+  const { data: reportData, isLoading: reportLoading } = useDepartmentAttendanceReport(
+    userContext?.departmentId,
+    {
+      startDate: reportStartDate || '',
+      endDate: reportEndDate || '',
+      establishmentId: reportEstablishmentFilter,
+      workerId: reportWorkerFilter,
+    }
+  );
+  const { data: establishmentsList } = useDepartmentEstablishmentsList(userContext?.departmentId);
+  const { data: workersList } = useDepartmentWorkersList(userContext?.departmentId);
+
   const handleEstSort = (key: string) => {
     setEstSort((current) => {
       if (current.key !== key) return { key, direction: "asc" };
@@ -299,6 +333,64 @@ export default function DepartmentDashboard() {
           <AttendanceChart data={trendData || []} isLoading={trendLoading} title="Department Attendance" type="bar" />
           <AttendanceRateChart data={trendData || []} isLoading={trendLoading} title="Attendance Rate Trend" />
         </div>
+
+        {/* Detailed Attendance Report */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Detailed Attendance Report
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <AttendanceReportFilters
+                dateRange={reportDateRange}
+                onDateRangeChange={setReportDateRange}
+                establishments={establishmentsList || []}
+                selectedEstablishment={reportEstablishmentFilter}
+                onEstablishmentChange={setReportEstablishmentFilter}
+                workers={workersList || []}
+                selectedWorker={reportWorkerFilter}
+                onWorkerChange={setReportWorkerFilter}
+                onExport={() => {
+                  if (reportData && reportData.length > 0) {
+                    const csvContent = [
+                      ['Date', 'Worker ID', 'Worker Name', 'Establishment', 'Department', 'Check-in', 'Check-out', 'Hours', 'Status'].join(','),
+                      ...reportData.map(row => [
+                        row.date,
+                        row.workerId,
+                        `"${row.workerName}"`,
+                        `"${row.establishmentName}"`,
+                        `"${row.departmentName}"`,
+                        row.checkIn ? format(new Date(row.checkIn), 'HH:mm') : '',
+                        row.checkOut ? format(new Date(row.checkOut), 'HH:mm') : '',
+                        row.hoursWorked?.toFixed(1) || '',
+                        row.status
+                      ].join(','))
+                    ].join('\n');
+                    
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `attendance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Export Complete', { description: 'Attendance report exported to CSV' });
+                  }
+                }}
+              />
+              {reportLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <AttendanceReportTable data={reportData || []} showEstablishment showDepartment={false} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Establishments List */}
         <Card className="mb-8">

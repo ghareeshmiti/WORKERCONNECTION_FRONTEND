@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download, UserX2, Landmark } from 'lucide-react';
+import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download, UserX2, Landmark, FileText } from 'lucide-react';
 import { generateCSV, workerColumns, attendanceTrendColumns } from '@/lib/csv-export';
 import { toast } from 'sonner';
 import { useNavigate, Link } from 'react-router-dom';
@@ -31,6 +31,9 @@ import { EditEstablishmentProfileDialog } from '@/components/EditEstablishmentPr
 import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { AttendanceReportTable } from '@/components/AttendanceReportTable';
+import { AttendanceReportFilters } from '@/components/AttendanceReportFilters';
+import { useEstablishmentAttendanceReport, useEstablishmentWorkersList } from '@/hooks/use-attendance-reports';
 
 export default function EstablishmentDashboard() {
   // Enable real-time updates
@@ -44,16 +47,25 @@ export default function EstablishmentDashboard() {
   });
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   
-  // Default to last 7 days for charts
+  // Chart date range
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 7),
     to: new Date(),
   });
 
+  // Report date range (separate from chart)
+  const [reportDateRange, setReportDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+
   const [workerSearch, setWorkerSearch] = useState('');
+  const [reportWorkerFilter, setReportWorkerFilter] = useState<string | undefined>(undefined);
 
   const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
+  const reportStartDate = reportDateRange?.from ? format(reportDateRange.from, 'yyyy-MM-dd') : undefined;
+  const reportEndDate = reportDateRange?.to ? format(reportDateRange.to, 'yyyy-MM-dd') : undefined;
 
   const { data: workers, isLoading: workersLoading } = useEstablishmentWorkers(userContext?.establishmentId);
   
@@ -96,6 +108,13 @@ export default function EstablishmentDashboard() {
   const { data: todayStats, isLoading: statsLoading } = useEstablishmentTodayAttendance(userContext?.establishmentId);
   const { data: trendData, isLoading: trendLoading } = useEstablishmentAttendanceTrendByRange(userContext?.establishmentId, startDate, endDate);
   const unmapWorker = useUnmapWorker();
+
+  // Report data
+  const { data: reportData, isLoading: reportLoading } = useEstablishmentAttendanceReport(
+    userContext?.establishmentId,
+    { startDate: reportStartDate || '', endDate: reportEndDate || '', workerId: reportWorkerFilter }
+  );
+  const { data: workersList } = useEstablishmentWorkersList(userContext?.establishmentId);
 
   const handleLogout = async () => {
     await signOut();
@@ -273,6 +292,60 @@ export default function EstablishmentDashboard() {
             title="Attendance Rate Trend" 
           />
         </div>
+
+        {/* Detailed Attendance Report */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Attendance Report
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <AttendanceReportFilters
+                dateRange={reportDateRange}
+                onDateRangeChange={setReportDateRange}
+                workers={workersList || []}
+                selectedWorker={reportWorkerFilter}
+                onWorkerChange={setReportWorkerFilter}
+                showEstablishmentFilter={false}
+                onExport={() => {
+                  if (reportData && reportData.length > 0) {
+                    const csvContent = [
+                      ['Date', 'Worker ID', 'Worker Name', 'Check-in', 'Check-out', 'Hours', 'Status'].join(','),
+                      ...reportData.map(row => [
+                        row.date,
+                        row.workerId,
+                        `"${row.workerName}"`,
+                        row.checkIn ? format(new Date(row.checkIn), 'HH:mm') : '',
+                        row.checkOut ? format(new Date(row.checkOut), 'HH:mm') : '',
+                        row.hoursWorked?.toFixed(1) || '',
+                        row.status
+                      ].join(','))
+                    ].join('\n');
+                    
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `attendance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Export Complete', { description: 'Attendance report exported to CSV' });
+                  }
+                }}
+              />
+              {reportLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <AttendanceReportTable data={reportData || []} showEstablishment={false} showDepartment />
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Worker List */}
         <Card>
