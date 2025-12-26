@@ -30,7 +30,14 @@ import {
   UserX2,
   Landmark,
   FileText,
+  Ban,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { generateCSV, workerColumns, attendanceTrendColumns } from "@/lib/csv-export";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
@@ -192,12 +199,30 @@ export default function EstablishmentDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Establishment Dashboard</h1>
           <div className="flex items-center gap-2">
-            <Button variant="default" asChild disabled={!isApproved}>
-              <Link to="/establishment/attendance">
-                <Clock className="w-4 h-4 mr-2" />
-                Check-in / Check-out
-              </Link>
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {isApproved ? (
+                    <Button variant="default" asChild>
+                      <Link to="/establishment/attendance">
+                        <Clock className="w-4 h-4 mr-2" />
+                        Check-in / Check-out
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button variant="default" disabled className="cursor-not-allowed">
+                      <Ban className="w-4 h-4 mr-2" />
+                      Check-in / Check-out
+                    </Button>
+                  )}
+                </TooltipTrigger>
+                {!isApproved && (
+                  <TooltipContent>
+                    <p>Inactive — activate from department</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             <Button variant="outline" asChild>
               <Link to="/establishment/workers">
                 <Users className="w-4 h-4 mr-2" />
