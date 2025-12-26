@@ -24,21 +24,11 @@ export default function Landing() {
       {/* Hero */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center max-w-3xl">
-          <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">
-            Real-time Attendance Management
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">Real-time Attendance Management</h1>
           <p className="text-lg text-muted-foreground mb-8">
             Streamline attendance tracking across departments and establishments with our secure, efficient platform
             designed for the workforce.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link to="/auth">
-              <Button size="lg" className="gap-2">
-                Get Started
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -96,9 +86,9 @@ export default function Landing() {
                 <CardDescription>Oversee all establishments, analytics, and workforce management</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Link to="/register/department" className="block">
+                {/* <Link to="/register/department" className="block">
                   <Button className="w-full bg-success hover:bg-success/90">Register</Button>
-                </Link>
+                </Link> */}
                 <Link to="/auth?role=department" className="block">
                   <Button className="w-full" variant="outline">
                     Login
