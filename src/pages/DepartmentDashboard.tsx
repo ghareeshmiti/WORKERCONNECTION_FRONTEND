@@ -311,7 +311,7 @@ export default function DepartmentDashboard() {
         </div>
 
         {/* Date Range Filter for Charts */}
-        {/* <Card className="mb-6">
+        <Card className="mb-6">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Attendance Analytics</CardTitle>
           </CardHeader>
@@ -321,13 +321,13 @@ export default function DepartmentDashboard() {
               <DateRangePresets onSelect={setDateRange} />
             </div>
           </CardContent>
-        </Card> */}
+        </Card>
 
         {/* Charts Section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        {/* <div className="grid md:grid-cols-2 gap-6 mb-8">
           <AttendanceChart data={trendData || []} isLoading={trendLoading} title="Department Attendance" type="bar" />
           <AttendanceRateChart data={trendData || []} isLoading={trendLoading} title="Attendance Rate Trend" />
-        </div>
+        </div> */}
 
         {/* Detailed Attendance Report */}
         <Card className="mb-8">
