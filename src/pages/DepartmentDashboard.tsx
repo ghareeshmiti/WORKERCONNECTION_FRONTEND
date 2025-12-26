@@ -50,10 +50,10 @@ import { ApproveEstablishmentDialog } from "@/components/ApproveEstablishmentDia
 import { SortableTableHeader, SortConfig, sortData } from "@/components/SortableTableHeader";
 import { AttendanceReportTable } from "@/components/AttendanceReportTable";
 import { AttendanceReportFilters } from "@/components/AttendanceReportFilters";
-import { 
-  useDepartmentAttendanceReport, 
-  useDepartmentWorkersList, 
-  useDepartmentEstablishmentsList 
+import {
+  useDepartmentAttendanceReport,
+  useDepartmentWorkersList,
+  useDepartmentEstablishmentsList,
 } from "@/hooks/use-attendance-reports";
 
 export default function DepartmentDashboard() {
@@ -103,15 +103,12 @@ export default function DepartmentDashboard() {
   const { data: workers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
 
   // Report data
-  const { data: reportData, isLoading: reportLoading } = useDepartmentAttendanceReport(
-    userContext?.departmentId,
-    {
-      startDate: reportStartDate || '',
-      endDate: reportEndDate || '',
-      establishmentId: reportEstablishmentFilter,
-      workerId: reportWorkerFilter,
-    }
-  );
+  const { data: reportData, isLoading: reportLoading } = useDepartmentAttendanceReport(userContext?.departmentId, {
+    startDate: reportStartDate || "",
+    endDate: reportEndDate || "",
+    establishmentId: reportEstablishmentFilter,
+    workerId: reportWorkerFilter,
+  });
   const { data: establishmentsList } = useDepartmentEstablishmentsList(userContext?.departmentId);
   const { data: workersList } = useDepartmentWorkersList(userContext?.departmentId);
 
@@ -237,9 +234,7 @@ export default function DepartmentDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Department Dashboard</h1>
           <div className="flex items-center gap-2">
-            {userContext?.departmentId && (
-              <EnrollWorkerDialog departmentId={userContext.departmentId} />
-            )}
+            {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
             <EditDepartmentProfileDialog departmentId={userContext?.departmentId} />
           </div>
         </div>
@@ -316,7 +311,7 @@ export default function DepartmentDashboard() {
         </div>
 
         {/* Date Range Filter for Charts */}
-        <Card className="mb-6">
+        {/* <Card className="mb-6">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Attendance Analytics</CardTitle>
           </CardHeader>
@@ -326,7 +321,7 @@ export default function DepartmentDashboard() {
               <DateRangePresets onSelect={setDateRange} />
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Charts Section */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -356,28 +351,40 @@ export default function DepartmentDashboard() {
                 onExport={() => {
                   if (reportData && reportData.length > 0) {
                     const csvContent = [
-                      ['Date', 'Worker ID', 'Worker Name', 'Establishment', 'Department', 'Check-in', 'Check-out', 'Hours', 'Status'].join(','),
-                      ...reportData.map(row => [
-                        row.date,
-                        row.workerId,
-                        `"${row.workerName}"`,
-                        `"${row.establishmentName}"`,
-                        `"${row.departmentName}"`,
-                        row.checkIn ? format(new Date(row.checkIn), 'HH:mm') : '',
-                        row.checkOut ? format(new Date(row.checkOut), 'HH:mm') : '',
-                        row.hoursWorked?.toFixed(1) || '',
-                        row.status
-                      ].join(','))
-                    ].join('\n');
-                    
-                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                      [
+                        "Date",
+                        "Worker ID",
+                        "Worker Name",
+                        "Establishment",
+                        "Department",
+                        "Check-in",
+                        "Check-out",
+                        "Hours",
+                        "Status",
+                      ].join(","),
+                      ...reportData.map((row) =>
+                        [
+                          row.date,
+                          row.workerId,
+                          `"${row.workerName}"`,
+                          `"${row.establishmentName}"`,
+                          `"${row.departmentName}"`,
+                          row.checkIn ? format(new Date(row.checkIn), "HH:mm") : "",
+                          row.checkOut ? format(new Date(row.checkOut), "HH:mm") : "",
+                          row.hoursWorked?.toFixed(1) || "",
+                          row.status,
+                        ].join(","),
+                      ),
+                    ].join("\n");
+
+                    const blob = new Blob([csvContent], { type: "text/csv" });
                     const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
+                    const a = document.createElement("a");
                     a.href = url;
-                    a.download = `attendance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                    a.download = `attendance-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    toast.success('Export Complete', { description: 'Attendance report exported to CSV' });
+                    toast.success("Export Complete", { description: "Attendance report exported to CSV" });
                   }
                 }}
               />
@@ -514,7 +521,10 @@ export default function DepartmentDashboard() {
                           </Badge>
                         </td>
                         <td className="py-2">
-                          <Badge variant={est.is_approved ? "default" : "secondary"} className={est.is_approved ? "bg-success" : ""}>
+                          <Badge
+                            variant={est.is_approved ? "default" : "secondary"}
+                            className={est.is_approved ? "bg-success" : ""}
+                          >
                             {est.is_approved ? "Approved" : "Pending"}
                           </Badge>
                         </td>
