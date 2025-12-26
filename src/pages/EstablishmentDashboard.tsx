@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
-import { useAuth } from '@/lib/auth-context';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { 
+import { useState, useMemo } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -13,27 +13,47 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download, UserX2, Landmark, FileText } from 'lucide-react';
-import { generateCSV, workerColumns, attendanceTrendColumns } from '@/lib/csv-export';
-import { toast } from 'sonner';
-import { useNavigate, Link } from 'react-router-dom';
-import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
-import { useEstablishmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
-import { useUnmapWorker } from '@/hooks/use-worker-mapping';
-import { MapWorkerDialog } from '@/components/MapWorkerDialog';
-import { AddWorkerByIdDialog } from '@/components/AddWorkerByIdDialog';
-import { AttendanceChart, AttendanceRateChart } from '@/components/AttendanceChart';
-import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
-import { DateRange } from 'react-day-picker';
-import { format, subDays } from 'date-fns';
-import { EditEstablishmentProfileDialog } from '@/components/EditEstablishmentProfileDialog';
-import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { AttendanceReportTable } from '@/components/AttendanceReportTable';
-import { AttendanceReportFilters } from '@/components/AttendanceReportFilters';
-import { useEstablishmentAttendanceReport, useEstablishmentWorkersList } from '@/hooks/use-attendance-reports';
+} from "@/components/ui/alert-dialog";
+import {
+  Clock,
+  LogOut,
+  Users,
+  UserCheck,
+  UserX,
+  AlertCircle,
+  Loader2,
+  Building2,
+  UserMinus,
+  Search,
+  X,
+  Download,
+  UserX2,
+  Landmark,
+  FileText,
+} from "lucide-react";
+import { generateCSV, workerColumns, attendanceTrendColumns } from "@/lib/csv-export";
+import { toast } from "sonner";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  useEstablishmentWorkers,
+  useEstablishmentTodayAttendance,
+  useEstablishmentAttendanceTrendByRange,
+} from "@/hooks/use-dashboard-data";
+import { useEstablishmentDashboardRealtime } from "@/hooks/use-realtime-subscriptions";
+import { useUnmapWorker } from "@/hooks/use-worker-mapping";
+import { MapWorkerDialog } from "@/components/MapWorkerDialog";
+import { AddWorkerByIdDialog } from "@/components/AddWorkerByIdDialog";
+import { AttendanceChart, AttendanceRateChart } from "@/components/AttendanceChart";
+import { DateRangePicker, DateRangePresets } from "@/components/DateRangePicker";
+import { DateRange } from "react-day-picker";
+import { format, subDays } from "date-fns";
+import { EditEstablishmentProfileDialog } from "@/components/EditEstablishmentProfileDialog";
+import { WorkerDetailsDialog } from "@/components/WorkerDetailsDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { AttendanceReportTable } from "@/components/AttendanceReportTable";
+import { AttendanceReportFilters } from "@/components/AttendanceReportFilters";
+import { useEstablishmentAttendanceReport, useEstablishmentWorkersList } from "@/hooks/use-attendance-reports";
 
 export default function EstablishmentDashboard() {
   // Enable real-time updates
@@ -42,11 +62,11 @@ export default function EstablishmentDashboard() {
   const navigate = useNavigate();
   const [unmapDialog, setUnmapDialog] = useState<{ open: boolean; mappingId: string; workerName: string }>({
     open: false,
-    mappingId: '',
-    workerName: '',
+    mappingId: "",
+    workerName: "",
   });
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
-  
+
   // Chart date range
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 7),
@@ -59,40 +79,40 @@ export default function EstablishmentDashboard() {
     to: new Date(),
   });
 
-  const [workerSearch, setWorkerSearch] = useState('');
+  const [workerSearch, setWorkerSearch] = useState("");
   const [reportWorkerFilter, setReportWorkerFilter] = useState<string | undefined>(undefined);
 
-  const startDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
-  const endDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
-  const reportStartDate = reportDateRange?.from ? format(reportDateRange.from, 'yyyy-MM-dd') : undefined;
-  const reportEndDate = reportDateRange?.to ? format(reportDateRange.to, 'yyyy-MM-dd') : undefined;
+  const startDate = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+  const endDate = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+  const reportStartDate = reportDateRange?.from ? format(reportDateRange.from, "yyyy-MM-dd") : undefined;
+  const reportEndDate = reportDateRange?.to ? format(reportDateRange.to, "yyyy-MM-dd") : undefined;
 
   const { data: workers, isLoading: workersLoading } = useEstablishmentWorkers(userContext?.establishmentId);
-  
+
   // Fetch establishment details to check approval status
   const { data: establishment } = useQuery({
-    queryKey: ['establishment', userContext?.establishmentId],
+    queryKey: ["establishment", userContext?.establishmentId],
     queryFn: async () => {
       if (!userContext?.establishmentId) return null;
       const { data, error } = await supabase
-        .from('establishments')
-        .select('id, name, is_approved, department_id, departments(name)')
-        .eq('id', userContext.establishmentId)
+        .from("establishments")
+        .select("id, name, is_approved, department_id, departments(name)")
+        .eq("id", userContext.establishmentId)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
     enabled: !!userContext?.establishmentId,
   });
-  
+
   const isApproved = establishment?.is_approved ?? true;
-  const departmentName = (establishment?.departments as any)?.name || 'Unknown Department';
+  const departmentName = (establishment?.departments as any)?.name || "Unknown Department";
 
   // Filter workers based on search
   const filteredWorkers = useMemo(() => {
     if (!workers) return [];
     if (!workerSearch.trim()) return workers;
-    
+
     const searchLower = workerSearch.toLowerCase();
     return workers.filter((mapping: any) => {
       const w = mapping.workers;
@@ -106,19 +126,23 @@ export default function EstablishmentDashboard() {
     });
   }, [workers, workerSearch]);
   const { data: todayStats, isLoading: statsLoading } = useEstablishmentTodayAttendance(userContext?.establishmentId);
-  const { data: trendData, isLoading: trendLoading } = useEstablishmentAttendanceTrendByRange(userContext?.establishmentId, startDate, endDate);
+  const { data: trendData, isLoading: trendLoading } = useEstablishmentAttendanceTrendByRange(
+    userContext?.establishmentId,
+    startDate,
+    endDate,
+  );
   const unmapWorker = useUnmapWorker();
 
   // Report data
   const { data: reportData, isLoading: reportLoading } = useEstablishmentAttendanceReport(
     userContext?.establishmentId,
-    { startDate: reportStartDate || '', endDate: reportEndDate || '', workerId: reportWorkerFilter }
+    { startDate: reportStartDate || "", endDate: reportEndDate || "", workerId: reportWorkerFilter },
   );
   const { data: workersList } = useEstablishmentWorkersList(userContext?.establishmentId);
 
   const handleLogout = async () => {
     await signOut();
-    navigate('/');
+    navigate("/");
   };
 
   const handleUnmap = async () => {
@@ -127,7 +151,7 @@ export default function EstablishmentDashboard() {
         mappingId: unmapDialog.mappingId,
         unmappedBy: user.id,
       });
-      setUnmapDialog({ open: false, mappingId: '', workerName: '' });
+      setUnmapDialog({ open: false, mappingId: "", workerName: "" });
     }
   };
 
@@ -160,8 +184,8 @@ export default function EstablishmentDashboard() {
             </div>
             <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
               <Landmark className="w-3 h-3" />
-              This establishment is pending approval from <strong className="mx-1">{departmentName}</strong>. 
-              Worker mapping and attendance tracking are disabled until approved.
+              This establishment is pending approval from <strong className="mx-1">{departmentName}</strong>. Worker
+              mapping and attendance tracking are disabled until approved.
             </p>
           </div>
         )}
@@ -178,19 +202,13 @@ export default function EstablishmentDashboard() {
             <EditEstablishmentProfileDialog establishmentId={userContext?.establishmentId} />
             {userContext?.establishmentId && user && isApproved && (
               <>
-                <AddWorkerByIdDialog 
-                  establishmentId={userContext.establishmentId} 
-                  mappedBy={user.id} 
-                />
-                <MapWorkerDialog 
-                  establishmentId={userContext.establishmentId} 
-                  mappedBy={user.id} 
-                />
+                <AddWorkerByIdDialog establishmentId={userContext.establishmentId} mappedBy={user.id} />
+                <MapWorkerDialog establishmentId={userContext.establishmentId} mappedBy={user.id} />
               </>
             )}
           </div>
         </div>
-        
+
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -262,37 +280,6 @@ export default function EstablishmentDashboard() {
           </Card>
         </div>
 
-        {/* Date Range Filter for Charts */}
-        <Card className="mb-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Attendance Analytics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <DateRangePicker 
-                dateRange={dateRange} 
-                onDateRangeChange={setDateRange} 
-              />
-              <DateRangePresets onSelect={setDateRange} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Charts Section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <AttendanceChart 
-            data={trendData || []} 
-            isLoading={trendLoading} 
-            title="Daily Attendance" 
-            type="bar"
-          />
-          <AttendanceRateChart 
-            data={trendData || []} 
-            isLoading={trendLoading} 
-            title="Attendance Rate Trend" 
-          />
-        </div>
-
         {/* Detailed Attendance Report */}
         <Card className="mb-8">
           <CardHeader>
@@ -313,27 +300,38 @@ export default function EstablishmentDashboard() {
                 onExport={() => {
                   if (reportData && reportData.length > 0) {
                     const csvContent = [
-                      ['Date', 'Worker ID', 'Worker Name', 'Department', 'Check-in', 'Check-out', 'Hours', 'Status'].join(','),
-                      ...reportData.map(row => [
-                        row.date,
-                        row.workerId,
-                        `"${row.workerName}"`,
-                        `"${row.departmentName}"`,
-                        row.checkIn ? format(new Date(row.checkIn), 'HH:mm') : '',
-                        row.checkOut ? format(new Date(row.checkOut), 'HH:mm') : '',
-                        row.hoursWorked?.toFixed(1) || '',
-                        row.status
-                      ].join(','))
-                    ].join('\n');
-                    
-                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                      [
+                        "Date",
+                        "Worker ID",
+                        "Worker Name",
+                        "Department",
+                        "Check-in",
+                        "Check-out",
+                        "Hours",
+                        "Status",
+                      ].join(","),
+                      ...reportData.map((row) =>
+                        [
+                          row.date,
+                          row.workerId,
+                          `"${row.workerName}"`,
+                          `"${row.departmentName}"`,
+                          row.checkIn ? format(new Date(row.checkIn), "HH:mm") : "",
+                          row.checkOut ? format(new Date(row.checkOut), "HH:mm") : "",
+                          row.hoursWorked?.toFixed(1) || "",
+                          row.status,
+                        ].join(","),
+                      ),
+                    ].join("\n");
+
+                    const blob = new Blob([csvContent], { type: "text/csv" });
                     const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
+                    const a = document.createElement("a");
                     a.href = url;
-                    a.download = `establishment-attendance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                    a.download = `establishment-attendance-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
                     a.click();
                     URL.revokeObjectURL(url);
-                    toast.success('Export Complete', { description: 'Attendance report exported to CSV' });
+                    toast.success("Export Complete", { description: "Attendance report exported to CSV" });
                   }
                 }}
               />
@@ -362,8 +360,8 @@ export default function EstablishmentDashboard() {
                   size="sm"
                   onClick={() => {
                     if (filteredWorkers && filteredWorkers.length > 0) {
-                      generateCSV(filteredWorkers, workerColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
-                      toast.success('Export Complete', { description: 'Worker list exported to CSV' });
+                      generateCSV(filteredWorkers, workerColumns, `workers-${format(new Date(), "yyyy-MM-dd")}`);
+                      toast.success("Export Complete", { description: "Worker list exported to CSV" });
                     }
                   }}
                   disabled={!filteredWorkers || filteredWorkers.length === 0}
@@ -372,23 +370,23 @@ export default function EstablishmentDashboard() {
                   Export
                 </Button>
                 <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by ID, name, or phone..."
-                  value={workerSearch}
-                  onChange={(e) => setWorkerSearch(e.target.value)}
-                  className="pl-10 pr-10"
-                />
-                {workerSearch && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                    onClick={() => setWorkerSearch('')}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by ID, name, or phone..."
+                    value={workerSearch}
+                    onChange={(e) => setWorkerSearch(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {workerSearch && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setWorkerSearch("")}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -413,8 +411,8 @@ export default function EstablishmentDashboard() {
                   </thead>
                   <tbody>
                     {filteredWorkers.map((mapping: any) => (
-                      <tr 
-                        key={mapping.id} 
+                      <tr
+                        key={mapping.id}
                         className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
                         onClick={() => setSelectedWorkerId(mapping.workers?.id)}
                       >
@@ -422,13 +420,13 @@ export default function EstablishmentDashboard() {
                         <td className="py-3">
                           {mapping.workers?.first_name} {mapping.workers?.last_name}
                         </td>
-                        <td className="py-3">{mapping.workers?.phone || '--'}</td>
+                        <td className="py-3">{mapping.workers?.phone || "--"}</td>
                         <td className="py-3">
                           {mapping.workers?.district}, {mapping.workers?.state}
                         </td>
                         <td className="py-3">
-                          <Badge variant={mapping.workers?.is_active ? 'default' : 'secondary'}>
-                            {mapping.workers?.is_active ? 'Active' : 'Inactive'}
+                          <Badge variant={mapping.workers?.is_active ? "default" : "secondary"}>
+                            {mapping.workers?.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </td>
                         <td className="py-3 text-right">
@@ -473,13 +471,14 @@ export default function EstablishmentDashboard() {
       </main>
 
       {/* Unmap Confirmation Dialog */}
-      <AlertDialog open={unmapDialog.open} onOpenChange={(open) => setUnmapDialog(prev => ({ ...prev, open }))}>
+      <AlertDialog open={unmapDialog.open} onOpenChange={(open) => setUnmapDialog((prev) => ({ ...prev, open }))}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Relieve Worker</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to relieve <strong>{unmapDialog.workerName}</strong> from this establishment? 
-              They will no longer appear in your worker list and their attendance will not be tracked under this establishment.
+              Are you sure you want to relieve <strong>{unmapDialog.workerName}</strong> from this establishment? They
+              will no longer appear in your worker list and their attendance will not be tracked under this
+              establishment.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -489,9 +488,7 @@ export default function EstablishmentDashboard() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={unmapWorker.isPending}
             >
-              {unmapWorker.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
+              {unmapWorker.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Relieve Worker
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -499,10 +496,7 @@ export default function EstablishmentDashboard() {
       </AlertDialog>
 
       {/* Worker Details Dialog */}
-      <WorkerDetailsDialog
-        workerId={selectedWorkerId}
-        onClose={() => setSelectedWorkerId(null)}
-      />
+      <WorkerDetailsDialog workerId={selectedWorkerId} onClose={() => setSelectedWorkerId(null)} />
     </div>
   );
 }
