@@ -15,7 +15,9 @@ import {
   LogOut,
   User,
   LogIn,
-  LogOut as LogOutIcon
+  LogOut as LogOutIcon,
+  Ban,
+  Landmark
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -157,8 +159,9 @@ export default function EstablishmentAttendance() {
     }
   };
 
-  // Show pending approval banner if not approved (UI hint only - backend enforces)
+  // Check if establishment is active
   const isApproved = establishment?.is_approved ?? false;
+  const isLoadingEstablishment = !establishment;
   const departmentName = (establishment?.departments as any)?.name || 'Unknown Department';
 
   return (
@@ -189,16 +192,16 @@ export default function EstablishmentAttendance() {
           </Link>
         </div>
 
-        {/* Pending Approval Banner (UI hint - backend still enforces) */}
-        {!isApproved && (
-          <div className="mb-6 p-4 bg-warning/10 border border-warning/30 rounded-lg">
-            <div className="flex items-center gap-2 text-warning">
-              <AlertCircle className="w-5 h-5" />
-              <span className="font-medium">Awaiting Department Approval</span>
+        {/* Inactive Establishment Warning */}
+        {!isLoadingEstablishment && !isApproved && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+            <div className="flex items-center gap-2 text-destructive">
+              <Ban className="w-5 h-5" />
+              <span className="font-medium">Establishment Inactive</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              This establishment is pending approval from <strong>{departmentName}</strong>. 
-              Attendance cannot be recorded until approved.
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+              <Landmark className="w-3 h-3" />
+              This establishment must be activated by <strong className="mx-1">{departmentName}</strong> before attendance can be recorded.
             </p>
           </div>
         )}
@@ -206,18 +209,26 @@ export default function EstablishmentAttendance() {
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-xl bg-accent flex items-center justify-center">
-                <Clock className="w-8 h-8 text-accent-foreground" />
+              <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${isApproved ? 'bg-accent' : 'bg-muted'}`}>
+                {isApproved ? (
+                  <Clock className="w-8 h-8 text-accent-foreground" />
+                ) : (
+                  <Ban className="w-8 h-8 text-muted-foreground" />
+                )}
               </div>
             </div>
             <h1 className="text-2xl font-display font-bold">Worker Check-in / Check-out</h1>
             <p className="text-muted-foreground">Record attendance for workers at {establishment?.name || 'this establishment'}</p>
           </div>
 
-          <Card>
+          <Card className={!isApproved ? 'opacity-60' : ''}>
             <CardHeader>
               <CardTitle>Submit Attendance</CardTitle>
-              <CardDescription>Enter Worker ID or Employee ID</CardDescription>
+              <CardDescription>
+                {isApproved 
+                  ? 'Enter Worker ID or Employee ID' 
+                  : 'Attendance disabled — establishment is inactive'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -228,16 +239,23 @@ export default function EstablishmentAttendance() {
                     placeholder="e.g., WKR00000001"
                     value={workerIdentifier}
                     onChange={(e) => setWorkerIdentifier(e.target.value.toUpperCase())}
-                    disabled={loading}
+                    disabled={loading || !isApproved}
                   />
                 </div>
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={loading}
+                  disabled={loading || !isApproved}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Submit Attendance
+                  {!isApproved ? (
+                    <>
+                      <Ban className="w-4 h-4 mr-2" />
+                      Attendance Disabled
+                    </>
+                  ) : (
+                    'Submit Attendance'
+                  )}
                 </Button>
               </form>
 
