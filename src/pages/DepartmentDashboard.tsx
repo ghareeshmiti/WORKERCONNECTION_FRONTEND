@@ -236,7 +236,6 @@ export default function DepartmentDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Department Dashboard</h1>
           <div className="flex items-center gap-2">
-            {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
             <EditDepartmentProfileDialog departmentId={userContext?.departmentId} />
           </div>
         </div>
@@ -382,330 +381,349 @@ export default function DepartmentDashboard() {
           </CardContent>
         </Card>
 
-        {/* Establishments List */}
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Establishments Overview</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (establishments && establishments.length > 0) {
-                  generateCSV(
-                    establishments,
-                    establishmentColumns,
-                    `establishments-${format(new Date(), "yyyy-MM-dd")}`,
-                  );
-                  toast.success("Export Complete", { description: "Establishments exported to CSV" });
-                }
-              }}
-              disabled={!establishments || establishments.length === 0}
-            >
-              <Download className="w-4 h-4 mr-1" />
-              Export
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {estLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : sortedEstablishments && sortedEstablishments.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <SortableTableHeader label="Code" sortKey="code" currentSort={estSort} onSort={handleEstSort} />
-                      <SortableTableHeader label="Name" sortKey="name" currentSort={estSort} onSort={handleEstSort} />
-                      <SortableTableHeader
-                        label="Location"
-                        sortKey="location"
-                        currentSort={estSort}
-                        onSort={handleEstSort}
-                      />
-                      <SortableTableHeader
-                        label="Workers"
-                        sortKey="workerCount"
-                        currentSort={estSort}
-                        onSort={handleEstSort}
-                        align="center"
-                      />
-                      <SortableTableHeader
-                        label="Present"
-                        sortKey="present"
-                        currentSort={estSort}
-                        onSort={handleEstSort}
-                        align="center"
-                        icon={<UserCheck className="w-3 h-3 text-success" />}
-                      />
-                      <SortableTableHeader
-                        label="Partial"
-                        sortKey="partial"
-                        currentSort={estSort}
-                        onSort={handleEstSort}
-                        align="center"
-                        icon={<AlertCircle className="w-3 h-3 text-warning" />}
-                      />
-                      <SortableTableHeader
-                        label="Absent"
-                        sortKey="absent"
-                        currentSort={estSort}
-                        onSort={handleEstSort}
-                        align="center"
-                        icon={<UserX className="w-3 h-3 text-destructive" />}
-                      />
-                      <SortableTableHeader
-                        label="Rate"
-                        sortKey="rate"
-                        currentSort={estSort}
-                        onSort={handleEstSort}
-                        align="center"
-                      />
-                      <th className="text-left py-3 font-medium">Status</th>
-                      <th className="text-right py-3 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedEstablishments.map((est: any) => (
-                      <tr
-                        key={est.id}
-                        className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
-                        onClick={() => setSelectedEstablishment(est)}
-                      >
-                        <td className="py-2 font-mono text-xs">{est.code}</td>
-                        <td className="py-2 font-medium">{est.name}</td>
-                        <td className="py-2">
-                          {est.district}, {est.state}
-                        </td>
-                        <td className="py-2 text-center">
-                          <Badge variant="outline">{est.workerCount || 0}</Badge>
-                        </td>
-                        <td className="py-2 text-center">
-                          <span className="text-success font-medium">{est.todayStats?.present || 0}</span>
-                        </td>
-                        <td className="py-2 text-center">
-                          <span className="text-warning font-medium">{est.todayStats?.partial || 0}</span>
-                        </td>
-                        <td className="py-2 text-center">
-                          <span className="text-destructive font-medium">{est.todayStats?.absent || 0}</span>
-                        </td>
-                        <td className="py-2 text-center">
-                          <Badge
-                            variant={
-                              est.todayStats?.rate >= 80
-                                ? "default"
-                                : est.todayStats?.rate >= 50
-                                  ? "secondary"
-                                  : "outline"
-                            }
-                            className={est.todayStats?.rate >= 80 ? "bg-success" : ""}
-                          >
-                            {est.todayStats?.rate || 0}%
-                          </Badge>
-                        </td>
-                        <td className="py-2">
-                          <Badge
-                            variant={est.is_approved ? "default" : "secondary"}
-                            className={est.is_approved ? "bg-success" : ""}
-                          >
-                            {est.is_approved ? "Active" : "Inactive"}
-                          </Badge>
-                        </td>
-                        <td className="py-2 text-right">
-                          {!est.is_approved ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-success hover:text-success hover:bg-success/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEstablishmentToActivate(est);
-                              }}
-                            >
-                              Activate
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEstablishmentToDeactivate(est);
-                              }}
-                            >
-                              Deactivate
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No establishments registered yet.</p>
-                <p className="text-sm text-muted-foreground">
-                  Establishments can register and link to this department.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Tabbed Sections */}
+        <Tabs defaultValue="establishments" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="establishments" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Establishments Overview
+            </TabsTrigger>
+            <TabsTrigger value="workers" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Worker Admin
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Workers Search */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Worker Admin
-              </CardTitle>
-              <div className="flex items-center gap-2">
+          {/* Establishments Tab */}
+          <TabsContent value="establishments">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Establishments Overview</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (filteredWorkers && filteredWorkers.length > 0) {
+                    if (establishments && establishments.length > 0) {
                       generateCSV(
-                        filteredWorkers,
-                        workerWithEstablishmentColumns,
-                        `workers-${format(new Date(), "yyyy-MM-dd")}`,
+                        establishments,
+                        establishmentColumns,
+                        `establishments-${format(new Date(), "yyyy-MM-dd")}`,
                       );
-                      toast.success("Export Complete", { description: "Worker list exported to CSV" });
+                      toast.success("Export Complete", { description: "Establishments exported to CSV" });
                     }
                   }}
-                  disabled={!filteredWorkers || filteredWorkers.length === 0}
+                  disabled={!establishments || establishments.length === 0}
                 >
                   <Download className="w-4 h-4 mr-1" />
                   Export
                 </Button>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by ID, name, phone, or establishment..."
-                    value={workerSearch}
-                    onChange={(e) => setWorkerSearch(e.target.value)}
-                    className="pl-10 pr-10"
-                  />
-                  {workerSearch && (
+              </CardHeader>
+              <CardContent>
+                {estLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : sortedEstablishments && sortedEstablishments.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <SortableTableHeader label="Code" sortKey="code" currentSort={estSort} onSort={handleEstSort} />
+                          <SortableTableHeader label="Name" sortKey="name" currentSort={estSort} onSort={handleEstSort} />
+                          <SortableTableHeader
+                            label="Location"
+                            sortKey="location"
+                            currentSort={estSort}
+                            onSort={handleEstSort}
+                          />
+                          <SortableTableHeader
+                            label="Workers"
+                            sortKey="workerCount"
+                            currentSort={estSort}
+                            onSort={handleEstSort}
+                            align="center"
+                          />
+                          <SortableTableHeader
+                            label="Present"
+                            sortKey="present"
+                            currentSort={estSort}
+                            onSort={handleEstSort}
+                            align="center"
+                            icon={<UserCheck className="w-3 h-3 text-success" />}
+                          />
+                          <SortableTableHeader
+                            label="Partial"
+                            sortKey="partial"
+                            currentSort={estSort}
+                            onSort={handleEstSort}
+                            align="center"
+                            icon={<AlertCircle className="w-3 h-3 text-warning" />}
+                          />
+                          <SortableTableHeader
+                            label="Absent"
+                            sortKey="absent"
+                            currentSort={estSort}
+                            onSort={handleEstSort}
+                            align="center"
+                            icon={<UserX className="w-3 h-3 text-destructive" />}
+                          />
+                          <SortableTableHeader
+                            label="Rate"
+                            sortKey="rate"
+                            currentSort={estSort}
+                            onSort={handleEstSort}
+                            align="center"
+                          />
+                          <th className="text-left py-3 font-medium">Status</th>
+                          <th className="text-right py-3 font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedEstablishments.map((est: any) => (
+                          <tr
+                            key={est.id}
+                            className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
+                            onClick={() => setSelectedEstablishment(est)}
+                          >
+                            <td className="py-2 font-mono text-xs">{est.code}</td>
+                            <td className="py-2 font-medium">{est.name}</td>
+                            <td className="py-2">
+                              {est.district}, {est.state}
+                            </td>
+                            <td className="py-2 text-center">
+                              <Badge variant="outline">{est.workerCount || 0}</Badge>
+                            </td>
+                            <td className="py-2 text-center">
+                              <span className="text-success font-medium">{est.todayStats?.present || 0}</span>
+                            </td>
+                            <td className="py-2 text-center">
+                              <span className="text-warning font-medium">{est.todayStats?.partial || 0}</span>
+                            </td>
+                            <td className="py-2 text-center">
+                              <span className="text-destructive font-medium">{est.todayStats?.absent || 0}</span>
+                            </td>
+                            <td className="py-2 text-center">
+                              <Badge
+                                variant={
+                                  est.todayStats?.rate >= 80
+                                    ? "default"
+                                    : est.todayStats?.rate >= 50
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                                className={est.todayStats?.rate >= 80 ? "bg-success" : ""}
+                              >
+                                {est.todayStats?.rate || 0}%
+                              </Badge>
+                            </td>
+                            <td className="py-2">
+                              <Badge
+                                variant={est.is_approved ? "default" : "secondary"}
+                                className={est.is_approved ? "bg-success" : ""}
+                              >
+                                {est.is_approved ? "Active" : "Inactive"}
+                              </Badge>
+                            </td>
+                            <td className="py-2 text-right">
+                              {!est.is_approved ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-success hover:text-success hover:bg-success/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEstablishmentToActivate(est);
+                                  }}
+                                >
+                                  Activate
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEstablishmentToDeactivate(est);
+                                  }}
+                                >
+                                  Deactivate
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No establishments registered yet.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Establishments can register and link to this department.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Worker Admin Tab */}
+          <TabsContent value="workers">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Worker Admin
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => setWorkerSearch("")}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {workersLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : filteredWorkers && filteredWorkers.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b">
-                      <SortableTableHeader
-                        label="Worker ID"
-                        sortKey="worker_id"
-                        currentSort={workerSort}
-                        onSort={handleWorkerSort}
-                        className="py-3"
-                      />
-                      <SortableTableHeader
-                        label="Name"
-                        sortKey="name"
-                        currentSort={workerSort}
-                        onSort={handleWorkerSort}
-                        className="py-3"
-                      />
-                      <SortableTableHeader
-                        label="Phone"
-                        sortKey="phone"
-                        currentSort={workerSort}
-                        onSort={handleWorkerSort}
-                        className="py-3"
-                      />
-                      <SortableTableHeader
-                        label="Location"
-                        sortKey="location"
-                        currentSort={workerSort}
-                        onSort={handleWorkerSort}
-                        className="py-3"
-                      />
-                      <SortableTableHeader
-                        label="Establishment"
-                        sortKey="establishment"
-                        currentSort={workerSort}
-                        onSort={handleWorkerSort}
-                        className="py-3"
-                      />
-                      <SortableTableHeader
-                        label="Status"
-                        sortKey="status"
-                        currentSort={workerSort}
-                        onSort={handleWorkerSort}
-                        className="py-3"
-                      />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredWorkers.map((mapping: any) => (
-                      <tr
-                        key={mapping.id}
-                        className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
-                        onClick={() =>
-                          setSelectedWorker({
-                            id: mapping.workers?.id,
-                            establishment: mapping.establishments?.name,
-                          })
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (filteredWorkers && filteredWorkers.length > 0) {
+                          generateCSV(
+                            filteredWorkers,
+                            workerWithEstablishmentColumns,
+                            `workers-${format(new Date(), "yyyy-MM-dd")}`,
+                          );
+                          toast.success("Export Complete", { description: "Worker list exported to CSV" });
                         }
-                      >
-                        <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
-                        <td className="py-3">
-                          {mapping.workers?.first_name} {mapping.workers?.last_name}
-                        </td>
-                        <td className="py-3">{mapping.workers?.phone || "--"}</td>
-                        <td className="py-3">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {mapping.workers?.district}, {mapping.workers?.state}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          <Badge variant="outline">{mapping.establishments?.name}</Badge>
-                        </td>
-                        <td className="py-3">
-                          <Badge variant={mapping.workers?.is_active ? "default" : "secondary"}>
-                            {mapping.workers?.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : workers && workers.length > 0 && filteredWorkers.length === 0 ? (
-              <div className="text-center py-8">
-                <Search className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-muted-foreground">No workers found matching "{workerSearch}"</p>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-muted-foreground">No workers mapped to any establishment yet.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      }}
+                      disabled={!filteredWorkers || filteredWorkers.length === 0}
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Export
+                    </Button>
+                    <div className="relative w-full md:w-64">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by ID, name, phone, or establishment..."
+                        value={workerSearch}
+                        onChange={(e) => setWorkerSearch(e.target.value)}
+                        className="pl-10 pr-10"
+                      />
+                      {workerSearch && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                          onClick={() => setWorkerSearch("")}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {workersLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : filteredWorkers && filteredWorkers.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <SortableTableHeader
+                            label="Worker ID"
+                            sortKey="worker_id"
+                            currentSort={workerSort}
+                            onSort={handleWorkerSort}
+                            className="py-3"
+                          />
+                          <SortableTableHeader
+                            label="Name"
+                            sortKey="name"
+                            currentSort={workerSort}
+                            onSort={handleWorkerSort}
+                            className="py-3"
+                          />
+                          <SortableTableHeader
+                            label="Phone"
+                            sortKey="phone"
+                            currentSort={workerSort}
+                            onSort={handleWorkerSort}
+                            className="py-3"
+                          />
+                          <SortableTableHeader
+                            label="Location"
+                            sortKey="location"
+                            currentSort={workerSort}
+                            onSort={handleWorkerSort}
+                            className="py-3"
+                          />
+                          <SortableTableHeader
+                            label="Establishment"
+                            sortKey="establishment"
+                            currentSort={workerSort}
+                            onSort={handleWorkerSort}
+                            className="py-3"
+                          />
+                          <SortableTableHeader
+                            label="Status"
+                            sortKey="status"
+                            currentSort={workerSort}
+                            onSort={handleWorkerSort}
+                            className="py-3"
+                          />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredWorkers.map((mapping: any) => (
+                          <tr
+                            key={mapping.id}
+                            className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
+                            onClick={() =>
+                              setSelectedWorker({
+                                id: mapping.workers?.id,
+                                establishment: mapping.establishments?.name,
+                              })
+                            }
+                          >
+                            <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
+                            <td className="py-3">
+                              {mapping.workers?.first_name} {mapping.workers?.last_name}
+                            </td>
+                            <td className="py-3">{mapping.workers?.phone || "--"}</td>
+                            <td className="py-3">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {mapping.workers?.district}, {mapping.workers?.state}
+                              </span>
+                            </td>
+                            <td className="py-3">
+                              <Badge variant="outline">{mapping.establishments?.name}</Badge>
+                            </td>
+                            <td className="py-3">
+                              <Badge variant={mapping.workers?.is_active ? "default" : "secondary"}>
+                                {mapping.workers?.is_active ? "Active" : "Inactive"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : workers && workers.length > 0 && filteredWorkers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Search className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No workers found matching "{workerSearch}"</p>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                    <p className="text-muted-foreground">No workers mapped to any establishment yet.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Worker Details Dialog */}
