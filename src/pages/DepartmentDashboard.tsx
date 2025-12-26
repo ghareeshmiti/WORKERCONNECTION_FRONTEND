@@ -43,6 +43,7 @@ import { format, subDays } from "date-fns";
 import { EditDepartmentProfileDialog } from "@/components/EditDepartmentProfileDialog";
 import { WorkerDetailsDialog } from "@/components/WorkerDetailsDialog";
 import { EstablishmentDetailsDialog } from "@/components/EstablishmentDetailsDialog";
+import { EnrollWorkerDialog } from "@/components/EnrollWorkerDialog";
 import { SortableTableHeader, SortConfig, sortData } from "@/components/SortableTableHeader";
 
 export default function DepartmentDashboard() {

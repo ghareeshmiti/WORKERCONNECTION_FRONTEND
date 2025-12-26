@@ -17,7 +17,7 @@ import {
 import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download, UserX2 } from 'lucide-react';
 import { generateCSV, workerColumns, attendanceTrendColumns } from '@/lib/csv-export';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useEstablishmentWorkers, useEstablishmentTodayAttendance, useEstablishmentAttendanceTrendByRange } from '@/hooks/use-dashboard-data';
 import { useEstablishmentDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
 import { useUnmapWorker } from '@/hooks/use-worker-mapping';
@@ -114,6 +114,12 @@ export default function EstablishmentDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Establishment Dashboard</h1>
           <div className="flex items-center gap-2">
+            <Button variant="default" asChild>
+              <Link to="/establishment/attendance">
+                <Clock className="w-4 h-4 mr-2" />
+                Check-in / Check-out
+              </Link>
+            </Button>
             <EditEstablishmentProfileDialog establishmentId={userContext?.establishmentId} />
             {userContext?.establishmentId && user && (
               <>

@@ -26,22 +26,14 @@ export default function Landing() {
         <div className="container mx-auto text-center max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">
             Real-time Attendance Management
-            {/* for{' '} */}
-            {/* <span className="text-primary">Indian Workers</span> */}
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
             Streamline attendance tracking across departments and establishments with our secure, efficient platform
             designed for the workforce.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
-            <Link to="/attendance">
-              <Button size="lg" className="gap-2">
-                <Clock className="w-5 h-5" />
-                Remote Check-in/out
-              </Button>
-            </Link>
             <Link to="/auth">
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button size="lg" className="gap-2">
                 Get Started
                 <ArrowRight className="w-5 h-5" />
               </Button>
@@ -55,7 +47,7 @@ export default function Landing() {
         <div className="container mx-auto">
           <h2 className="text-2xl font-display font-bold text-center mb-12">Choose Your Role</h2>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {/* Worker */}
+            {/* Worker - Login only */}
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
@@ -65,13 +57,8 @@ export default function Landing() {
                 <CardDescription>Track your attendance, view history, and manage your profile</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Link to="/register/worker" className="block">
-                  <Button className="w-full" variant="default">
-                    Register
-                  </Button>
-                </Link>
                 <Link to="/auth?role=worker" className="block">
-                  <Button className="w-full" variant="outline">
+                  <Button className="w-full" variant="default">
                     Login
                   </Button>
                 </Link>
@@ -126,7 +113,6 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          {/* <p>Worker Connect © 2025. India-only system.</p> */}
           <p>Worker Connect © 2025.</p>
         </div>
       </footer>

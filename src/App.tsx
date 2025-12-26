@@ -14,14 +14,13 @@ const queryClient = new QueryClient();
 // Lazy load pages for code splitting
 const LandingPage = lazy(() => import("@/pages/Landing"));
 const AuthPage = lazy(() => import("@/pages/Auth"));
-const WorkerRegister = lazy(() => import("@/pages/WorkerRegister"));
 const EstablishmentRegister = lazy(() => import("@/pages/EstablishmentRegister"));
 const DepartmentRegister = lazy(() => import("@/pages/DepartmentRegister"));
-const RemoteAttendance = lazy(() => import("@/pages/RemoteAttendance"));
 const OverviewDashboard = lazy(() => import("@/pages/OverviewDashboard"));
 const WorkerDashboard = lazy(() => import("@/pages/WorkerDashboard"));
 const EstablishmentDashboard = lazy(() => import("@/pages/EstablishmentDashboard"));
 const DepartmentDashboard = lazy(() => import("@/pages/DepartmentDashboard"));
+const EstablishmentAttendance = lazy(() => import("@/pages/EstablishmentAttendance"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function PageLoader() {
@@ -47,10 +46,8 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<AuthPage />} />
-              <Route path="/register/worker" element={<WorkerRegister />} />
               <Route path="/register/establishment" element={<EstablishmentRegister />} />
               <Route path="/register/department" element={<DepartmentRegister />} />
-              <Route path="/attendance" element={<RemoteAttendance />} />
               
               {/* Mock THALES auth screen */}
               <Route path="/thales-auth" element={
@@ -77,6 +74,13 @@ const App = () => (
               <Route path="/establishment/dashboard" element={
                 <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
                   <EstablishmentDashboard />
+                </ProtectedRoute>
+              } />
+              
+              {/* Establishment Attendance Page */}
+              <Route path="/establishment/attendance" element={
+                <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
+                  <EstablishmentAttendance />
                 </ProtectedRoute>
               } />
               

@@ -209,6 +209,9 @@ export type Database = {
       establishments: {
         Row: {
           address_line: string | null
+          approved_at: string | null
+          approved_by: string | null
+          card_reader_id: string | null
           code: string
           construction_type: string | null
           contractor_name: string | null
@@ -222,6 +225,7 @@ export type Database = {
           expected_end_date: string | null
           id: string
           is_active: boolean
+          is_approved: boolean
           license_number: string | null
           mandal: string | null
           name: string
@@ -234,6 +238,9 @@ export type Database = {
         }
         Insert: {
           address_line?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          card_reader_id?: string | null
           code: string
           construction_type?: string | null
           contractor_name?: string | null
@@ -247,6 +254,7 @@ export type Database = {
           expected_end_date?: string | null
           id?: string
           is_active?: boolean
+          is_approved?: boolean
           license_number?: string | null
           mandal?: string | null
           name: string
@@ -259,6 +267,9 @@ export type Database = {
         }
         Update: {
           address_line?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          card_reader_id?: string | null
           code?: string
           construction_type?: string | null
           contractor_name?: string | null
@@ -272,6 +283,7 @@ export type Database = {
           expected_end_date?: string | null
           id?: string
           is_active?: boolean
+          is_approved?: boolean
           license_number?: string | null
           mandal?: string | null
           name?: string
@@ -431,9 +443,11 @@ export type Database = {
       workers: {
         Row: {
           aadhaar_last_four: string | null
+          access_card_id: string | null
           address_line: string | null
           created_at: string
           date_of_birth: string | null
+          department_id: string | null
           district: string
           email: string | null
           emergency_contact_name: string | null
@@ -456,9 +470,11 @@ export type Database = {
         }
         Insert: {
           aadhaar_last_four?: string | null
+          access_card_id?: string | null
           address_line?: string | null
           created_at?: string
           date_of_birth?: string | null
+          department_id?: string | null
           district: string
           email?: string | null
           emergency_contact_name?: string | null
@@ -481,9 +497,11 @@ export type Database = {
         }
         Update: {
           aadhaar_last_four?: string | null
+          access_card_id?: string | null
           address_line?: string | null
           created_at?: string
           date_of_birth?: string | null
+          department_id?: string | null
           district?: string
           email?: string | null
           emergency_contact_name?: string | null
@@ -504,7 +522,15 @@ export type Database = {
           updated_at?: string
           worker_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workers_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
