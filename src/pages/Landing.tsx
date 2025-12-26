@@ -22,18 +22,26 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="py-20 px-4">
+      <section className="py-10 px-4">
         <div className="container mx-auto text-center max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">Real-time Attendance Management</h1>
           <p className="text-lg text-muted-foreground mb-8">
             Streamline attendance tracking across departments and establishments with our secure, efficient platform
             designed for the workforce.
           </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Link to="/auth">
+              <Button size="lg" className="gap-2">
+                Get Started
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Role Cards */}
-      <section className="py-16 px-4 bg-muted/50">
+      <section className="py-8 px-4 bg-muted/50">
         <div className="container mx-auto">
           <h2 className="text-2xl font-display font-bold text-center mb-12">Choose Your Role</h2>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -86,9 +94,9 @@ export default function Landing() {
                 <CardDescription>Oversee all establishments, analytics, and workforce management</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* <Link to="/register/department" className="block">
+                <Link to="/register/department" className="block">
                   <Button className="w-full bg-success hover:bg-success/90">Register</Button>
-                </Link> */}
+                </Link>
                 <Link to="/auth?role=department" className="block">
                   <Button className="w-full" variant="outline">
                     Login
