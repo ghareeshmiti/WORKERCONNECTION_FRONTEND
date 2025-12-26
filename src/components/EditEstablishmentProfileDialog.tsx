@@ -116,7 +116,7 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
           name: data.name,
           description: data.description || null,
           phone: data.phone || null,
-          email: data.email || null,
+          // Note: email is not updated as it's read-only
           address_line: data.address_line || null,
           contractor_name: data.contractor_name || null,
           project_name: data.project_name || null,
@@ -232,9 +232,9 @@ export function EditEstablishmentProfileDialog({ establishmentId }: EditEstablis
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email (Read-only)</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Email" {...field} />
+                      <Input type="email" placeholder="Email" {...field} disabled className="bg-muted" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

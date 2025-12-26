@@ -46,7 +46,8 @@ import { EditDepartmentProfileDialog } from "@/components/EditDepartmentProfileD
 import { WorkerDetailsDialog } from "@/components/WorkerDetailsDialog";
 import { EstablishmentDetailsDialog } from "@/components/EstablishmentDetailsDialog";
 import { EnrollWorkerDialog } from "@/components/EnrollWorkerDialog";
-import { ApproveEstablishmentDialog } from "@/components/ApproveEstablishmentDialog";
+import { ActivateEstablishmentDialog } from "@/components/ActivateEstablishmentDialog";
+import { DeactivateEstablishmentDialog } from "@/components/DeactivateEstablishmentDialog";
 import { SortableTableHeader, SortConfig, sortData } from "@/components/SortableTableHeader";
 import { AttendanceReportTable } from "@/components/AttendanceReportTable";
 import { AttendanceReportFilters } from "@/components/AttendanceReportFilters";
@@ -78,7 +79,8 @@ export default function DepartmentDashboard() {
   const [workerSearch, setWorkerSearch] = useState("");
   const [selectedWorker, setSelectedWorker] = useState<{ id: string; establishment: string } | null>(null);
   const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
-  const [establishmentToApprove, setEstablishmentToApprove] = useState<any | null>(null);
+  const [establishmentToActivate, setEstablishmentToActivate] = useState<any | null>(null);
+  const [establishmentToDeactivate, setEstablishmentToDeactivate] = useState<any | null>(null);
 
   // Report filters
   const [reportEstablishmentFilter, setReportEstablishmentFilter] = useState<string | undefined>(undefined);
@@ -459,7 +461,7 @@ export default function DepartmentDashboard() {
                         onSort={handleEstSort}
                         align="center"
                       />
-                      <th className="text-left py-3 font-medium">Approval</th>
+                      <th className="text-left py-3 font-medium">Status</th>
                       <th className="text-right py-3 font-medium">Actions</th>
                     </tr>
                   </thead>
@@ -506,21 +508,33 @@ export default function DepartmentDashboard() {
                             variant={est.is_approved ? "default" : "secondary"}
                             className={est.is_approved ? "bg-success" : ""}
                           >
-                            {est.is_approved ? "Approved" : "Pending"}
+                            {est.is_approved ? "Active" : "Inactive"}
                           </Badge>
                         </td>
                         <td className="py-2 text-right">
-                          {!est.is_approved && (
+                          {!est.is_approved ? (
                             <Button
                               variant="outline"
                               size="sm"
                               className="text-success hover:text-success hover:bg-success/10"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setEstablishmentToApprove(est);
+                                setEstablishmentToActivate(est);
                               }}
                             >
-                              Approve
+                              Activate
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEstablishmentToDeactivate(est);
+                              }}
+                            >
+                              Deactivate
                             </Button>
                           )}
                         </td>
@@ -546,7 +560,7 @@ export default function DepartmentDashboard() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                All Workers
+                Worker Admin
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Button
@@ -707,10 +721,16 @@ export default function DepartmentDashboard() {
         onClose={() => setSelectedEstablishment(null)}
       />
 
-      {/* Approve Establishment Dialog */}
-      <ApproveEstablishmentDialog
-        establishment={establishmentToApprove}
-        onClose={() => setEstablishmentToApprove(null)}
+      {/* Activate Establishment Dialog */}
+      <ActivateEstablishmentDialog
+        establishment={establishmentToActivate}
+        onClose={() => setEstablishmentToActivate(null)}
+      />
+
+      {/* Deactivate Establishment Dialog */}
+      <DeactivateEstablishmentDialog
+        establishment={establishmentToDeactivate}
+        onClose={() => setEstablishmentToDeactivate(null)}
       />
     </div>
   );
