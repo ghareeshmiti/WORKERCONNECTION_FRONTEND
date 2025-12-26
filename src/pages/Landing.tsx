@@ -29,14 +29,6 @@ export default function Landing() {
             Streamline attendance tracking across departments and establishments with our secure, efficient platform
             designed for the workforce.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link to="/auth">
-              <Button size="lg" className="gap-2">
-                Get Started
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -94,9 +86,6 @@ export default function Landing() {
                 <CardDescription>Oversee all establishments, analytics, and workforce management</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Link to="/register/department" className="block">
-                  <Button className="w-full bg-success hover:bg-success/90">Register</Button>
-                </Link>
                 <Link to="/auth?role=department" className="block">
                   <Button className="w-full" variant="outline">
                     Login
