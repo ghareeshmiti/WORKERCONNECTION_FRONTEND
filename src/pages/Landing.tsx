@@ -87,9 +87,7 @@ export default function Landing() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link to="/auth?role=department" className="block">
-                  <Button className="w-full bg-success hover:bg-success/90" variant="outline">
-                    Login
-                  </Button>
+                  <Button className="w-full bg-success hover:bg-success/90">Login</Button>
                 </Link>
               </CardContent>
             </Card>
