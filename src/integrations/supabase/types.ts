@@ -556,6 +556,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      worker_belongs_to_establishment_department: {
+        Args: { _establishment_id: string; _worker_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "DEPARTMENT_ADMIN" | "ESTABLISHMENT_ADMIN" | "WORKER"
