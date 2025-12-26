@@ -313,11 +313,12 @@ export default function EstablishmentDashboard() {
                 onExport={() => {
                   if (reportData && reportData.length > 0) {
                     const csvContent = [
-                      ['Date', 'Worker ID', 'Worker Name', 'Check-in', 'Check-out', 'Hours', 'Status'].join(','),
+                      ['Date', 'Worker ID', 'Worker Name', 'Department', 'Check-in', 'Check-out', 'Hours', 'Status'].join(','),
                       ...reportData.map(row => [
                         row.date,
                         row.workerId,
                         `"${row.workerName}"`,
+                        `"${row.departmentName}"`,
                         row.checkIn ? format(new Date(row.checkIn), 'HH:mm') : '',
                         row.checkOut ? format(new Date(row.checkOut), 'HH:mm') : '',
                         row.hoursWorked?.toFixed(1) || '',
@@ -329,7 +330,7 @@ export default function EstablishmentDashboard() {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `attendance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+                    a.download = `establishment-attendance-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
                     a.click();
                     URL.revokeObjectURL(url);
                     toast.success('Export Complete', { description: 'Attendance report exported to CSV' });

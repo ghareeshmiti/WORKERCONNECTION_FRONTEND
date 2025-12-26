@@ -8,7 +8,23 @@ const corsHeaders = {
 
 interface AttendanceSubmissionRequest {
   workerIdentifier: string; // Can be worker_id or employee_id
+  establishmentId: string; // Required: the establishment making the request
 }
+
+// Error codes for client handling
+const ErrorCodes = {
+  INVALID_INPUT: 'INVALID_INPUT',
+  ESTABLISHMENT_NOT_FOUND: 'ESTABLISHMENT_NOT_FOUND',
+  ESTABLISHMENT_NOT_APPROVED: 'ESTABLISHMENT_NOT_APPROVED',
+  WORKER_NOT_FOUND: 'WORKER_NOT_FOUND',
+  WORKER_INACTIVE: 'WORKER_INACTIVE',
+  WORKER_DEPT_MISMATCH: 'WORKER_DEPT_MISMATCH',
+  NO_ACTIVE_MAPPING: 'NO_ACTIVE_MAPPING',
+  MAPPED_TO_DIFFERENT_ESTABLISHMENT: 'MAPPED_TO_DIFFERENT_ESTABLISHMENT',
+  LOOKUP_ERROR: 'LOOKUP_ERROR',
+  INSERT_ERROR: 'INSERT_ERROR',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+} as const;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -24,26 +40,92 @@ serve(async (req) => {
     });
 
     const body: AttendanceSubmissionRequest = await req.json();
-    console.log('Attendance submission request:', { workerIdentifier: body.workerIdentifier });
+    console.log('Attendance submission request:', { 
+      workerIdentifier: body.workerIdentifier,
+      establishmentId: body.establishmentId 
+    });
 
-    // Validate required fields
+    // ============================================
+    // VALIDATION 1: Required fields
+    // ============================================
     if (!body.workerIdentifier || !body.workerIdentifier.trim()) {
+      console.log('Validation failed: Missing worker identifier');
       return new Response(
         JSON.stringify({ 
           success: false, 
           message: 'Worker ID or Employee ID is required',
-          code: 'INVALID_INPUT'
+          code: ErrorCodes.INVALID_INPUT
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!body.establishmentId || !body.establishmentId.trim()) {
+      console.log('Validation failed: Missing establishment ID');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Establishment ID is required',
+          code: ErrorCodes.INVALID_INPUT
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const identifier = body.workerIdentifier.trim().toUpperCase();
+    const establishmentId = body.establishmentId.trim();
 
-    // Find worker by worker_id or employee_id
+    // ============================================
+    // VALIDATION 2: Establishment exists and is APPROVED
+    // ============================================
+    const { data: establishmentData, error: estError } = await supabase
+      .from('establishments')
+      .select('id, name, state, department_id, is_approved, is_active')
+      .eq('id', establishmentId)
+      .maybeSingle();
+
+    if (estError) {
+      console.error('Establishment lookup failed:', estError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Error looking up establishment',
+          code: ErrorCodes.LOOKUP_ERROR
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!establishmentData) {
+      console.log('Validation failed: Establishment not found', establishmentId);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Establishment not found',
+          code: ErrorCodes.ESTABLISHMENT_NOT_FOUND
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!establishmentData.is_approved) {
+      console.log('Validation failed: Establishment not approved', establishmentId);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'This establishment is pending department approval. Attendance cannot be recorded until approved.',
+          code: ErrorCodes.ESTABLISHMENT_NOT_APPROVED
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ============================================
+    // VALIDATION 3: Worker exists
+    // ============================================
     const { data: workerData, error: workerError } = await supabase
       .from('workers')
-      .select('id, worker_id, employee_id, first_name, last_name, is_active')
+      .select('id, worker_id, employee_id, first_name, last_name, is_active, department_id')
       .or(`worker_id.eq.${identifier},employee_id.eq.${identifier}`)
       .maybeSingle();
 
@@ -53,38 +135,63 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           message: 'Error looking up worker',
-          code: 'LOOKUP_ERROR'
+          code: ErrorCodes.LOOKUP_ERROR
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!workerData) {
+      console.log('Validation failed: Worker not found', identifier);
       return new Response(
         JSON.stringify({ 
           success: false, 
           message: 'Worker not found with the provided ID. Please verify your Worker ID or Employee ID.',
-          code: 'WORKER_NOT_FOUND'
+          code: ErrorCodes.WORKER_NOT_FOUND
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // ============================================
+    // VALIDATION 4: Worker is ACTIVE
+    // ============================================
     if (!workerData.is_active) {
+      console.log('Validation failed: Worker not active', workerData.worker_id);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Worker is not active',
-          code: 'WORKER_INACTIVE'
+          message: 'This worker is not active. Please contact your department administrator.',
+          code: ErrorCodes.WORKER_INACTIVE
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get worker's current establishment mapping - REQUIRED for attendance
+    // ============================================
+    // VALIDATION 5: Worker belongs to SAME department as establishment
+    // ============================================
+    if (workerData.department_id !== establishmentData.department_id) {
+      console.log('Validation failed: Department mismatch', {
+        workerDept: workerData.department_id,
+        estDept: establishmentData.department_id
+      });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'This worker belongs to a different department and cannot check in at this establishment.',
+          code: ErrorCodes.WORKER_DEPT_MISMATCH
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ============================================
+    // VALIDATION 6: Worker has ACTIVE mapping to THIS establishment
+    // ============================================
     const { data: mappingData, error: mappingError } = await supabase
       .from('worker_mappings')
-      .select('establishment_id, establishments(id, name, state)')
+      .select('id, establishment_id')
       .eq('worker_id', workerData.id)
       .eq('is_active', true)
       .maybeSingle();
@@ -95,27 +202,46 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           message: 'Error checking worker mapping',
-          code: 'MAPPING_ERROR'
+          code: ErrorCodes.LOOKUP_ERROR
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (!mappingData) {
+      console.log('Validation failed: No active mapping', workerData.worker_id);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Worker is not mapped to any establishment. Please contact your establishment administrator to be added.',
-          code: 'NO_ACTIVE_MAPPING'
+          message: 'This worker is not currently mapped to any establishment. Please contact your establishment administrator to be added.',
+          code: ErrorCodes.NO_ACTIVE_MAPPING
         }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Derive region from establishment
-    const establishment = mappingData.establishments as any;
-    const region = establishment?.state || 'Unknown';
-    const establishmentName = establishment?.name || 'Unknown';
+    if (mappingData.establishment_id !== establishmentId) {
+      console.log('Validation failed: Mapped to different establishment', {
+        mapped: mappingData.establishment_id,
+        requested: establishmentId
+      });
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'This worker is mapped to a different establishment and cannot check in here.',
+          code: ErrorCodes.MAPPED_TO_DIFFERENT_ESTABLISHMENT
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // ============================================
+    // ALL VALIDATIONS PASSED - Record Attendance
+    // ============================================
+    console.log('All validations passed. Recording attendance for:', workerData.worker_id);
+
+    const region = establishmentData.state || 'Unknown';
+    const establishmentName = establishmentData.name || 'Unknown';
 
     // Get current time in Asia/Kolkata
     const now = new Date();
@@ -139,8 +265,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          message: 'Error checking attendance',
-          code: 'EVENTS_ERROR'
+          message: 'Error checking attendance history',
+          code: ErrorCodes.LOOKUP_ERROR
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -171,7 +297,7 @@ serve(async (req) => {
         event_type: eventType,
         occurred_at: now.toISOString(),
         region: region,
-        establishment_id: mappingData.establishment_id,
+        establishment_id: establishmentId,
         meta: { timezone: 'Asia/Kolkata' }
       })
       .select('id, event_type, occurred_at')
@@ -183,13 +309,18 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           message: 'Failed to record attendance',
-          code: 'INSERT_ERROR'
+          code: ErrorCodes.INSERT_ERROR
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Attendance recorded successfully:', eventData);
+    console.log('Attendance recorded successfully:', {
+      eventId: eventData.id,
+      eventType: eventData.event_type,
+      worker: workerData.worker_id,
+      establishment: establishmentName
+    });
 
     return new Response(
       JSON.stringify({
@@ -212,8 +343,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        message: 'Internal server error',
-        code: 'INTERNAL_ERROR'
+        message: 'Internal server error. Please try again.',
+        code: ErrorCodes.INTERNAL_ERROR
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
