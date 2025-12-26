@@ -44,6 +44,7 @@ import { EditDepartmentProfileDialog } from "@/components/EditDepartmentProfileD
 import { WorkerDetailsDialog } from "@/components/WorkerDetailsDialog";
 import { EstablishmentDetailsDialog } from "@/components/EstablishmentDetailsDialog";
 import { EnrollWorkerDialog } from "@/components/EnrollWorkerDialog";
+import { ApproveEstablishmentDialog } from "@/components/ApproveEstablishmentDialog";
 import { SortableTableHeader, SortConfig, sortData } from "@/components/SortableTableHeader";
 
 export default function DepartmentDashboard() {
@@ -61,6 +62,7 @@ export default function DepartmentDashboard() {
   const [workerSearch, setWorkerSearch] = useState("");
   const [selectedWorker, setSelectedWorker] = useState<{ id: string; establishment: string } | null>(null);
   const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
+  const [establishmentToApprove, setEstablishmentToApprove] = useState<any | null>(null);
 
   // Sorting state
   const [estSort, setEstSort] = useState<SortConfig>({ key: "", direction: null });
@@ -201,12 +203,9 @@ export default function DepartmentDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Department Dashboard</h1>
           <div className="flex items-center gap-2">
-            {/* <Button variant="outline" asChild>
-              <Link to="/overview">
-                <Activity className="w-4 h-4 mr-2" />
-                System Overview
-              </Link>
-            </Button> */}
+            {userContext?.departmentId && (
+              <EnrollWorkerDialog departmentId={userContext.departmentId} />
+            )}
             <EditDepartmentProfileDialog departmentId={userContext?.departmentId} />
           </div>
         </div>
@@ -380,12 +379,8 @@ export default function DepartmentDashboard() {
                         onSort={handleEstSort}
                         align="center"
                       />
-                      <SortableTableHeader
-                        label="Status"
-                        sortKey="status"
-                        currentSort={estSort}
-                        onSort={handleEstSort}
-                      />
+                      <th className="text-left py-3 font-medium">Approval</th>
+                      <th className="text-right py-3 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -427,9 +422,24 @@ export default function DepartmentDashboard() {
                           </Badge>
                         </td>
                         <td className="py-2">
-                          <Badge variant={est.is_active ? "default" : "secondary"}>
-                            {est.is_active ? "Active" : "Inactive"}
+                          <Badge variant={est.is_approved ? "default" : "secondary"} className={est.is_approved ? "bg-success" : ""}>
+                            {est.is_approved ? "Approved" : "Pending"}
                           </Badge>
+                        </td>
+                        <td className="py-2 text-right">
+                          {!est.is_approved && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-success hover:text-success hover:bg-success/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEstablishmentToApprove(est);
+                              }}
+                            >
+                              Approve
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -612,6 +622,12 @@ export default function DepartmentDashboard() {
       <EstablishmentDetailsDialog
         establishment={selectedEstablishment}
         onClose={() => setSelectedEstablishment(null)}
+      />
+
+      {/* Approve Establishment Dialog */}
+      <ApproveEstablishmentDialog
+        establishment={establishmentToApprove}
+        onClose={() => setEstablishmentToApprove(null)}
       />
     </div>
   );
