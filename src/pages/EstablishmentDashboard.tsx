@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download, UserX2 } from 'lucide-react';
+import { Clock, LogOut, Users, UserCheck, UserX, AlertCircle, Loader2, Building2, UserMinus, Search, X, Download, UserX2, Landmark } from 'lucide-react';
 import { generateCSV, workerColumns, attendanceTrendColumns } from '@/lib/csv-export';
 import { toast } from 'sonner';
 import { useNavigate, Link } from 'react-router-dom';
@@ -29,6 +29,8 @@ import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
 import { EditEstablishmentProfileDialog } from '@/components/EditEstablishmentProfileDialog';
 import { WorkerDetailsDialog } from '@/components/WorkerDetailsDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 export default function EstablishmentDashboard() {
   // Enable real-time updates
@@ -55,6 +57,25 @@ export default function EstablishmentDashboard() {
 
   const { data: workers, isLoading: workersLoading } = useEstablishmentWorkers(userContext?.establishmentId);
   
+  // Fetch establishment details to check approval status
+  const { data: establishment } = useQuery({
+    queryKey: ['establishment', userContext?.establishmentId],
+    queryFn: async () => {
+      if (!userContext?.establishmentId) return null;
+      const { data, error } = await supabase
+        .from('establishments')
+        .select('id, name, is_approved, department_id, departments(name)')
+        .eq('id', userContext.establishmentId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userContext?.establishmentId,
+  });
+  
+  const isApproved = establishment?.is_approved ?? true;
+  const departmentName = (establishment?.departments as any)?.name || 'Unknown Department';
+
   // Filter workers based on search
   const filteredWorkers = useMemo(() => {
     if (!workers) return [];
@@ -111,17 +132,32 @@ export default function EstablishmentDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Pending Approval Banner */}
+        {!isApproved && (
+          <div className="mb-6 p-4 bg-warning/10 border border-warning/30 rounded-lg">
+            <div className="flex items-center gap-2 text-warning">
+              <AlertCircle className="w-5 h-5" />
+              <span className="font-medium">Awaiting Department Approval</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+              <Landmark className="w-3 h-3" />
+              This establishment is pending approval from <strong className="mx-1">{departmentName}</strong>. 
+              Worker mapping and attendance tracking are disabled until approved.
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Establishment Dashboard</h1>
           <div className="flex items-center gap-2">
-            <Button variant="default" asChild>
+            <Button variant="default" asChild disabled={!isApproved}>
               <Link to="/establishment/attendance">
                 <Clock className="w-4 h-4 mr-2" />
                 Check-in / Check-out
               </Link>
             </Button>
             <EditEstablishmentProfileDialog establishmentId={userContext?.establishmentId} />
-            {userContext?.establishmentId && user && (
+            {userContext?.establishmentId && user && isApproved && (
               <>
                 <AddWorkerByIdDialog 
                   establishmentId={userContext.establishmentId} 
