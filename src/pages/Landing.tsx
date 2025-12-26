@@ -22,7 +22,7 @@ export default function Landing() {
       </header>
 
       {/* Hero */}
-      <section className="py-10 px-4">
+      <section className="p-4">
         <div className="container mx-auto text-center max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">Real-time Attendance Management</h1>
           <p className="text-lg text-muted-foreground mb-8">
@@ -33,7 +33,7 @@ export default function Landing() {
       </section>
 
       {/* Role Cards */}
-      <section className="py-8 px-4 bg-muted/50">
+      <section className="p-4 bg-muted/50">
         <div className="container mx-auto">
           <h2 className="text-2xl font-display font-bold text-center mb-12">Choose Your Role</h2>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -87,7 +87,7 @@ export default function Landing() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link to="/auth?role=department" className="block">
-                  <Button className="w-full" variant="outline">
+                  <Button className="w-full bg-success hover:bg-success/90" variant="outline">
                     Login
                   </Button>
                 </Link>
