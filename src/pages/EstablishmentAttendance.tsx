@@ -9,14 +9,11 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   Clock, 
   Loader2, 
-  CheckCircle, 
   ArrowLeft, 
   AlertCircle, 
   Building2, 
   LogOut,
   User,
-  Phone,
-  MapPin,
   LogIn,
   LogOut as LogOutIcon
 } from 'lucide-react';
@@ -37,6 +34,20 @@ interface AttendanceResult {
   };
 }
 
+// Error code to user-friendly message mapping
+const getErrorMessage = (code: string, defaultMessage: string): string => {
+  const messages: Record<string, string> = {
+    ESTABLISHMENT_NOT_APPROVED: 'This establishment is pending department approval. Attendance cannot be recorded.',
+    WORKER_NOT_FOUND: 'Worker not found. Please verify the Worker ID or Employee ID.',
+    WORKER_INACTIVE: 'This worker is not active. Please contact your department administrator.',
+    WORKER_DEPT_MISMATCH: 'This worker belongs to a different department.',
+    NO_ACTIVE_MAPPING: 'This worker is not mapped to any establishment.',
+    MAPPED_TO_DIFFERENT_ESTABLISHMENT: 'This worker is mapped to a different establishment.',
+    INVALID_INPUT: 'Please provide a valid Worker ID or Employee ID.',
+  };
+  return messages[code] || defaultMessage;
+};
+
 export default function EstablishmentAttendance() {
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
@@ -45,7 +56,7 @@ export default function EstablishmentAttendance() {
   const [result, setResult] = useState<AttendanceResult | null>(null);
   const { toast } = useToast();
 
-  // Fetch establishment details to check approval status
+  // Fetch establishment details to check approval status (for UI display only)
   const { data: establishment } = useQuery({
     queryKey: ['establishment', userContext?.establishmentId],
     queryFn: async () => {
@@ -74,12 +85,8 @@ export default function EstablishmentAttendance() {
       return;
     }
 
-    if (!establishment?.is_approved) {
-      toast({ 
-        title: 'Not Approved', 
-        description: 'This establishment is pending department approval. Attendance cannot be recorded.', 
-        variant: 'destructive' 
-      });
+    if (!userContext?.establishmentId) {
+      toast({ title: 'Error', description: 'Establishment context not available', variant: 'destructive' });
       return;
     }
 
@@ -87,144 +94,49 @@ export default function EstablishmentAttendance() {
     setResult(null);
 
     try {
-      const identifier = workerIdentifier.trim().toUpperCase();
+      // Call the backend Edge Function - ALL validations are done server-side
+      const { data, error } = await supabase.functions.invoke('submit-attendance', {
+        body: {
+          workerIdentifier: workerIdentifier.trim().toUpperCase(),
+          establishmentId: userContext.establishmentId,
+        },
+      });
 
-      // Find worker by worker_id or employee_id
-      const { data: workerData, error: workerError } = await supabase
-        .from('workers')
-        .select('id, worker_id, employee_id, first_name, last_name, phone, district, state, is_active, department_id')
-        .or(`worker_id.eq.${identifier},employee_id.eq.${identifier}`)
-        .maybeSingle();
-
-      if (workerError) {
-        setResult({ success: false, message: 'Error looking up worker', code: 'LOOKUP_ERROR' });
-        toast({ title: 'Error', description: 'Error looking up worker', variant: 'destructive' });
-        return;
-      }
-
-      if (!workerData) {
-        setResult({ success: false, message: 'Worker not found with the provided ID.', code: 'WORKER_NOT_FOUND' });
-        toast({ title: 'Not Found', description: 'Worker not found with the provided ID', variant: 'destructive' });
-        return;
-      }
-
-      // Check if worker is from the same department
-      if (workerData.department_id !== establishment.department_id) {
-        setResult({ 
+      if (error) {
+        console.error('Edge function error:', error);
+        const errorResult: AttendanceResult = { 
           success: false, 
-          message: 'This worker belongs to a different department.', 
-          code: 'DIFFERENT_DEPARTMENT' 
-        });
-        toast({ title: 'Access Denied', description: 'This worker belongs to a different department', variant: 'destructive' });
+          message: 'Failed to connect to attendance service. Please try again.',
+          code: 'NETWORK_ERROR'
+        };
+        setResult(errorResult);
+        toast({ title: 'Error', description: errorResult.message, variant: 'destructive' });
         return;
       }
 
-      if (!workerData.is_active) {
-        setResult({ success: false, message: 'Worker is not active', code: 'WORKER_INACTIVE' });
-        toast({ title: 'Inactive', description: 'Worker is not active', variant: 'destructive' });
-        return;
-      }
-
-      // Check if worker is mapped to THIS establishment
-      const { data: mappingData, error: mappingError } = await supabase
-        .from('worker_mappings')
-        .select('id, establishment_id')
-        .eq('worker_id', workerData.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (mappingError) {
-        setResult({ success: false, message: 'Error checking worker mapping', code: 'MAPPING_ERROR' });
-        toast({ title: 'Error', description: 'Error checking worker mapping', variant: 'destructive' });
-        return;
-      }
-
-      if (!mappingData) {
-        setResult({ 
+      // Handle response from Edge Function
+      if (!data.success) {
+        const errorMessage = getErrorMessage(data.code, data.message);
+        const errorResult: AttendanceResult = { 
           success: false, 
-          message: 'Worker is not mapped to any establishment.', 
-          code: 'NO_MAPPING' 
-        });
-        toast({ title: 'Not Mapped', description: 'Worker is not mapped to any establishment', variant: 'destructive' });
+          message: errorMessage,
+          code: data.code
+        };
+        setResult(errorResult);
+        toast({ title: 'Failed', description: errorMessage, variant: 'destructive' });
         return;
       }
 
-      if (mappingData.establishment_id !== userContext?.establishmentId) {
-        setResult({ 
-          success: false, 
-          message: 'Worker is mapped to a different establishment.', 
-          code: 'DIFFERENT_ESTABLISHMENT' 
-        });
-        toast({ title: 'Access Denied', description: 'Worker is mapped to a different establishment', variant: 'destructive' });
-        return;
-      }
-
-      // All validations passed - record attendance
-      const now = new Date();
-      const kolkataTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-      const todayStart = new Date(kolkataTime);
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date(kolkataTime);
-      todayEnd.setHours(23, 59, 59, 999);
-
-      // Check today's events for this worker
-      const { data: todayEvents, error: eventsError } = await supabase
-        .from('attendance_events')
-        .select('event_type, occurred_at')
-        .eq('worker_id', workerData.id)
-        .gte('occurred_at', todayStart.toISOString())
-        .lte('occurred_at', todayEnd.toISOString())
-        .order('occurred_at', { ascending: true });
-
-      if (eventsError) {
-        setResult({ success: false, message: 'Error checking attendance', code: 'EVENTS_ERROR' });
-        toast({ title: 'Error', description: 'Error checking attendance', variant: 'destructive' });
-        return;
-      }
-
-      // Determine event type based on existing events
-      const checkIns = todayEvents?.filter(e => e.event_type === 'CHECK_IN') || [];
-      const checkOuts = todayEvents?.filter(e => e.event_type === 'CHECK_OUT') || [];
-      
-      let eventType: 'CHECK_IN' | 'CHECK_OUT';
-      
-      if (checkIns.length === 0) {
-        eventType = 'CHECK_IN';
-      } else if (checkOuts.length < checkIns.length) {
-        eventType = 'CHECK_OUT';
-      } else {
-        eventType = 'CHECK_IN';
-      }
-
-      // Insert attendance event
-      const { data: eventData, error: insertError } = await supabase
-        .from('attendance_events')
-        .insert({
-          worker_id: workerData.id,
-          event_type: eventType,
-          occurred_at: now.toISOString(),
-          region: establishment.name || 'Unknown',
-          establishment_id: userContext?.establishmentId,
-          meta: { timezone: 'Asia/Kolkata' }
-        })
-        .select('id, event_type, occurred_at')
-        .single();
-
-      if (insertError) {
-        setResult({ success: false, message: 'Failed to record attendance', code: 'INSERT_ERROR' });
-        toast({ title: 'Error', description: 'Failed to record attendance', variant: 'destructive' });
-        return;
-      }
-
+      // Success
       const attendanceResult: AttendanceResult = {
         success: true,
-        message: `${eventType === 'CHECK_IN' ? 'Check-in' : 'Check-out'} recorded successfully`,
+        message: data.message,
         data: {
-          eventType: eventData.event_type as 'CHECK_IN' | 'CHECK_OUT',
-          workerName: `${workerData.first_name} ${workerData.last_name}`,
-          workerId: workerData.worker_id,
-          establishmentName: establishment.name,
-          occurredAt: eventData.occurred_at,
+          eventType: data.data.eventType,
+          workerName: data.data.workerName,
+          workerId: data.data.workerId,
+          establishmentName: data.data.establishmentName,
+          occurredAt: data.data.occurredAt,
         }
       };
 
@@ -245,7 +157,7 @@ export default function EstablishmentAttendance() {
     }
   };
 
-  // Show pending approval banner if not approved
+  // Show pending approval banner if not approved (UI hint only - backend enforces)
   const isApproved = establishment?.is_approved ?? false;
   const departmentName = (establishment?.departments as any)?.name || 'Unknown Department';
 
@@ -277,7 +189,7 @@ export default function EstablishmentAttendance() {
           </Link>
         </div>
 
-        {/* Pending Approval Banner */}
+        {/* Pending Approval Banner (UI hint - backend still enforces) */}
         {!isApproved && (
           <div className="mb-6 p-4 bg-warning/10 border border-warning/30 rounded-lg">
             <div className="flex items-center gap-2 text-warning">
@@ -316,16 +228,16 @@ export default function EstablishmentAttendance() {
                     placeholder="e.g., WKR00000001"
                     value={workerIdentifier}
                     onChange={(e) => setWorkerIdentifier(e.target.value.toUpperCase())}
-                    disabled={loading || !isApproved}
+                    disabled={loading}
                   />
                 </div>
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={loading || !isApproved}
+                  disabled={loading}
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  {!isApproved ? 'Pending Approval' : 'Submit Attendance'}
+                  Submit Attendance
                 </Button>
               </form>
 
