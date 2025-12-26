@@ -415,13 +415,6 @@ export default function Auth() {
               <div className="mt-6 text-center text-sm">
                 <p className="text-muted-foreground">
                   {(role === "establishment" || role === "department") && <span> Don't have an account? </span>}
-                  /*{" "}
-                  {role === "worker" && (
-                    <Link to="/register/worker" className="text-primary hover:underline">
-                      Register as Worker
-                    </Link>
-                  )}{" "}
-                  */
                   {role === "establishment" && (
                     <Link to="/register/establishment" className="text-primary hover:underline">
                       Register as Establishment
