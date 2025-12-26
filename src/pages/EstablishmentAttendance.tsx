@@ -37,17 +37,26 @@ interface AttendanceResult {
 }
 
 // Error code to user-friendly message mapping
-const getErrorMessage = (code: string, defaultMessage: string): string => {
+const getErrorMessage = (code: string | undefined, defaultMessage?: string): string => {
   const messages: Record<string, string> = {
-    ESTABLISHMENT_NOT_APPROVED: 'This establishment is pending department approval. Attendance cannot be recorded.',
-    WORKER_NOT_FOUND: 'Worker not found. Please verify the Worker ID or Employee ID.',
-    WORKER_INACTIVE: 'This worker is not active. Please contact your department administrator.',
-    WORKER_DEPT_MISMATCH: 'This worker belongs to a different department.',
-    NO_ACTIVE_MAPPING: 'This worker is not mapped to any establishment.',
-    MAPPED_TO_DIFFERENT_ESTABLISHMENT: 'This worker is mapped to a different establishment.',
+    NO_ACTIVE_MAPPING: 'Worker is not mapped to this establishment.',
+    ESTABLISHMENT_NOT_APPROVED: 'This establishment is inactive. Please activate it from Department.',
+    WORKER_DEPT_MISMATCH: 'Worker belongs to a different department.',
+    WORKER_INACTIVE: 'Worker is inactive.',
+    WORKER_NOT_FOUND: 'Worker ID not found. Please check and try again.',
+    INVALID_WORKER_ID: 'Worker ID not found. Please check and try again.',
     INVALID_INPUT: 'Please provide a valid Worker ID or Employee ID.',
+    MAPPED_TO_DIFFERENT_ESTABLISHMENT: 'This worker is mapped to a different establishment.',
+    ESTABLISHMENT_NOT_FOUND: 'Establishment not found.',
+    LOOKUP_ERROR: 'Unable to verify worker details. Please try again.',
+    INSERT_ERROR: 'Failed to record attendance. Please try again.',
+    INTERNAL_ERROR: 'Attendance failed. Please try again.',
+    NETWORK_ERROR: 'Unable to reach attendance service.',
   };
-  return messages[code] || defaultMessage;
+  if (code && messages[code]) {
+    return messages[code];
+  }
+  return defaultMessage || 'Attendance failed. Please try again.';
 };
 
 export default function EstablishmentAttendance() {
@@ -104,20 +113,22 @@ export default function EstablishmentAttendance() {
         },
       });
 
+      // Handle network/fetch errors (no response at all)
       if (error) {
         console.error('Edge function error:', error);
+        const errorMessage = getErrorMessage('NETWORK_ERROR');
         const errorResult: AttendanceResult = { 
           success: false, 
-          message: 'Failed to connect to attendance service. Please try again.',
+          message: errorMessage,
           code: 'NETWORK_ERROR'
         };
         setResult(errorResult);
-        toast({ title: 'Error', description: errorResult.message, variant: 'destructive' });
+        toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
         return;
       }
 
-      // Handle response from Edge Function
-      if (!data.success) {
+      // Handle error response from Edge Function (non-2xx with JSON body)
+      if (data && !data.success) {
         const errorMessage = getErrorMessage(data.code, data.message);
         const errorResult: AttendanceResult = { 
           success: false, 
@@ -125,7 +136,7 @@ export default function EstablishmentAttendance() {
           code: data.code
         };
         setResult(errorResult);
-        toast({ title: 'Failed', description: errorMessage, variant: 'destructive' });
+        toast({ title: 'Attendance Failed', description: errorMessage, variant: 'destructive' });
         return;
       }
 
@@ -147,13 +158,14 @@ export default function EstablishmentAttendance() {
       setWorkerIdentifier('');
     } catch (err) {
       console.error('Attendance submission error:', err);
+      const errorMessage = getErrorMessage('NETWORK_ERROR');
       const errorResult: AttendanceResult = { 
         success: false, 
-        message: 'Failed to submit attendance. Please try again.',
+        message: errorMessage,
         code: 'NETWORK_ERROR'
       };
       setResult(errorResult);
-      toast({ title: 'Error', description: errorResult.message, variant: 'destructive' });
+      toast({ title: 'Error', description: errorMessage, variant: 'destructive' });
     } finally {
       setLoading(false);
     }

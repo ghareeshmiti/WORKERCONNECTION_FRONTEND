@@ -48,7 +48,7 @@ import {
 } from "@/hooks/use-dashboard-data";
 import { useEstablishmentDashboardRealtime } from "@/hooks/use-realtime-subscriptions";
 import { useUnmapWorker } from "@/hooks/use-worker-mapping";
-import { MapWorkerDialog } from "@/components/MapWorkerDialog";
+
 import { AttendanceChart, AttendanceRateChart } from "@/components/AttendanceChart";
 import { DateRangePicker, DateRangePresets } from "@/components/DateRangePicker";
 import { DateRange } from "react-day-picker";
