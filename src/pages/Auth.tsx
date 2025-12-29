@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth-context";
+import { getDashboardPath } from "@/components/ProtectedRoute";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,9 +34,18 @@ export default function Auth() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { signIn } = useAuth();
+  const { signIn, userContext, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [redirecting, setRedirecting] = useState(false);
+
+  // Effect to redirect after successful login when userContext is loaded
+  useEffect(() => {
+    if (redirecting && userContext && !authLoading) {
+      const dashboardPath = getDashboardPath(userContext.role);
+      navigate(dashboardPath, { replace: true });
+    }
+  }, [redirecting, userContext, authLoading, navigate]);
 
   const getRoleTitle = () => {
     switch (role) {
@@ -104,13 +114,14 @@ export default function Auth() {
 
       if (error) {
         toast({ title: "Login Failed", description: error.message, variant: "destructive" });
+        setLoading(false);
       } else {
         toast({ title: "Success", description: "Login successful!" });
-        navigate("/thales-auth");
+        // Set redirecting flag - the useEffect will handle navigation once userContext is ready
+        setRedirecting(true);
       }
     } catch (err) {
       toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
-    } finally {
       setLoading(false);
     }
   };

@@ -17,7 +17,9 @@ import {
   LogIn,
   LogOut as LogOutIcon,
   Ban,
-  Landmark
+  Landmark,
+  Shield,
+  CheckCircle
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,12 +61,67 @@ const getErrorMessage = (code: string | undefined, defaultMessage?: string): str
   return defaultMessage || 'Attendance failed. Please try again.';
 };
 
+// THALES authentication modal component (inline for attendance)
+function ThalesAuthOverlay({ stage }: { stage: 'authenticating' | 'verified' }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-sidebar to-sidebar-accent">
+      <div className="bg-card p-12 rounded-xl shadow-2xl max-w-md w-full mx-4 animate-fade-in">
+        <div className="flex flex-col items-center gap-6">
+          {/* THALES Logo placeholder */}
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+            <Shield className="w-10 h-10 text-primary" />
+          </div>
+
+          <div className="text-center">
+            <h1 className="text-2xl font-display font-bold text-foreground mb-2">THALES Authentication</h1>
+            <p className="text-muted-foreground text-sm">Secure Identity Verification</p>
+          </div>
+
+          {/* Status */}
+          <div className="flex flex-col items-center gap-4 py-6">
+            {stage === 'authenticating' ? (
+              <>
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <div className="text-center">
+                  <p className="font-medium text-foreground">Verifying Identity...</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Please wait while we authenticate your credentials
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-12 h-12 text-success animate-fade-in" />
+                <div className="text-center">
+                  <p className="font-medium text-success">Authentication Successful</p>
+                  <p className="text-sm text-muted-foreground mt-1">Processing attendance...</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full bg-primary transition-all duration-2000 ease-out ${
+                stage === 'authenticating' ? 'w-1/2' : 'w-full'
+              }`}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EstablishmentAttendance() {
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
   const [workerIdentifier, setWorkerIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AttendanceResult | null>(null);
+  const [showThales, setShowThales] = useState(false);
+  const [thalesStage, setThalesStage] = useState<'authenticating' | 'verified'>('authenticating');
   const { toast } = useToast();
 
   // Fetch establishment details to check approval status (for UI display only)
@@ -88,28 +145,13 @@ export default function EstablishmentAttendance() {
     navigate('/');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!workerIdentifier.trim()) {
-      toast({ title: 'Error', description: 'Please enter Worker ID or Employee ID', variant: 'destructive' });
-      return;
-    }
-
-    if (!userContext?.establishmentId) {
-      toast({ title: 'Error', description: 'Establishment context not available', variant: 'destructive' });
-      return;
-    }
-
-    setLoading(true);
-    setResult(null);
-
+  // Helper to call edge function and handle response
+  const callAttendanceEdgeFunction = async () => {
     try {
-      // Call the backend Edge Function - ALL validations are done server-side
       const { data, error } = await supabase.functions.invoke('submit-attendance', {
         body: {
           workerIdentifier: workerIdentifier.trim().toUpperCase(),
-          establishmentId: userContext.establishmentId,
+          establishmentId: userContext?.establishmentId,
         },
       });
 
@@ -171,13 +213,50 @@ export default function EstablishmentAttendance() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation - do NOT show THALES if validation fails
+    if (!workerIdentifier.trim()) {
+      toast({ title: 'Error', description: 'Please enter Worker ID or Employee ID', variant: 'destructive' });
+      return;
+    }
+
+    if (!userContext?.establishmentId) {
+      toast({ title: 'Error', description: 'Establishment context not available', variant: 'destructive' });
+      return;
+    }
+
+    // Start loading and show THALES
+    setLoading(true);
+    setResult(null);
+    setShowThales(true);
+    setThalesStage('authenticating');
+
+    // THALES mock: show authenticating for 1500ms, then verified for 500ms, then call edge function
+    setTimeout(() => {
+      setThalesStage('verified');
+    }, 1500);
+
+    // After 2000ms total, hide THALES and call the edge function
+    setTimeout(() => {
+      setShowThales(false);
+      setThalesStage('authenticating'); // reset for next time
+      callAttendanceEdgeFunction();
+    }, 2000);
+  };
+
   // Check if establishment is active
   const isApproved = establishment?.is_approved ?? false;
   const isLoadingEstablishment = !establishment;
   const departmentName = (establishment?.departments as any)?.name || 'Unknown Department';
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      {/* THALES Authentication Overlay - shown only during attendance submission */}
+      {showThales && <ThalesAuthOverlay stage={thalesStage} />}
+      
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -326,5 +405,6 @@ export default function EstablishmentAttendance() {
         </div>
       </main>
     </div>
+    </>
   );
 }
