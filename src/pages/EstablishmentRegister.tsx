@@ -245,7 +245,7 @@ export default function EstablishmentRegister() {
       const fullAddress = `${formData.doorNo}, ${formData.street}, ${formData.village}, ${formData.mandal}, ${formData.district} - ${formData.pincode}`;
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-establishment`,
+        `${import.meta.env.VITE_API_URL}/api/register/establishment`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -319,8 +319,8 @@ export default function EstablishmentRegister() {
           {STEPS.map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${index < step ? 'bg-accent text-accent-foreground' :
-                  index === step ? 'bg-accent text-accent-foreground' :
-                    'bg-muted text-muted-foreground'
+                index === step ? 'bg-accent text-accent-foreground' :
+                  'bg-muted text-muted-foreground'
                 }`}>
                 {index < step ? <Check className="w-4 h-4" /> : index + 1}
               </div>
