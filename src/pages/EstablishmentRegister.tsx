@@ -119,7 +119,7 @@ export default function EstablishmentRegister() {
     estimatedCost: '', constructionArea: '', builtUpArea: '',
     basicEstimationCost: '', maleWorkers: '', femaleWorkers: '',
   });
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -131,7 +131,7 @@ export default function EstablishmentRegister() {
         .select('id, name, code')
         .eq('is_active', true)
         .order('name');
-      
+
       if (!error && data) {
         setDepartments(data);
         // If only one department, auto-select it
@@ -243,9 +243,9 @@ export default function EstablishmentRegister() {
     try {
       const code = generateCode(formData.name);
       const fullAddress = `${formData.doorNo}, ${formData.street}, ${formData.village}, ${formData.mandal}, ${formData.district} - ${formData.pincode}`;
-      
+
       const response = await fetch(
-        'https://aldtcudqvbhmngkstbrr.supabase.co/functions/v1/register-establishment',
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-establishment`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -267,8 +267,8 @@ export default function EstablishmentRegister() {
             constructionType: formData.natureOfWork,
             projectName: formData.village,
             contractorName: formData.contactPerson.trim(),
-            estimatedWorkers: formData.maleWorkers && formData.femaleWorkers 
-              ? parseInt(formData.maleWorkers || '0') + parseInt(formData.femaleWorkers || '0') 
+            estimatedWorkers: formData.maleWorkers && formData.femaleWorkers
+              ? parseInt(formData.maleWorkers || '0') + parseInt(formData.femaleWorkers || '0')
               : null,
             startDate: formData.commencementDate || null,
             expectedEndDate: formData.completionDate || null,
@@ -277,7 +277,7 @@ export default function EstablishmentRegister() {
       );
 
       const data = await response.json();
-      
+
       if (data.success) {
         toast({ title: 'Success!', description: 'Establishment registered. Please login.' });
         navigate('/auth?role=establishment');
@@ -318,11 +318,10 @@ export default function EstablishmentRegister() {
         <div className="flex items-center justify-center mb-8 flex-wrap gap-y-2">
           {STEPS.map((stepName, index) => (
             <div key={stepName} className="flex items-center">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                index < step ? 'bg-accent text-accent-foreground' :
-                index === step ? 'bg-accent text-accent-foreground' :
-                'bg-muted text-muted-foreground'
-              }`}>
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${index < step ? 'bg-accent text-accent-foreground' :
+                  index === step ? 'bg-accent text-accent-foreground' :
+                    'bg-muted text-muted-foreground'
+                }`}>
                 {index < step ? <Check className="w-4 h-4" /> : index + 1}
               </div>
               <span className={`ml-2 text-xs hidden lg:inline ${index === step ? 'font-medium' : 'text-muted-foreground'}`}>
@@ -352,60 +351,60 @@ export default function EstablishmentRegister() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Establishment Name *</Label>
-                  <Input 
-                    id="name" 
-                    value={formData.name} 
-                    onChange={e => updateField('name', e.target.value)} 
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={e => updateField('name', e.target.value)}
                     placeholder="Enter establishment name"
                   />
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="contactPerson">Owner / Manager / Contact Person Name *</Label>
-                  <Input 
-                    id="contactPerson" 
-                    value={formData.contactPerson} 
-                    onChange={e => updateField('contactPerson', e.target.value.replace(/[^a-zA-Z\s]/g, ''))} 
+                  <Input
+                    id="contactPerson"
+                    value={formData.contactPerson}
+                    onChange={e => updateField('contactPerson', e.target.value.replace(/[^a-zA-Z\s]/g, ''))}
                     placeholder="Enter contact person name"
                   />
                   {errors.contactPerson && <p className="text-sm text-destructive">{errors.contactPerson}</p>}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      value={formData.email} 
-                      onChange={e => updateField('email', e.target.value)} 
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={e => updateField('email', e.target.value)}
                       placeholder="example@domain.com"
                     />
                     {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Mobile Number *</Label>
-                    <Input 
-                      id="phone" 
-                      value={formData.phone} 
-                      onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))} 
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                       placeholder="9876543210"
                       maxLength={10}
                     />
                     {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="password">Password *</Label>
                     <div className="relative">
-                      <Input 
-                        id="password" 
-                        type={showPassword ? "text" : "password"} 
-                        value={formData.password} 
-                        onChange={e => updateField('password', e.target.value)} 
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={e => updateField('password', e.target.value)}
                         placeholder="Min 8 chars, 1 upper, 1 lower, 1 number, 1 special"
                       />
                       <Button
@@ -423,11 +422,11 @@ export default function EstablishmentRegister() {
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirm Password *</Label>
                     <div className="relative">
-                      <Input 
-                        id="confirmPassword" 
-                        type={showConfirmPassword ? "text" : "password"} 
-                        value={formData.confirmPassword} 
-                        onChange={e => updateField('confirmPassword', e.target.value)} 
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={formData.confirmPassword}
+                        onChange={e => updateField('confirmPassword', e.target.value)}
                         placeholder="Re-enter password"
                       />
                       <Button
@@ -452,10 +451,10 @@ export default function EstablishmentRegister() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="doorNo">Door Number *</Label>
-                    <Input 
-                      id="doorNo" 
-                      value={formData.doorNo} 
-                      onChange={e => updateField('doorNo', e.target.value)} 
+                    <Input
+                      id="doorNo"
+                      value={formData.doorNo}
+                      onChange={e => updateField('doorNo', e.target.value)}
                       placeholder="e.g., 1-2-34/A"
                       maxLength={20}
                     />
@@ -463,17 +462,17 @@ export default function EstablishmentRegister() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="street">Street *</Label>
-                    <Input 
-                      id="street" 
-                      value={formData.street} 
-                      onChange={e => updateField('street', e.target.value)} 
+                    <Input
+                      id="street"
+                      value={formData.street}
+                      onChange={e => updateField('street', e.target.value)}
                       placeholder="Street name"
                       maxLength={100}
                     />
                     {errors.street && <p className="text-sm text-destructive">{errors.street}</p>}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="district">District *</Label>
                   <Select value={formData.district} onValueChange={v => updateField('district', v)}>
@@ -488,12 +487,12 @@ export default function EstablishmentRegister() {
                   </Select>
                   {errors.district && <p className="text-sm text-destructive">{errors.district}</p>}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="mandal">Mandal / City *</Label>
-                    <Select 
-                      value={formData.mandal} 
+                    <Select
+                      value={formData.mandal}
                       onValueChange={v => updateField('mandal', v)}
                       disabled={!formData.district}
                     >
@@ -510,8 +509,8 @@ export default function EstablishmentRegister() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="village">Village / Area *</Label>
-                    <Select 
-                      value={formData.village} 
+                    <Select
+                      value={formData.village}
                       onValueChange={v => updateField('village', v)}
                       disabled={!formData.mandal}
                     >
@@ -527,13 +526,13 @@ export default function EstablishmentRegister() {
                     {errors.village && <p className="text-sm text-destructive">{errors.village}</p>}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="pincode">Pincode *</Label>
-                  <Input 
-                    id="pincode" 
-                    value={formData.pincode} 
-                    onChange={e => updateField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                  <Input
+                    id="pincode"
+                    value={formData.pincode}
+                    onChange={e => updateField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="6-digit pincode"
                     maxLength={6}
                   />
@@ -558,7 +557,7 @@ export default function EstablishmentRegister() {
                   </Select>
                   {errors.hasPlanApproval && <p className="text-sm text-destructive">{errors.hasPlanApproval}</p>}
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="category">Category of Establishment *</Label>
                   <Select value={formData.category} onValueChange={v => updateField('category', v)}>
@@ -573,7 +572,7 @@ export default function EstablishmentRegister() {
                   </Select>
                   {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="natureOfWork">Nature of Work *</Label>
                   <Select value={formData.natureOfWork} onValueChange={v => updateField('natureOfWork', v)}>
@@ -588,14 +587,14 @@ export default function EstablishmentRegister() {
                   </Select>
                   {errors.natureOfWork && <p className="text-sm text-destructive">{errors.natureOfWork}</p>}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="commencementDate">Date of Commencement *</Label>
-                    <Input 
-                      id="commencementDate" 
-                      type="date" 
-                      value={formData.commencementDate} 
+                    <Input
+                      id="commencementDate"
+                      type="date"
+                      value={formData.commencementDate}
                       onChange={e => updateField('commencementDate', e.target.value)}
                       max={new Date().toISOString().split('T')[0]}
                     />
@@ -603,17 +602,17 @@ export default function EstablishmentRegister() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="completionDate">Tentative Date of Completion</Label>
-                    <Input 
-                      id="completionDate" 
-                      type="date" 
-                      value={formData.completionDate} 
+                    <Input
+                      id="completionDate"
+                      type="date"
+                      value={formData.completionDate}
                       onChange={e => updateField('completionDate', e.target.value)}
                       min={formData.commencementDate || undefined}
                     />
                     {errors.completionDate && <p className="text-sm text-destructive">{errors.completionDate}</p>}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="departmentId">Department *</Label>
                   {loadingDepts ? (
@@ -646,77 +645,77 @@ export default function EstablishmentRegister() {
             {step === 3 && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">All fields in this section are optional.</p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="estimatedCost">Estimated Cost (₹)</Label>
-                    <Input 
-                      id="estimatedCost" 
+                    <Input
+                      id="estimatedCost"
                       type="number"
                       min="0"
-                      value={formData.estimatedCost} 
-                      onChange={e => updateField('estimatedCost', e.target.value)} 
+                      value={formData.estimatedCost}
+                      onChange={e => updateField('estimatedCost', e.target.value)}
                       placeholder="Enter amount"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="basicEstimationCost">Basic Estimation Cost (₹)</Label>
-                    <Input 
-                      id="basicEstimationCost" 
+                    <Input
+                      id="basicEstimationCost"
                       type="number"
                       min="0"
-                      value={formData.basicEstimationCost} 
-                      onChange={e => updateField('basicEstimationCost', e.target.value)} 
+                      value={formData.basicEstimationCost}
+                      onChange={e => updateField('basicEstimationCost', e.target.value)}
                       placeholder="Enter amount"
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="constructionArea">Construction Area (sq ft)</Label>
-                    <Input 
-                      id="constructionArea" 
+                    <Input
+                      id="constructionArea"
                       type="number"
                       min="0"
-                      value={formData.constructionArea} 
-                      onChange={e => updateField('constructionArea', e.target.value)} 
+                      value={formData.constructionArea}
+                      onChange={e => updateField('constructionArea', e.target.value)}
                       placeholder="Enter area"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="builtUpArea">Built-up Area (sq ft)</Label>
-                    <Input 
-                      id="builtUpArea" 
+                    <Input
+                      id="builtUpArea"
                       type="number"
                       min="0"
-                      value={formData.builtUpArea} 
-                      onChange={e => updateField('builtUpArea', e.target.value)} 
+                      value={formData.builtUpArea}
+                      onChange={e => updateField('builtUpArea', e.target.value)}
                       placeholder="Enter area"
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="maleWorkers">Male Workers</Label>
-                    <Input 
-                      id="maleWorkers" 
+                    <Input
+                      id="maleWorkers"
                       type="number"
                       min="0"
-                      value={formData.maleWorkers} 
-                      onChange={e => updateField('maleWorkers', e.target.value)} 
+                      value={formData.maleWorkers}
+                      onChange={e => updateField('maleWorkers', e.target.value)}
                       placeholder="Number of male workers"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="femaleWorkers">Female Workers</Label>
-                    <Input 
-                      id="femaleWorkers" 
+                    <Input
+                      id="femaleWorkers"
                       type="number"
                       min="0"
-                      value={formData.femaleWorkers} 
-                      onChange={e => updateField('femaleWorkers', e.target.value)} 
+                      value={formData.femaleWorkers}
+                      onChange={e => updateField('femaleWorkers', e.target.value)}
                       placeholder="Number of female workers"
                     />
                   </div>
@@ -736,7 +735,7 @@ export default function EstablishmentRegister() {
                     <div><strong>Mobile:</strong> {formData.phone}</div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <h3 className="font-semibold text-sm uppercase text-muted-foreground">Address Details</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm bg-muted/50 p-4 rounded-lg">
@@ -748,7 +747,7 @@ export default function EstablishmentRegister() {
                     <div><strong>Pincode:</strong> {formData.pincode}</div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <h3 className="font-semibold text-sm uppercase text-muted-foreground">Business Details</h3>
                   <div className="grid grid-cols-2 gap-3 text-sm bg-muted/50 p-4 rounded-lg">
@@ -760,7 +759,7 @@ export default function EstablishmentRegister() {
                     <div><strong>Completion:</strong> {formData.completionDate || 'Not specified'}</div>
                   </div>
                 </div>
-                
+
                 {(formData.estimatedCost || formData.maleWorkers || formData.femaleWorkers) && (
                   <div className="space-y-4">
                     <h3 className="font-semibold text-sm uppercase text-muted-foreground">Construction Details</h3>

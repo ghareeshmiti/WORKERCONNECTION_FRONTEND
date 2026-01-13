@@ -15,7 +15,7 @@ export default function RemoteAttendance() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!workerIdentifier.trim()) {
       toast({ title: 'Error', description: 'Please enter your Worker ID or Employee ID', variant: 'destructive' });
       return;
@@ -26,7 +26,7 @@ export default function RemoteAttendance() {
 
     try {
       const response = await fetch(
-        `https://aldtcudqvbhmngkstbrr.supabase.co/functions/v1/submit-attendance`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-attendance`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -38,15 +38,15 @@ export default function RemoteAttendance() {
       try {
         data = await response.json();
       } catch {
-        data = { 
-          success: false, 
+        data = {
+          success: false,
           message: 'Server returned an invalid response. Please try again.',
           code: 'PARSE_ERROR'
         };
       }
-      
+
       setResult(data);
-      
+
       if (data.success) {
         toast({ title: 'Success', description: data.message });
         setWorkerIdentifier('');
@@ -55,8 +55,8 @@ export default function RemoteAttendance() {
       }
     } catch (err) {
       console.error('Attendance submission error:', err);
-      const errorResult = { 
-        success: false, 
+      const errorResult = {
+        success: false,
         message: 'Failed to submit attendance. Please check your connection and try again.',
         code: 'NETWORK_ERROR'
       };
