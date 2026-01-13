@@ -60,6 +60,7 @@ const personalSchema = z.object({
 const addressSchema = z.object({
   district: z.string().min(1, 'District is required'),
   mandal: z.string().min(1, 'Mandal/City is required'),
+  village: z.string().optional(),
   pincode: z.string().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits').optional().or(z.literal('')),
   addressLine: z.string().max(200).optional(),
 });
@@ -73,6 +74,7 @@ type FormData = {
   phone: string;
   district: string;
   mandal: string;
+  village: string;
   pincode: string;
   addressLine: string;
   accessCardId: string;
@@ -101,15 +103,28 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
     phone: '',
     district: '',
     mandal: '',
+    village: '',
     pincode: '',
     addressLine: '',
     accessCardId: '',
   });
 
   const districts = useMemo(() => getDistricts(), []);
+
   const mandals = useMemo(() => {
-    return formData.district ? getMandalsForDistrict(formData.district) : [];
-  }, [formData.district]);
+    if (!formData.district) return [];
+    // Find district name if value is code, or use as is
+    const selectedAvg = districts.find((d: any) => d.code === formData.district || d.name === formData.district || d === formData.district);
+    const distName = selectedAvg ? (typeof selectedAvg === 'string' ? selectedAvg : selectedAvg.name) : formData.district;
+    return getMandalsForDistrict(distName);
+  }, [formData.district, districts]);
+
+  const villages = useMemo(() => {
+    if (!formData.district || !formData.mandal) return [];
+    const selectedAvg = districts.find((d: any) => d.code === formData.district || d.name === formData.district || d === formData.district);
+    const distName = selectedAvg ? (typeof selectedAvg === 'string' ? selectedAvg : selectedAvg.name) : formData.district;
+    return getVillagesForMandal(distName, formData.mandal);
+  }, [formData.district, formData.mandal, districts]);
 
   const updateField = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => {
@@ -118,6 +133,10 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       // Reset dependent fields
       if (field === 'district') {
         newData.mandal = '';
+        newData.village = '';
+      }
+      if (field === 'mandal') {
+        newData.village = '';
       }
 
       return newData;
@@ -173,6 +192,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       phone: '',
       district: '',
       mandal: '',
+      village: '',
       pincode: '',
       addressLine: '',
       accessCardId: '',
@@ -214,6 +234,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           state: 'Andhra Pradesh',
           district: formData.district,
           mandal: formData.mandal || null,
+          village: formData.village || null,
           pincode: formData.pincode || null,
           address_line: formData.addressLine || null,
           access_card_id: formData.accessCardId || null,
@@ -294,8 +315,8 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           {STEPS.map((s, i) => (
             <div key={i} className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${i < step ? 'bg-success text-success-foreground' :
-                  i === step ? 'bg-primary text-primary-foreground' :
-                    'bg-muted text-muted-foreground'
+                i === step ? 'bg-primary text-primary-foreground' :
+                  'bg-muted text-muted-foreground'
                 }`}>
                 {i < step || (i === 3 && step === 3) ? <Check className="w-4 h-4" /> : i + 1}
               </div>
@@ -409,7 +430,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {mandals.map((m: any) => (
-                      <SelectItem key={typeof m === 'string' ? m : m.code} value={typeof m === 'string' ? m : m.code}>
+                      <SelectItem key={typeof m === 'string' ? m : m.code} value={typeof m === 'string' ? m : m.name}>
                         {typeof m === 'string' ? m : m.name}
                       </SelectItem>
                     ))}
@@ -418,6 +439,25 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                 {errors.mandal && <p className="text-sm text-destructive">{errors.mandal}</p>}
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>Village (Optional)</Label>
+              <Select
+                value={formData.village}
+                onValueChange={(v) => updateField('village', v)}
+                disabled={!formData.mandal}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {villages.map((v: any) => (
+                    <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
 
             <div className="space-y-2">
               <Label>Pincode</Label>
