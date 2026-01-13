@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -114,12 +114,12 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
   const updateField = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
-      
+
       // Reset dependent fields
       if (field === 'district') {
         newData.mandal = '';
       }
-      
+
       return newData;
     });
     setErrors(prev => ({ ...prev, [field]: '' }));
@@ -132,7 +132,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
 
   const validateStep = () => {
     setErrors({});
-    
+
     try {
       if (step === 0) {
         personalSchema.parse(formData);
@@ -180,19 +180,21 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
     setErrors({});
   };
 
+  const [createdWorkerId, setCreatedWorkerId] = useState<string | null>(null);
+
   const handleSubmit = async () => {
     if (!validateStep()) return;
-    
+
     setLoading(true);
-    
+
     try {
       // Generate worker_id
       const { count: workerCount } = await supabase
         .from('workers')
         .select('*', { count: 'exact', head: true });
-      
+
       const workerId = `WKR${String((workerCount ?? 0) + 1).padStart(8, '0')}`;
-      
+
       // Extract last 4 digits of Aadhaar
       const aadhaarDigits = formData.aadhaar.replace(/-/g, '');
       const aadhaarLastFour = aadhaarDigits.length >= 4 ? aadhaarDigits.slice(-4) : null;
@@ -208,6 +210,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           date_of_birth: formData.dateOfBirth || null,
           phone: formData.phone,
           aadhaar_last_four: aadhaarLastFour,
+          aadhaar_number: formData.aadhaar || null, // Added based on schema update
           state: 'Andhra Pradesh',
           district: formData.district,
           mandal: formData.mandal || null,
@@ -224,17 +227,14 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
         throw new Error(`Worker creation failed: ${workerError.message}`);
       }
 
-      toast({
-        title: 'Worker Enrolled Successfully',
-        description: `Worker ID: ${workerId}`,
-      });
+      setCreatedWorkerId(workerId);
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['department-workers'] });
       queryClient.invalidateQueries({ queryKey: ['department-stats'] });
 
-      resetForm();
-      setOpen(false);
+      // Move to Card Setup step (Index 3)
+      setStep(3);
 
     } catch (error) {
       console.error('Enrollment error:', error);
@@ -248,7 +248,27 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
     }
   };
 
-  const STEPS = ['Personal Information', 'Address & Card', 'Review'];
+  const handleRegisterCard = async () => {
+    if (!createdWorkerId) return;
+    try {
+      const { registerUser } = await import("@/lib/api");
+      toast({ title: "Setup", description: "Follow browser prompts to register FIDO card..." });
+
+      const success = await registerUser(createdWorkerId);
+      if (success) {
+        toast({ title: "Success", description: "Card assigned successfully!" });
+        setOpen(false); // Close dialog on success
+        resetForm();
+      } else {
+        toast({ title: "Failed", description: "Card registration failed.", variant: 'destructive' });
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: e.message, variant: 'destructive' });
+    }
+  };
+
+  const STEPS = ['Personal Information', 'Address', 'Review & Create', 'Card Setup'];
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -265,7 +285,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
         <DialogHeader>
           <DialogTitle>Enroll New Worker</DialogTitle>
           <DialogDescription>
-            Add a worker to your department. They will be visible only to establishments under this department.
+            Add a worker to your department.
           </DialogDescription>
         </DialogHeader>
 
@@ -273,12 +293,11 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
         <div className="flex items-center justify-between mb-6">
           {STEPS.map((s, i) => (
             <div key={i} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                i < step ? 'bg-success text-success-foreground' :
-                i === step ? 'bg-primary text-primary-foreground' :
-                'bg-muted text-muted-foreground'
-              }`}>
-                {i < step ? <Check className="w-4 h-4" /> : i + 1}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${i < step ? 'bg-success text-success-foreground' :
+                  i === step ? 'bg-primary text-primary-foreground' :
+                    'bg-muted text-muted-foreground'
+                }`}>
+                {i < step || (i === 3 && step === 3) ? <Check className="w-4 h-4" /> : i + 1}
               </div>
               {i < STEPS.length - 1 && (
                 <div className={`w-8 md:w-16 h-1 mx-1 ${i < step ? 'bg-success' : 'bg-muted'}`} />
@@ -380,8 +399,8 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
               </div>
               <div className="space-y-2">
                 <Label>Mandal/City *</Label>
-                <Select 
-                  value={formData.mandal} 
+                <Select
+                  value={formData.mandal}
                   onValueChange={(v) => updateField('mandal', v)}
                   disabled={!formData.district}
                 >
@@ -418,16 +437,6 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                 value={formData.addressLine}
                 onChange={(e) => updateField('addressLine', e.target.value)}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Access Card ID</Label>
-              <Input
-                placeholder="Enter access card number"
-                value={formData.accessCardId}
-                onChange={(e) => updateField('accessCardId', e.target.value.toUpperCase())}
-              />
-              <p className="text-xs text-muted-foreground">Optional - can be assigned later</p>
             </div>
           </div>
         )}
@@ -476,22 +485,36 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                 )}
               </div>
             </div>
+          </div>
+        )}
 
-            {formData.accessCardId && (
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <h4 className="font-medium">Access Card</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="text-muted-foreground">Card ID:</span>
-                  <span>{formData.accessCardId}</span>
-                </div>
-              </div>
-            )}
+        {/* Step 3: Card Setup */}
+        {step === 3 && (
+          <div className="space-y-6 py-6 text-center">
+            <div className="mx-auto w-16 h-16 bg-success/20 rounded-full flex items-center justify-center">
+              <Check className="w-8 h-8 text-success" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">Worker Created Successfully!</h3>
+              <p className="text-muted-foreground">ID: {createdWorkerId}</p>
+            </div>
+
+            <div className="border border-dashed p-6 rounded-xl bg-card">
+              <p className="mb-4 text-sm">Tap below to assign a FIDO Smart Card now.</p>
+              <Button onClick={handleRegisterCard} size="lg" className="gap-2 w-full">
+                Register FIDO Card
+              </Button>
+            </div>
+
+            <Button variant="ghost" onClick={() => { setOpen(false); resetForm(); }}>
+              Skip / Finish Later
+            </Button>
           </div>
         )}
 
         {/* Navigation Buttons */}
         <div className="flex justify-between mt-6">
-          {step > 0 ? (
+          {step > 0 && step < 3 ? (
             <Button variant="outline" onClick={prevStep} disabled={loading}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
@@ -500,17 +523,17 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
             <div />
           )}
 
-          {step < STEPS.length - 1 ? (
+          {step < 2 ? (
             <Button onClick={nextStep}>
               Next
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-          ) : (
+          ) : step === 2 ? (
             <Button onClick={handleSubmit} disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Enroll Worker
+              Create & Proceed to Card
             </Button>
-          )}
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

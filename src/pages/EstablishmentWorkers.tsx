@@ -35,6 +35,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useEstablishmentWorkers } from "@/hooks/use-dashboard-data";
 import { useUnmapWorker } from "@/hooks/use-worker-mapping";
 import { MapWorkerDialog } from "@/components/MapWorkerDialog";
+import { AddWorkerDialog } from "@/components/AddWorkerDialog";
 import { WorkerDetailsDialog } from "@/components/WorkerDetailsDialog";
 import { WorkerAttendanceLogsDialog } from "@/components/WorkerAttendanceLogsDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,7 +161,10 @@ export default function EstablishmentWorkers() {
           <h1 className="text-2xl font-display font-bold">Manage Workers</h1>
           <div className="flex items-center gap-2">
             {userContext?.establishmentId && user && isApproved && (
-              <MapWorkerDialog establishmentId={userContext.establishmentId} mappedBy={user.id} />
+              <>
+                <AddWorkerDialog establishmentId={userContext.establishmentId} mappedBy={user.id} />
+                <MapWorkerDialog establishmentId={userContext.establishmentId} mappedBy={user.id} />
+              </>
             )}
           </div>
         </div>
