@@ -14,10 +14,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Loader2, ArrowLeft, ArrowRight, Check, UserPlus } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Check, UserPlus, Building2 } from 'lucide-react';
 import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/data/india-locations';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useDepartmentEstablishments } from '@/hooks/use-dashboard-data';
 
 // Format Aadhaar with hyphens
 const formatAadhaar = (value: string) => {
@@ -58,6 +59,7 @@ const personalSchema = z.object({
 });
 
 const addressSchema = z.object({
+  establishmentId: z.string().min(1, 'Establishment is required'),
   district: z.string().min(1, 'District is required'),
   mandal: z.string().min(1, 'Mandal/City is required'),
   village: z.string().optional(),
@@ -78,6 +80,7 @@ type FormData = {
   pincode: string;
   addressLine: string;
   accessCardId: string;
+  establishmentId: string;
 };
 
 const GENDERS = ['Male', 'Female', 'Other'];
@@ -93,6 +96,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: establishments } = useDepartmentEstablishments(departmentId);
 
   const [formData, setFormData] = useState<FormData>({
     aadhaar: '',
@@ -194,8 +198,10 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       mandal: '',
       village: '',
       pincode: '',
+      pincode: '',
       addressLine: '',
       accessCardId: '',
+      establishmentId: '',
     });
     setErrors({});
   };
@@ -249,6 +255,26 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       }
 
       setCreatedWorkerId(workerId);
+
+      // Link to Establishment
+      if (formData.establishmentId) {
+        const { error: mapError } = await supabase
+          .from('worker_mappings')
+          .insert({
+            worker_id: workerData.id,
+            establishment_id: formData.establishmentId
+          });
+
+        if (mapError) {
+          console.error('Mapping error:', mapError);
+          // Don't fail the whole process, but log it.
+          toast({
+            title: "Warning",
+            description: "Worker created but failed to link to establishment.",
+            variant: "destructive"
+          });
+        }
+      }
 
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['department-workers'] });
@@ -401,6 +427,27 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
         {/* Step 1: Address & Access Card */}
         {step === 1 && (
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Assign to Establishment *</Label>
+              <Select
+                value={formData.establishmentId}
+                onValueChange={(v) => updateField('establishmentId', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Establishment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {establishments?.map((est: any) => (
+                    <SelectItem key={est.id} value={est.id}>{est.name} ({est.code})</SelectItem>
+                  ))}
+                  {!establishments?.length && (
+                    <SelectItem value="none" disabled>No establishments found</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.establishmentId && <p className="text-sm text-destructive">{errors.establishmentId}</p>}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>District *</Label>
