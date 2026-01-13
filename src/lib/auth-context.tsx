@@ -24,25 +24,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserContext = async (user: User): Promise<UserContext | null> => {
     try {
       const userId = user.id;
-      // 1. Get Role from Metadata (Fallbacks for legacy)
-      let role = (user.user_metadata?.role || user.app_metadata?.role) as AppRole;
+      // 1. Get Role from Metadata
+      let rawRole = (user.user_metadata?.role || user.app_metadata?.role) as string;
+      let role: AppRole | undefined;
+
+      // Normalize Role
+      if (rawRole === 'department') role = 'DEPARTMENT_ADMIN';
+      else if (rawRole === 'establishment') role = 'ESTABLISHMENT_ADMIN';
+      else if (rawRole === 'worker') role = 'WORKER';
+      else if (rawRole === 'DEPARTMENT_ADMIN' || rawRole === 'ESTABLISHMENT_ADMIN' || rawRole === 'WORKER') role = rawRole as AppRole;
 
       if (!role) {
         // Fallback: Check if in departments table
         const { data: dept } = await supabase.from('departments').select('id').eq('id', userId).maybeSingle();
-        if (dept) role = 'department';
-        // Else maybe worker? (Assuming 'worker' role default if not found)
+        if (dept) role = 'DEPARTMENT_ADMIN';
       }
 
       if (!role) {
         console.warn('No role found for user');
-        return null; // Or handle as guest?
+        return null;
       }
 
       let profileData: any = {};
 
       // 2. Fetch Profile based on Role
-      if (role === 'department') {
+      if (role === 'DEPARTMENT_ADMIN') {
         const { data: deptData, error: deptError } = await supabase
           .from('departments')
           .select('*')
