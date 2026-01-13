@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -303,6 +303,56 @@ export default function EstablishmentDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* On-Site Kiosk Check-in */}
+        <Card className="mb-8 border-primary/20 shadow-md bg-accent/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              On-Site Worker Check-In (Kiosk Mode)
+            </CardTitle>
+            <CardDescription>Workers can enter their ID here to mark attendance at this establishment.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 items-end max-w-lg">
+              <div className="flex-1 space-y-2">
+                <label htmlFor="kiosk-worker-id" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Worker ID</label>
+                <Input
+                  id="kiosk-worker-id"
+                  placeholder="WKR..."
+                />
+              </div>
+              <Button onClick={async () => {
+                const input = document.getElementById('kiosk-worker-id') as HTMLInputElement;
+                const username = input.value;
+                if (!username) {
+                  toast.error("Please enter Worker ID");
+                  return;
+                }
+                try {
+                  const { authenticateUser } = await import("@/lib/api");
+                  toast.info("Requesting FIDO verification...");
+                  // @ts-ignore
+                  const result = await authenticateUser(username, null, establishment?.name || "Establishment Kiosk");
+
+                  if (result && result.verified) {
+                    toast.success(`Success! ${username} marked as ${result.status === 'in' ? 'PRESENT' : 'OUT'}`, {
+                      description: result.message
+                    });
+                    input.value = ''; // Clear input for next worker
+                  } else {
+                    toast.error("Verification failed");
+                  }
+                } catch (e: any) {
+                  console.error(e);
+                  toast.error("Check-in failed: " + e.message);
+                }
+              }}>
+                Verify & Check In
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Detailed Attendance Report */}
         <Card className="mb-8">
