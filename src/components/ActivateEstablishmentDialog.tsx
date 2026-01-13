@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -46,17 +46,21 @@ export function ActivateEstablishmentDialog({ establishment, onClose }: Activate
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('establishments')
-        .update({
-          is_approved: true,
-          card_reader_id: cardReaderId.trim().toUpperCase(),
-          approved_at: new Date().toISOString(),
-          approved_by: user?.id,
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/approve-establishment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          establishmentId: establishment.id,
+          cardReaderId: cardReaderId.trim().toUpperCase(),
+          approvedBy: user?.id,
         })
-        .eq('id', establishment.id);
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message);
+      }
 
       toast.success('Establishment Activated', {
         description: `${establishment.name} has been activated successfully.`,
@@ -65,12 +69,12 @@ export function ActivateEstablishmentDialog({ establishment, onClose }: Activate
       queryClient.invalidateQueries({ queryKey: ['department-establishments'] });
       queryClient.invalidateQueries({ queryKey: ['department-stats'] });
       queryClient.invalidateQueries({ queryKey: ['establishment'] });
-      
+
       setCardReaderId('');
       onClose();
     } catch (error) {
       console.error('Activation error:', error);
-      toast.error('Failed to activate establishment');
+      toast.error(error instanceof Error ? error.message : 'Failed to activate establishment');
     } finally {
       setLoading(false);
     }
@@ -101,21 +105,21 @@ export function ActivateEstablishmentDialog({ establishment, onClose }: Activate
                 <p className="text-sm text-muted-foreground">Code: {establishment?.code}</p>
               </div>
             </div>
-            
+
             {establishment?.department_name && (
               <div className="text-sm">
                 <span className="text-muted-foreground">Department:</span>{' '}
                 <span className="font-medium">{establishment.department_name}</span>
               </div>
             )}
-            
+
             {(establishment?.district || establishment?.state) && (
               <div className="text-sm flex items-center gap-1 text-muted-foreground">
                 <MapPin className="w-3 h-3" />
                 {[establishment?.district, establishment?.state].filter(Boolean).join(', ')}
               </div>
             )}
-            
+
             {establishment?.address_line && (
               <div className="text-sm text-muted-foreground">
                 {establishment.address_line}
@@ -143,8 +147,8 @@ export function ActivateEstablishmentDialog({ establishment, onClose }: Activate
           <Button variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleActivate} 
+          <Button
+            onClick={handleActivate}
             disabled={loading || !cardReaderId.trim()}
             className="bg-success hover:bg-success/90"
           >
