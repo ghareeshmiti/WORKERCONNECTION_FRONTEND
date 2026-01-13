@@ -21,40 +21,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userContext, setUserContext] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserContext = async (userId: string): Promise<UserContext | null> => {
+  const fetchUserContext = async (user: User): Promise<UserContext | null> => {
     try {
-      // Fetch user role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const userId = user.id;
+      // 1. Get Role from Metadata (Fallbacks for legacy)
+      let role = (user.user_metadata?.role || user.app_metadata?.role) as AppRole;
 
-      if (roleError || !roleData) {
-        console.error('Error fetching user role:', roleError);
-        return null;
+      if (!role) {
+        // Fallback: Check if in departments table
+        const { data: dept } = await supabase.from('departments').select('id').eq('id', userId).maybeSingle();
+        if (dept) role = 'department';
+        // Else maybe worker? (Assuming 'worker' role default if not found)
       }
 
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('auth_user_id', userId)
-        .maybeSingle();
+      if (!role) {
+        console.warn('No role found for user');
+        return null; // Or handle as guest?
+      }
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        return null;
+      let profileData: any = {};
+
+      // 2. Fetch Profile based on Role
+      if (role === 'department') {
+        const { data: deptData, error: deptError } = await supabase
+          .from('departments')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (deptError) {
+          console.error('Error fetching department profile:', deptError);
+          // Don't return null, maybe just missing profile data
+        }
+        if (deptData) {
+          profileData = {
+            department_id: deptData.id,
+            full_name: deptData.name, // Mapping Query Result to Context Expectation
+            // code: deptData.code 
+          };
+        }
+      } else {
+        // Assume Worker or existing Profile mechanism for others?
+        // Since 'profiles' table is missing, we skip it.
+        // If you have a 'workers' table mapped to auth, query that here.
+        // For now, let's leave generic profile empty to unblock Department Login.
       }
 
       const context: UserContext = {
         authUserId: userId,
-        role: roleData.role as AppRole,
+        role: role,
         workerId: profileData?.worker_id || undefined,
         establishmentId: profileData?.establishment_id || undefined,
         departmentId: profileData?.department_id || undefined,
         fullName: profileData?.full_name || undefined,
-        email: user?.email || undefined,
+        email: user.email || undefined,
       };
 
       return context;
@@ -66,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUserContext = async () => {
     if (user) {
-      const context = await fetchUserContext(user.id);
+      const context = await fetchUserContext(user);
       setUserContext(context);
     }
   };
@@ -77,11 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         // Defer fetching user context
         if (session?.user) {
           setTimeout(() => {
-            fetchUserContext(session.user.id).then(setUserContext);
+            fetchUserContext(session.user).then(setUserContext);
           }, 0);
         } else {
           setUserContext(null);
@@ -93,9 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
-        fetchUserContext(session.user.id).then((context) => {
+        fetchUserContext(session.user).then((context) => {
           setUserContext(context);
           setLoading(false);
         });
