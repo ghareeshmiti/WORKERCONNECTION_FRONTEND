@@ -66,7 +66,7 @@ export default function DepartmentRegister() {
     pincode: '',
     addressLine: '',
   });
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -141,7 +141,7 @@ export default function DepartmentRegister() {
     setLoading(true);
     try {
       const response = await fetch(
-        'https://aldtcudqvbhmngkstbrr.supabase.co/functions/v1/register-department',
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-department`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -161,7 +161,7 @@ export default function DepartmentRegister() {
       );
 
       const data = await response.json();
-      
+
       if (data.success) {
         toast({ title: 'Success!', description: 'Department registered successfully. Please login.' });
         navigate('/auth?role=department');
@@ -197,11 +197,10 @@ export default function DepartmentRegister() {
         <div className="flex items-center justify-center mb-8 flex-wrap gap-y-2">
           {STEPS.map((stepName, index) => (
             <div key={stepName} className="flex items-center">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                index < step ? 'bg-success text-success-foreground' :
-                index === step ? 'bg-success text-success-foreground' :
-                'bg-muted text-muted-foreground'
-              }`}>
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${index < step ? 'bg-success text-success-foreground' :
+                  index === step ? 'bg-success text-success-foreground' :
+                    'bg-muted text-muted-foreground'
+                }`}>
                 {index < step ? <Check className="w-4 h-4" /> : index + 1}
               </div>
               <span className={`ml-2 text-sm hidden md:inline ${index === step ? 'font-medium' : 'text-muted-foreground'}`}>
@@ -229,10 +228,10 @@ export default function DepartmentRegister() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Department Name *</Label>
-                  <Input 
-                    id="name" 
-                    value={formData.name} 
-                    onChange={e => updateField('name', e.target.value)} 
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={e => updateField('name', e.target.value)}
                     placeholder="Enter department name"
                   />
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
@@ -240,11 +239,11 @@ export default function DepartmentRegister() {
 
                 <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => updateField('email', e.target.value)} 
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={e => updateField('email', e.target.value)}
                     placeholder="example@domain.com"
                   />
                   {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
@@ -252,10 +251,10 @@ export default function DepartmentRegister() {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone *</Label>
-                  <Input 
-                    id="phone" 
-                    value={formData.phone} 
-                    onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))} 
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                     placeholder="9876543210"
                     maxLength={10}
                   />
@@ -266,11 +265,11 @@ export default function DepartmentRegister() {
                 <div className="space-y-2">
                   <Label htmlFor="password">Password *</Label>
                   <div className="relative">
-                    <Input 
-                      id="password" 
-                      type={showPassword ? 'text' : 'password'} 
-                      value={formData.password} 
-                      onChange={e => updateField('password', e.target.value)} 
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={e => updateField('password', e.target.value)}
                       placeholder="Enter password"
                     />
                     <Button
@@ -290,11 +289,11 @@ export default function DepartmentRegister() {
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password *</Label>
                   <div className="relative">
-                    <Input 
-                      id="confirmPassword" 
-                      type={showConfirmPassword ? 'text' : 'password'} 
-                      value={formData.confirmPassword} 
-                      onChange={e => updateField('confirmPassword', e.target.value)} 
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={formData.confirmPassword}
+                      onChange={e => updateField('confirmPassword', e.target.value)}
                       placeholder="Re-enter password"
                     />
                     <Button
@@ -332,8 +331,8 @@ export default function DepartmentRegister() {
 
                 <div className="space-y-2">
                   <Label htmlFor="mandal">Mandal / City *</Label>
-                  <Select 
-                    value={formData.mandal} 
+                  <Select
+                    value={formData.mandal}
                     onValueChange={v => updateField('mandal', v)}
                     disabled={!formData.district}
                   >
@@ -351,22 +350,22 @@ export default function DepartmentRegister() {
 
                 <div className="space-y-2">
                   <Label htmlFor="pincode">Pincode</Label>
-                  <Input 
-                    id="pincode" 
-                    maxLength={6} 
-                    placeholder="500001" 
-                    value={formData.pincode} 
-                    onChange={e => updateField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                  <Input
+                    id="pincode"
+                    maxLength={6}
+                    placeholder="500001"
+                    value={formData.pincode}
+                    onChange={e => updateField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
                   />
                   {errors.pincode && <p className="text-sm text-destructive">{errors.pincode}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="addressLine">Full Address</Label>
-                  <Textarea 
-                    id="addressLine" 
-                    value={formData.addressLine} 
-                    onChange={e => updateField('addressLine', e.target.value)} 
+                  <Textarea
+                    id="addressLine"
+                    value={formData.addressLine}
+                    onChange={e => updateField('addressLine', e.target.value)}
                     placeholder="Enter complete address"
                   />
                 </div>
