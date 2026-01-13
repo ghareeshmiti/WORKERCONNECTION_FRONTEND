@@ -141,7 +141,7 @@ export default function DepartmentRegister() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-department`,
+        `${import.meta.env.VITE_API_URL}/api/register/department`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -198,8 +198,8 @@ export default function DepartmentRegister() {
           {STEPS.map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${index < step ? 'bg-success text-success-foreground' :
-                  index === step ? 'bg-success text-success-foreground' :
-                    'bg-muted text-muted-foreground'
+                index === step ? 'bg-success text-success-foreground' :
+                  'bg-muted text-muted-foreground'
                 }`}>
                 {index < step ? <Check className="w-4 h-4" /> : index + 1}
               </div>
