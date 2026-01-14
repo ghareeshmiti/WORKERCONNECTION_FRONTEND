@@ -448,10 +448,10 @@ export function useUnmappedWorkers(departmentDistrict?: string) {
         .select('id, worker_id, first_name, last_name, phone, state, district, status, is_active')
         .order('created_at', { ascending: false });
 
-      // If we have a district filter, use it (only show pending workers from this district)
-      if (departmentDistrict) {
-        query = query.eq('district', departmentDistrict);
-      }
+      // If we have a district filter, use it - DISABLED for now to ensure all new registrations are seen
+      // if (departmentDistrict) {
+      //   query = query.eq('district', departmentDistrict);
+      // }
 
       const { data, error } = await query;
 
