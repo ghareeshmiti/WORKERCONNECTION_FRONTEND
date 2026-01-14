@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Clock,
+  Search,
   LogOut,
   Building2,
   Users,
@@ -14,7 +14,6 @@ import {
   TrendingUp,
   Loader2,
   Landmark,
-  Search,
   X,
   MapPin,
   Activity,
@@ -22,6 +21,9 @@ import {
   UserX,
   AlertCircle,
   FileText,
+  Clock, // Added
+  Eye, // Added
+  Check, // Added
 } from "lucide-react";
 import {
   generateCSV,
@@ -90,7 +92,11 @@ export default function DepartmentDashboard() {
   const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
   const [establishmentToActivate, setEstablishmentToActivate] = useState<any | null>(null);
   const [establishmentToDeactivate, setEstablishmentToDeactivate] = useState<any | null>(null);
+
+  // --- Worker Rejection Logic ---
   const [workerToApprove, setWorkerToApprove] = useState<any | null>(null);
+  const [workerToReject, setWorkerToReject] = useState<any | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Report filters
   const [reportEstablishmentFilter, setReportEstablishmentFilter] = useState<string | undefined>(undefined);
@@ -112,20 +118,122 @@ export default function DepartmentDashboard() {
     startDate,
     endDate,
   );
-  const { data: mappedWorkers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
-  const { data: unmappedWorkers } = useUnmappedWorkers(userContext?.district);
 
-  // Merge mapped and unmapped workers
+  // Worker Data for Admin Panel
+  const { data: mappedWorkersData, isLoading: mappedLoading } = useDepartmentWorkers(userContext?.departmentId);
+  const { data: unmappedWorkersData, isLoading: unmappedLoading } = useUnmappedWorkers(userContext?.district);
+
+  const mappedWorkers = useMemo(() => {
+    return mappedWorkersData?.map((m: any) => ({
+      ...m.workers,
+      establishment_name: m.establishments?.name,
+      establishment_id: m.establishment_id,
+      status: 'active'
+    })) || [];
+  }, [mappedWorkersData]);
+
+  const activeUnmappedWorkers = useMemo(() => unmappedWorkersData?.filter((w: any) => w.status === 'active') || [], [unmappedWorkersData]);
+  const pendingWorkers = useMemo(() => unmappedWorkersData?.filter((w: any) => w.status === 'new') || [], [unmappedWorkersData]);
+
   const workers = useMemo(() => {
-    const mapped = mappedWorkers || [];
-    const unmapped = (unmappedWorkers || []).map(w => ({
-      id: `temp-${w.id}`,
-      workers: w,
-      establishments: { name: 'Unassigned' },
-      establishment_id: null
-    }));
-    return [...unmapped, ...mapped];
-  }, [mappedWorkers, unmappedWorkers]);
+    return [...pendingWorkers, ...activeUnmappedWorkers, ...mappedWorkers];
+  }, [pendingWorkers, activeUnmappedWorkers, mappedWorkers]);
+
+  const workersLoading = mappedLoading || unmappedLoading;
+
+  const handleRejectWorker = async () => {
+    if (!workerToReject || !rejectReason) return;
+    try {
+      await import("@/lib/api").then(mod => mod.rejectWorker(workerToReject.worker_id, rejectReason));
+      toast.success("Worker rejected successfully");
+      setWorkerToReject(null);
+      setRejectReason("");
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const WorkerTable = ({ workers, showActions = false, viewOnly = false }: { workers: any[], showActions?: boolean, viewOnly?: boolean }) => (
+    <div className="rounded-md border bg-white">
+      <SortableTableHeader
+        columns={[
+          { key: "worker_id", label: "Worker ID", sortable: true },
+          { key: "first_name", label: "Name", sortable: true },
+          { key: "phone", label: "Phone" },
+          { key: "address_line", label: "Location" },
+          ...(!viewOnly ? [] : [{ key: "establishment_name", label: "Establishment" }]),
+          ...(showActions ? [{ key: "actions", label: "Actions", align: "right" }] : [])
+        ]}
+        data={workers}
+        onSort={(key: string, direction: any) => { }}
+        renderRow={(worker) => (
+          <tr key={worker.id} className="border-b transition-colors hover:bg-muted/50">
+            <td className="p-4 align-middle font-medium text-sm">{worker.worker_id}</td>
+            <td className="p-4 align-middle font-medium text-gray-900">{worker.first_name} {worker.last_name}</td>
+            <td className="p-4 align-middle text-sm text-gray-500">{worker.phone}</td>
+            <td className="p-4 align-middle text-sm text-gray-500">
+              {worker.village || worker.address_line ? (
+                <span className="flex items-center gap-1">
+                  {worker.village || worker.address_line}, {worker.state}
+                </span>
+              ) : <span className="text-muted-foreground italic">--</span>}
+            </td>
+            {viewOnly && (
+              <td className="p-4 align-middle">
+                {worker.establishment_name ? (
+                  <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                    <Building2 className="mr-1 h-3 w-3" /> {worker.establishment_name}
+                  </div>
+                ) : <span className="text-muted-foreground">-</span>}
+              </td>
+            )}
+            {showActions && (
+              <td className="p-4 align-middle text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 lg:px-3 text-gray-700 hover:bg-gray-50"
+                    onClick={() => setSelectedWorker({ id: worker.worker_id || worker.id, establishment: worker.establishment_name })}
+                  >
+                    <Eye className="mr-2 h-3.5 w-3.5 text-gray-500" /> View
+                  </Button>
+
+                  {!viewOnly && worker.status === 'new' && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2 lg:px-3 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                        onClick={() => setWorkerToApprove(worker)}
+                      >
+                        <Check className="mr-2 h-3.5 w-3.5" /> Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2 lg:px-3 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                        onClick={() => setWorkerToReject(worker)}
+                      >
+                        <X className="mr-2 h-3.5 w-3.5" /> Reject
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </td>
+            )}
+          </tr>
+        )}
+      />
+      {workers.length === 0 && (
+        <div className="p-12 text-center text-muted-foreground flex flex-col items-center">
+          <Search className="h-10 w-10 text-muted-foreground/20 mb-3" />
+          <p>No workers found in this category.</p>
+        </div>
+      )}
+    </div>
+  );
 
 
   // Report data
@@ -603,171 +711,47 @@ export default function DepartmentDashboard() {
           {/* Worker Admin Tab */}
           <TabsContent value="workers">
             <Card>
-              <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Worker Admin
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Users className="h-5 w-5" /> Worker Admin
                   </CardTitle>
-                  <div className="flex items-center gap-2">
-                    {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (filteredWorkers && filteredWorkers.length > 0) {
-                          generateCSV(
-                            filteredWorkers,
-                            workerWithEstablishmentColumns,
-                            `workers-${format(new Date(), "yyyy-MM-dd")}`,
-                          );
-                          toast.success("Export Complete", { description: "Worker list exported to CSV" });
-                        }
-                      }}
-                      disabled={!filteredWorkers || filteredWorkers.length === 0}
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                      Export
-                    </Button>
-                    <div className="relative w-full md:w-64">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search by ID, name, phone, or establishment..."
-                        value={workerSearch}
-                        onChange={(e) => setWorkerSearch(e.target.value)}
-                        className="pl-10 pr-10"
-                      />
-                      {workerSearch && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                          onClick={() => setWorkerSearch("")}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
+                  <p className="text-sm text-muted-foreground">Manage approvals, mapping, and worker status</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Dialog>
+                    <DialogTrigger asChild><Button><UserCheck className="mr-2 h-4 w-4" /> Enroll Worker</Button></DialogTrigger>
+                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                      {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
+                    </DialogContent>
+                  </Dialog>
+                  {/* 
+                     <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Export</Button>
+                     */}
+                  <div className="relative w-64">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search workers..." className="pl-8" value={workerSearch} onChange={(e) => setWorkerSearch(e.target.value)} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                {workersLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                  </div>
-                ) : filteredWorkers && filteredWorkers.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b">
-                          <SortableTableHeader
-                            label="Worker ID"
-                            sortKey="worker_id"
-                            currentSort={workerSort}
-                            onSort={handleWorkerSort}
-                            className="py-3"
-                          />
-                          <SortableTableHeader
-                            label="Name"
-                            sortKey="name"
-                            currentSort={workerSort}
-                            onSort={handleWorkerSort}
-                            className="py-3"
-                          />
-                          <SortableTableHeader
-                            label="Phone"
-                            sortKey="phone"
-                            currentSort={workerSort}
-                            onSort={handleWorkerSort}
-                            className="py-3"
-                          />
-                          <SortableTableHeader
-                            label="Location"
-                            sortKey="location"
-                            currentSort={workerSort}
-                            onSort={handleWorkerSort}
-                            className="py-3"
-                          />
-                          <SortableTableHeader
-                            label="Establishment"
-                            sortKey="establishment"
-                            currentSort={workerSort}
-                            onSort={handleWorkerSort}
-                            className="py-3"
-                          />
+                <Tabs defaultValue="pending" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3 max-w-md mb-4 bg-muted/50">
+                    <TabsTrigger value="pending">Pending ({pendingWorkers.length})</TabsTrigger>
+                    <TabsTrigger value="active">Active ({activeUnmappedWorkers.length})</TabsTrigger>
+                    <TabsTrigger value="mapped">Mapped ({mappedWorkers.length})</TabsTrigger>
+                  </TabsList>
 
-                          <SortableTableHeader
-                            label="Status"
-                            sortKey="status"
-                            currentSort={workerSort}
-                            onSort={handleWorkerSort}
-                            className="py-3"
-                          />
-                          <th className="text-right py-3 font-medium">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredWorkers.map((mapping: any) => (
-                          <tr
-                            key={mapping.id}
-                            className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
-                            onClick={() =>
-                              setSelectedWorker({
-                                id: mapping.workers?.id,
-                                establishment: mapping.establishments?.name,
-                              })
-                            }
-                          >
-                            <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
-                            <td className="py-3">
-                              {mapping.workers?.first_name} {mapping.workers?.last_name}
-                            </td>
-                            <td className="py-3">{mapping.workers?.phone || "--"}</td>
-                            <td className="py-3">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {mapping.workers?.district}, {mapping.workers?.state}
-                              </span>
-                            </td>
-                            <td className="py-3">
-                              <Badge variant="outline">{mapping.establishments?.name}</Badge>
-                            </td>
-                            <td className="py-3">
-                              <Badge variant={mapping.workers?.status === 'new' ? "outline" : (mapping.workers?.is_active ? "default" : "secondary")}>
-                                {mapping.workers?.status === 'new' ? "New Request" : (mapping.workers?.is_active ? "Active" : "Inactive")}
-                              </Badge>
-                            </td>
-                            <td className="py-3 text-right">
-                              {mapping.workers?.status === 'new' && (
-                                <Button
-                                  size="sm"
-                                  className="h-7 text-xs bg-success hover:bg-success/90"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setWorkerToApprove(mapping.workers);
-                                  }}
-                                >
-                                  Approve
-                                </Button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : workers && workers.length > 0 && filteredWorkers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Search className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No workers found matching "{workerSearch}"</p>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-                    <p className="text-muted-foreground">No workers mapped to any establishment yet.</p>
-                  </div>
-                )}
+                  <TabsContent value="pending" className="space-y-4">
+                    <WorkerTable workers={pendingWorkers} showActions={true} />
+                  </TabsContent>
+                  <TabsContent value="active" className="space-y-4">
+                    <WorkerTable workers={activeUnmappedWorkers} showActions={false} />
+                  </TabsContent>
+                  <TabsContent value="mapped" className="space-y-4">
+                    <WorkerTable workers={mappedWorkers} showActions={false} />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>

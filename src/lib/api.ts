@@ -131,3 +131,12 @@ export const approveWorker = async (workerId: string, departmentId: string, esta
     });
     return handleResponse(res);
 };
+
+export const rejectWorker = async (workerId: string, reason: string) => {
+    const res = await fetch(`${API_URL}/admin/workers/${workerId}/reject`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+    });
+    return handleResponse(res);
+};
