@@ -199,7 +199,7 @@ export default function DepartmentDashboard() {
                         variant="outline"
                         size="sm"
                         className="h-8 px-2 lg:px-3 text-gray-700 hover:bg-gray-50"
-                        onClick={() => setSelectedWorker({ id: worker.worker_id || worker.id, establishment: worker.establishment_name })}
+                        onClick={() => setSelectedWorker({ id: worker.id, establishment: worker.establishment_name })}
                       >
                         <Eye className="mr-2 h-3.5 w-3.5 text-gray-500" /> View
                       </Button>
