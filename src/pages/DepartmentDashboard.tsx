@@ -156,76 +156,81 @@ export default function DepartmentDashboard() {
 
   const WorkerTable = ({ workers, showActions = false, viewOnly = false }: { workers: any[], showActions?: boolean, viewOnly?: boolean }) => (
     <div className="rounded-md border bg-white">
-      <SortableTableHeader
-        columns={[
-          { key: "worker_id", label: "Worker ID", sortable: true },
-          { key: "first_name", label: "Name", sortable: true },
-          { key: "phone", label: "Phone" },
-          { key: "address_line", label: "Location" },
-          ...(!viewOnly ? [] : [{ key: "establishment_name", label: "Establishment" }]),
-          ...(showActions ? [{ key: "actions", label: "Actions", align: "right" }] : [])
-        ]}
-        data={workers}
-        onSort={(key: string, direction: any) => { }}
-        renderRow={(worker) => (
-          <tr key={worker.id} className="border-b transition-colors hover:bg-muted/50">
-            <td className="p-4 align-middle font-medium text-sm">{worker.worker_id}</td>
-            <td className="p-4 align-middle font-medium text-gray-900">{worker.first_name} {worker.last_name}</td>
-            <td className="p-4 align-middle text-sm text-gray-500">{worker.phone}</td>
-            <td className="p-4 align-middle text-sm text-gray-500">
-              {worker.village || worker.address_line ? (
-                <span className="flex items-center gap-1">
-                  {worker.village || worker.address_line}, {worker.state}
-                </span>
-              ) : <span className="text-muted-foreground italic">--</span>}
-            </td>
-            {viewOnly && (
-              <td className="p-4 align-middle">
-                {worker.establishment_name ? (
-                  <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
-                    <Building2 className="mr-1 h-3 w-3" /> {worker.establishment_name}
-                  </div>
-                ) : <span className="text-muted-foreground">-</span>}
-              </td>
-            )}
-            {showActions && (
-              <td className="p-4 align-middle text-right">
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-2 lg:px-3 text-gray-700 hover:bg-gray-50"
-                    onClick={() => setSelectedWorker({ id: worker.worker_id || worker.id, establishment: worker.establishment_name })}
-                  >
-                    <Eye className="mr-2 h-3.5 w-3.5 text-gray-500" /> View
-                  </Button>
-
-                  {!viewOnly && worker.status === 'new' && (
-                    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/20">
+              <SortableTableHeader label="Worker ID" sortKey="worker_id" currentSort={workerSort} onSort={handleWorkerSort} />
+              <SortableTableHeader label="Name" sortKey="first_name" currentSort={workerSort} onSort={handleWorkerSort} />
+              <SortableTableHeader label="Phone" sortKey="phone" currentSort={workerSort} onSort={handleWorkerSort} />
+              <SortableTableHeader label="Location" sortKey="address_line" currentSort={workerSort} onSort={handleWorkerSort} />
+              {viewOnly && (
+                <SortableTableHeader label="Establishment" sortKey="establishment" currentSort={workerSort} onSort={handleWorkerSort} />
+              )}
+              {showActions && <th className="py-2 px-4 text-right font-medium text-muted-foreground">Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {workers.map((worker) => (
+              <tr key={worker.id || worker.worker_id} className="border-b transition-colors hover:bg-muted/50">
+                <td className="p-4 align-middle font-medium text-sm">{worker.worker_id}</td>
+                <td className="p-4 align-middle font-medium text-gray-900">{worker.first_name} {worker.last_name}</td>
+                <td className="p-4 align-middle text-sm text-gray-500">{worker.phone}</td>
+                <td className="p-4 align-middle text-sm text-gray-500">
+                  {worker.village || worker.address_line ? (
+                    <span className="flex items-center gap-1">
+                      {worker.village || worker.address_line}, {worker.state}
+                    </span>
+                  ) : <span className="text-muted-foreground italic">--</span>}
+                </td>
+                {viewOnly && (
+                  <td className="p-4 align-middle">
+                    {worker.establishment_name ? (
+                      <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                        <Building2 className="mr-1 h-3 w-3" /> {worker.establishment_name}
+                      </div>
+                    ) : <span className="text-muted-foreground">-</span>}
+                  </td>
+                )}
+                {showActions && (
+                  <td className="p-4 align-middle text-right">
+                    <div className="flex items-center justify-end gap-2">
                       <Button
-                        size="sm"
                         variant="outline"
-                        className="h-8 px-2 lg:px-3 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
-                        onClick={() => setWorkerToApprove(worker)}
-                      >
-                        <Check className="mr-2 h-3.5 w-3.5" /> Approve
-                      </Button>
-                      <Button
                         size="sm"
-                        variant="outline"
-                        className="h-8 px-2 lg:px-3 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
-                        onClick={() => setWorkerToReject(worker)}
+                        className="h-8 px-2 lg:px-3 text-gray-700 hover:bg-gray-50"
+                        onClick={() => setSelectedWorker({ id: worker.worker_id || worker.id, establishment: worker.establishment_name })}
                       >
-                        <X className="mr-2 h-3.5 w-3.5" /> Reject
+                        <Eye className="mr-2 h-3.5 w-3.5 text-gray-500" /> View
                       </Button>
-                    </>
-                  )}
-                </div>
-              </td>
-            )}
-          </tr>
-        )}
-      />
+                      {!viewOnly && worker.status === 'new' && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2 lg:px-3 border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800"
+                            onClick={() => setWorkerToApprove(worker)}
+                          >
+                            <Check className="mr-2 h-3.5 w-3.5" /> Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2 lg:px-3 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800"
+                            onClick={() => setWorkerToReject(worker)}
+                          >
+                            <X className="mr-2 h-3.5 w-3.5" /> Reject
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {workers.length === 0 && (
         <div className="p-12 text-center text-muted-foreground flex flex-col items-center">
           <Search className="h-10 w-10 text-muted-foreground/20 mb-3" />
