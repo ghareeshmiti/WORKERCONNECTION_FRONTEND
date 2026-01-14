@@ -296,20 +296,24 @@ export default function DepartmentDashboard() {
   };
 
   // Get worker value for sorting
-  const getWorkerValue = (mapping: any, key: string) => {
+  const getWorkerValue = (worker: any, key: string) => {
+    // Handle both flat and nested (legacy?) just in case, but prefer flat
+    const w = worker.workers ? worker.workers : worker;
+    const estName = worker.establishments ? worker.establishments.name : worker.establishment_name;
+
     switch (key) {
       case "worker_id":
-        return mapping.workers?.worker_id;
+        return w.worker_id;
       case "name":
-        return `${mapping.workers?.first_name} ${mapping.workers?.last_name}`;
+        return `${w.first_name} ${w.last_name}`;
       case "phone":
-        return mapping.workers?.phone;
+        return w.phone;
       case "location":
-        return `${mapping.workers?.district}, ${mapping.workers?.state}`;
+        return `${w.district}, ${w.state}`;
       case "establishment":
-        return mapping.establishments?.name;
+        return estName;
       case "status":
-        return mapping.workers?.is_active;
+        return w.is_active;
       default:
         return null;
     }
@@ -322,28 +326,32 @@ export default function DepartmentDashboard() {
   }, [establishments, estSort]);
 
   // Filter and sort workers
-  const filteredWorkers = useMemo(() => {
-    if (!workers) return [];
-    let result = workers;
+  const filterAndSort = (data: any[]) => {
+    if (!data) return [];
+    let result = data;
 
     if (workerSearch.trim()) {
       const searchLower = workerSearch.toLowerCase();
-      result = workers.filter((mapping: any) => {
-        const w = mapping.workers;
-        const est = mapping.establishments;
+      result = data.filter((item: any) => {
+        const w = item.workers ? item.workers : item;
+        const estName = item.establishments ? item.establishments.name : item.establishment_name;
+
         return (
-          w?.worker_id?.toLowerCase().includes(searchLower) ||
-          w?.first_name?.toLowerCase().includes(searchLower) ||
-          w?.last_name?.toLowerCase().includes(searchLower) ||
-          `${w?.first_name} ${w?.last_name}`.toLowerCase().includes(searchLower) ||
-          est?.name?.toLowerCase().includes(searchLower) ||
-          (w?.phone && w.phone.includes(workerSearch))
+          w.worker_id?.toLowerCase().includes(searchLower) ||
+          w.first_name?.toLowerCase().includes(searchLower) ||
+          w.last_name?.toLowerCase().includes(searchLower) ||
+          `${w.first_name} ${w.last_name}`.toLowerCase().includes(searchLower) ||
+          estName?.toLowerCase().includes(searchLower) ||
+          (w.phone && w.phone.includes(workerSearch))
         );
       });
     }
-
     return sortData(result, workerSort, getWorkerValue);
-  }, [workers, workerSearch, workerSort]);
+  };
+
+  const mappedWorkersFiltered = useMemo(() => filterAndSort(mappedWorkers), [mappedWorkers, workerSearch, workerSort]);
+  const activeUnmappedWorkersFiltered = useMemo(() => filterAndSort(activeUnmappedWorkers), [activeUnmappedWorkers, workerSearch, workerSort]);
+  const pendingWorkersFiltered = useMemo(() => filterAndSort(pendingWorkers), [pendingWorkers, workerSearch, workerSort]);
 
   const handleLogout = async () => {
     await signOut();
@@ -451,34 +459,11 @@ export default function DepartmentDashboard() {
 
 
         {/* Tabbed Sections */}
-        <Tabs defaultValue="mapped" className="w-full">
+        <Tabs defaultValue="workers" className="w-full">
           <TabsList className="mb-4">
-            <TabsTrigger value="mapped" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Mapped Workers
-              {mappedWorkers && mappedWorkers.length > 0 && (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200 ml-1">
-                  {mappedWorkers.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="unmapped" className="flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Unmapped Workers
-              {activeUnmappedWorkers && activeUnmappedWorkers.length > 0 && (
-                <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-200 ml-1">
-                  {activeUnmappedWorkers.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Pending Approval
-              {pendingWorkers && pendingWorkers.length > 0 && (
-                <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ml-1">
-                  {pendingWorkers.length}
-                </Badge>
-              )}
+            <TabsTrigger value="workers" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Worker Admin
             </TabsTrigger>
             <TabsTrigger value="attendance" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -739,45 +724,68 @@ export default function DepartmentDashboard() {
           {/* Worker Admin Tab */}
           <TabsContent value="workers">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="space-y-1">
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Users className="h-5 w-5" /> Worker Admin
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">Manage approvals, mapping, and worker status</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                   <Dialog>
                     <DialogTrigger asChild><Button><UserCheck className="mr-2 h-4 w-4" /> Enroll Worker</Button></DialogTrigger>
                     <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                       {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
                     </DialogContent>
                   </Dialog>
-                  {/* 
-                     <Button variant="outline"><Download className="mr-2 h-4 w-4" /> Export</Button>
-                     */}
-                  <div className="relative w-64">
+                  {/* Export Button if needed */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (workers && workers.length > 0) {
+                        generateCSV(workers, workerWithEstablishmentColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
+                        toast.success("Export Complete");
+                      }
+                    }}
+                    className="hidden sm:flex"
+                  >
+                    <Download className="w-4 h-4 mr-2" /> Export
+                  </Button>
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Search workers..." className="pl-8" value={workerSearch} onChange={(e) => setWorkerSearch(e.target.value)} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="pending" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 max-w-md mb-4 bg-muted/50">
-                    <TabsTrigger value="pending">Pending ({pendingWorkers.length})</TabsTrigger>
-                    <TabsTrigger value="active">Active ({activeUnmappedWorkers.length})</TabsTrigger>
-                    <TabsTrigger value="mapped">Mapped ({mappedWorkers.length})</TabsTrigger>
+                <Tabs defaultValue="mapped" className="w-full">
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="mapped">
+                      <Building2 className="w-4 h-4 mr-2" />
+                      Mapped
+                      {mappedWorkers && mappedWorkers.length > 0 && <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">{mappedWorkers.length}</Badge>}
+                    </TabsTrigger>
+                    <TabsTrigger value="unmapped">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Unmapped
+                      {activeUnmappedWorkers && activeUnmappedWorkers.length > 0 && <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-700">{activeUnmappedWorkers.length}</Badge>}
+                    </TabsTrigger>
+                    <TabsTrigger value="pending">
+                      <Clock className="w-4 h-4 mr-2" />
+                      Pending
+                      {pendingWorkers && pendingWorkers.length > 0 && <Badge variant="secondary" className="ml-2 bg-yellow-100 text-yellow-700">{pendingWorkers.length}</Badge>}
+                    </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="pending" className="space-y-4">
-                    <WorkerTable workers={pendingWorkers} showActions={true} />
-                  </TabsContent>
-                  <TabsContent value="active" className="space-y-4">
-                    <WorkerTable workers={activeUnmappedWorkers} showActions={false} />
-                  </TabsContent>
                   <TabsContent value="mapped" className="space-y-4">
-                    <WorkerTable workers={mappedWorkers} showActions={false} />
+                    <WorkerTable workers={mappedWorkersFiltered} viewOnly={true} showActions={true} />
+                  </TabsContent>
+                  <TabsContent value="unmapped" className="space-y-4">
+                    <WorkerTable workers={activeUnmappedWorkersFiltered} viewOnly={false} showActions={true} />
+                  </TabsContent>
+                  <TabsContent value="pending" className="space-y-4">
+                    <WorkerTable workers={pendingWorkersFiltered} showActions={true} />
                   </TabsContent>
                 </Tabs>
               </CardContent>
