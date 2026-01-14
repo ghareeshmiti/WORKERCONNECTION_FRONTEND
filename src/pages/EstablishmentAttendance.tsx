@@ -297,15 +297,70 @@ export default function EstablishmentAttendance() {
 
   const [scanOpen, setScanOpen] = useState(false);
 
-  const handleTap = () => {
-    setScanOpen(true);
-    // Auto focus the input when dialog opens (handled by autoFocus prop)
+  // Direct FIDO Check-in (Usernameless / Resident Key)
+  const handleDirectTap = async () => {
+    if (!userContext?.establishmentId) {
+      toast({ title: 'Error', description: 'Establishment context not available', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    setResult(null);
+    setShowThales(true);
+    setThalesStage('authenticating');
+
+    try {
+      const { authenticateUser } = await import("@/lib/api");
+      // Pass empty username for Usernameless flow (triggers Windows Security "Choose a passkey")
+      const fidoResult = await authenticateUser('', 'toggle', establishmentName);
+
+      if (fidoResult && fidoResult.verified) {
+        setThalesStage('verified');
+        const successResult: AttendanceResult = {
+          success: true,
+          message: fidoResult.message || 'Verification Successful',
+          data: {
+            eventType: fidoResult.status === 'in' ? 'CHECK_IN' : 'CHECK_OUT',
+            workerName: fidoResult.username || 'Unknown Worker',
+            workerId: fidoResult.username || 'N/A', // Username is the ID
+            establishmentName: establishmentName,
+            occurredAt: new Date().toISOString()
+          }
+        };
+
+        setTimeout(() => {
+          setResult(successResult);
+          setShowThales(false);
+          setWorkerIdentifier('');
+          toast({ title: 'Success', description: successResult.message });
+        }, 1000);
+
+      } else {
+        throw new Error('Verification failed.');
+      }
+    } catch (err: any) {
+      console.error("FIDO Check-in Failed", err);
+      setShowThales(false);
+      setResult({
+        success: false,
+        message: err.message || "Authentication failed",
+        code: 'AUTH_FAILED'
+      });
+      // Don't show toast for cancellation, just UI feedback if needed
+      if (!err.message?.includes('The operation was aborted')) {
+        toast({ title: 'Error', description: err.message || "Authentication failed", variant: 'destructive' });
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onScanSubmit = async () => {
+  const handleManualEntry = () => {
+    setScanOpen(true);
+  };
+
+  const onManualSubmit = async () => {
     setScanOpen(false);
-    // Trigger the actual submission logic
-    // reusing handleSubmit logic but adapting for direct call
     if (!workerIdentifier.trim()) {
       toast({ title: 'Error', description: 'Please enter Worker ID', variant: 'destructive' });
       return;
@@ -347,7 +402,7 @@ export default function EstablishmentAttendance() {
         }, 1000);
 
       } else {
-        throw new Error('Verification failed or declined.');
+        throw new Error('Verification failed.');
       }
     } catch (err: any) {
       console.error("FIDO Check-in Failed", err);
@@ -409,19 +464,31 @@ export default function EstablishmentAttendance() {
             </div>
 
             {/* Tap Action Button */}
-            <Button
-              size="lg"
-              className="w-full h-20 text-xl font-bold rounded-2xl shadow-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-              onClick={handleTap}
-              disabled={!isActive || loading}
-            >
-              {loading ? (
-                <Loader2 className="w-8 h-8 animate-spin mr-3" />
-              ) : (
-                <Scan className="w-8 h-8 mr-3" />
-              )}
-              {loading ? "Processing..." : "Tap to Check In / Out"}
-            </Button>
+            {/* Tap Action Button */}
+            <div className="w-full space-y-4">
+              <Button
+                size="lg"
+                className="w-full h-20 text-xl font-bold rounded-2xl shadow-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                onClick={handleDirectTap}
+                disabled={!isActive || loading}
+              >
+                {loading ? (
+                  <Loader2 className="w-8 h-8 animate-spin mr-3" />
+                ) : (
+                  <Scan className="w-8 h-8 mr-3" />
+                )}
+                {loading ? "Processing..." : "Tap to Check In / Out"}
+              </Button>
+
+              <Button
+                variant="ghost"
+                className="w-full text-slate-400 hover:text-slate-600 font-medium"
+                onClick={handleManualEntry}
+                disabled={!isActive || loading}
+              >
+                Enter ID Manually
+              </Button>
+            </div>
 
             {!isActive && (
               <p className="text-red-500 text-sm font-medium">Establishment is Inactive</p>
@@ -453,8 +520,8 @@ export default function EstablishmentAttendance() {
                 <Scan className="w-8 h-8 text-blue-500" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-slate-800">Scan Worker ID</h3>
-                <p className="text-slate-500 text-sm">Use the reader or enter ID manually</p>
+                <h3 className="text-xl font-bold text-slate-800">Manual Check-in</h3>
+                <p className="text-slate-500 text-sm">Enter Worker ID to proceed</p>
               </div>
 
               <Input
@@ -463,14 +530,14 @@ export default function EstablishmentAttendance() {
                 value={workerIdentifier}
                 onChange={(e) => setWorkerIdentifier(e.target.value.toUpperCase())}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') onScanSubmit();
+                  if (e.key === 'Enter') onManualSubmit();
                 }}
                 className="text-center text-2xl font-mono tracking-wider h-14 border-2 border-slate-200 focus:border-blue-500 rounded-xl"
               />
 
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1 h-12" onClick={() => setScanOpen(false)}>Cancel</Button>
-                <Button className="flex-1 h-12 bg-blue-600 hover:bg-blue-700" onClick={onScanSubmit}>
+                <Button className="flex-1 h-12 bg-blue-600 hover:bg-blue-700" onClick={onManualSubmit}>
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </div>
