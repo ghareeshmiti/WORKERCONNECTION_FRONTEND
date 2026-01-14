@@ -68,7 +68,7 @@ export default function EstablishmentWorkers() {
       if (!userContext?.establishmentId) return null;
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, is_approved, department_id, departments(name)")
+        .select("id, name, is_active, department_id, departments(name)")
         .eq("id", userContext.establishmentId)
         .maybeSingle();
       if (error) throw error;
@@ -77,7 +77,7 @@ export default function EstablishmentWorkers() {
     enabled: !!userContext?.establishmentId,
   });
 
-  const isApproved = establishment?.is_approved ?? true;
+  const isActive = establishment?.is_active ?? true;
   const departmentName = (establishment?.departments as any)?.name || "Unknown Department";
 
   const unmapWorker = useUnmapWorker();
@@ -143,7 +143,7 @@ export default function EstablishmentWorkers() {
         </div>
 
         {/* Inactive Banner */}
-        {!isApproved && (
+        {!isActive && (
           <div className="mb-6 p-4 bg-warning/10 border border-warning/30 rounded-lg">
             <div className="flex items-center gap-2 text-warning">
               <AlertCircle className="w-5 h-5" />
@@ -160,7 +160,7 @@ export default function EstablishmentWorkers() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-display font-bold">Manage Workers</h1>
           <div className="flex items-center gap-2">
-            {userContext?.establishmentId && user && isApproved && (
+            {userContext?.establishmentId && user && isActive && (
               <>
                 <AddWorkerDialog establishmentId={userContext.establishmentId} mappedBy={user.id} />
                 <MapWorkerDialog establishmentId={userContext.establishmentId} mappedBy={user.id} />
