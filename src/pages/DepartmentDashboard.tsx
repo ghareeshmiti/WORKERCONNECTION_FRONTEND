@@ -180,9 +180,10 @@ export default function DepartmentDashboard() {
                 <td className="p-4 align-middle font-medium text-gray-900">{worker.first_name} {worker.last_name}</td>
                 <td className="p-4 align-middle text-sm text-gray-500">{worker.phone}</td>
                 <td className="p-4 align-middle text-sm text-gray-500">
-                  {worker.village || worker.address_line ? (
-                    <span className="flex items-center gap-1">
-                      {worker.village || worker.address_line}, {worker.state}
+                  {worker.district || worker.mandal || worker.village ? (
+                    <span className="flex flex-col">
+                      <span className="font-medium text-gray-700">{worker.district}</span>
+                      <span className="text-xs">{worker.mandal || worker.village}</span>
                     </span>
                   ) : <span className="text-muted-foreground italic">--</span>}
                 </td>

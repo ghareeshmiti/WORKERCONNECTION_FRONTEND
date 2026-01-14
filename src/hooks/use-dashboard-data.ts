@@ -445,7 +445,7 @@ export function useUnmappedWorkers(departmentDistrict?: string) {
 
       let query = supabase
         .from('workers')
-        .select('id, worker_id, first_name, last_name, phone, state, district, status, is_active')
+        .select('id, worker_id, first_name, last_name, phone, state, district, mandal, village, address_line, status, is_active')
         .order('created_at', { ascending: false });
 
       // If we have a district filter, use it - DISABLED for now to ensure all new registrations are seen
