@@ -311,79 +311,15 @@ export default function DepartmentDashboard() {
           </Card>
         </div>
 
-        {/* Detailed Attendance Report */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Detailed Attendance Report
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <AttendanceReportFilters
-                dateRange={reportDateRange}
-                onDateRangeChange={setReportDateRange}
-                establishments={establishmentsList || []}
-                selectedEstablishment={reportEstablishmentFilter}
-                onEstablishmentChange={setReportEstablishmentFilter}
-                workers={workersList || []}
-                selectedWorker={reportWorkerFilter}
-                onWorkerChange={setReportWorkerFilter}
-                onExport={() => {
-                  if (reportData && reportData.length > 0) {
-                    const csvContent = [
-                      [
-                        "Date",
-                        "Worker ID",
-                        "Worker Name",
-                        "Establishment",
-                        "Department",
-                        "Check-in",
-                        "Check-out",
-                        "Hours",
-                        "Status",
-                      ].join(","),
-                      ...reportData.map((row) =>
-                        [
-                          row.date,
-                          row.workerId,
-                          `"${row.workerName}"`,
-                          `"${row.establishmentName}"`,
-                          `"${row.departmentName}"`,
-                          row.checkIn ? format(new Date(row.checkIn), "HH:mm") : "",
-                          row.checkOut ? format(new Date(row.checkOut), "HH:mm") : "",
-                          row.hoursWorked?.toFixed(1) || "",
-                          row.status,
-                        ].join(","),
-                      ),
-                    ].join("\n");
 
-                    const blob = new Blob([csvContent], { type: "text/csv" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `attendance-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    toast.success("Export Complete", { description: "Attendance report exported to CSV" });
-                  }
-                }}
-              />
-              {reportLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              ) : (
-                <AttendanceReportTable data={reportData || []} showEstablishment showDepartment={false} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Tabbed Sections */}
-        <Tabs defaultValue="establishments" className="w-full">
+        <Tabs defaultValue="attendance" className="w-full">
           <TabsList className="mb-4">
+            <TabsTrigger value="attendance" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Detailed Attendance
+            </TabsTrigger>
             <TabsTrigger value="establishments" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               Establishments Overview
@@ -393,6 +329,78 @@ export default function DepartmentDashboard() {
               Worker Admin
             </TabsTrigger>
           </TabsList>
+
+          {/* Detailed Attendance Tab */}
+          <TabsContent value="attendance">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Detailed Attendance Report
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <AttendanceReportFilters
+                    dateRange={reportDateRange}
+                    onDateRangeChange={setReportDateRange}
+                    establishments={establishmentsList || []}
+                    selectedEstablishment={reportEstablishmentFilter}
+                    onEstablishmentChange={setReportEstablishmentFilter}
+                    workers={workersList || []}
+                    selectedWorker={reportWorkerFilter}
+                    onWorkerChange={setReportWorkerFilter}
+                    onExport={() => {
+                      if (reportData && reportData.length > 0) {
+                        const csvContent = [
+                          [
+                            "Date",
+                            "Worker ID",
+                            "Worker Name",
+                            "Establishment",
+                            "Department",
+                            "Check-in",
+                            "Check-out",
+                            "Hours",
+                            "Status",
+                          ].join(","),
+                          ...reportData.map((row) =>
+                            [
+                              row.date,
+                              row.workerId,
+                              `"${row.workerName}"`,
+                              `"${row.establishmentName}"`,
+                              `"${row.departmentName}"`,
+                              row.checkIn ? format(new Date(row.checkIn), "HH:mm") : "",
+                              row.checkOut ? format(new Date(row.checkOut), "HH:mm") : "",
+                              row.hoursWorked?.toFixed(1) || "",
+                              row.status,
+                            ].join(","),
+                          ),
+                        ].join("\n");
+
+                        const blob = new Blob([csvContent], { type: "text/csv" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `attendance-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        toast.success("Export Complete", { description: "Attendance report exported to CSV" });
+                      }
+                    }}
+                  />
+                  {reportLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <AttendanceReportTable data={reportData || []} showEstablishment showDepartment={false} />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Establishments Tab */}
           <TabsContent value="establishments">
