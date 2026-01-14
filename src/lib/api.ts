@@ -122,3 +122,12 @@ export const getExportData = async () => {
     const res = await fetch(`${API_URL}/admin/export`);
     return handleResponse(res);
 };
+
+export const approveWorker = async (workerId: string, departmentId: string, establishmentId?: string) => {
+    const res = await fetch(`${API_URL}/admin/workers/${workerId}/approve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ departmentId, establishmentId }),
+    });
+    return handleResponse(res);
+};

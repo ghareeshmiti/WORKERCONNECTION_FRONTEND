@@ -12,6 +12,7 @@ export interface UserContext {
   departmentId?: string;
   fullName?: string;
   email?: string;
+  district?: string;
 }
 
 export interface Department {

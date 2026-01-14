@@ -78,6 +78,8 @@ type FormData = {
   pincode: string;
   addressLine: string;
   accessCardId: string;
+  eshramId: string;
+  bocwId: string;
 };
 
 const GENDERS = ['Male', 'Female', 'Other'];
@@ -107,6 +109,8 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
     pincode: '',
     addressLine: '',
     accessCardId: '',
+    eshramId: '',
+    bocwId: '',
   });
 
   const districts = useMemo(() => getDistricts(), []);
@@ -196,6 +200,8 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       pincode: '',
       addressLine: '',
       accessCardId: '',
+      eshramId: '',
+      bocwId: '',
     });
     setErrors({});
   };
@@ -230,7 +236,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           date_of_birth: formData.dateOfBirth || null,
           phone: formData.phone,
           aadhaar_last_four: aadhaarLastFour,
-          aadhaar_number: formData.aadhaar || null, // Added based on schema update
+          aadhaar_number: formData.aadhaar || null,
           state: 'Andhra Pradesh',
           district: formData.district,
           mandal: formData.mandal || null,
@@ -239,7 +245,10 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           address_line: formData.addressLine || null,
           access_card_id: formData.accessCardId || null,
           department_id: departmentId,
+          eshram_id: formData.eshramId || null,
+          bocw_id: formData.bocwId || null,
           is_active: true,
+          status: 'active', // Auto-approve for Admin enrollment
         })
         .select('id, worker_id')
         .single();
@@ -342,6 +351,25 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label>eShram ID</Label>
+                <Input
+                  value={formData.eshramId}
+                  onChange={(e) => updateField('eshramId', e.target.value)}
+                  placeholder="12-digit eShram ID"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>BOCW ID</Label>
+                <Input
+                  value={formData.bocwId}
+                  onChange={(e) => updateField('bocwId', e.target.value)}
+                  placeholder="BOCW Registration ID"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label>First Name *</Label>
                 <Input
                   value={formData.firstName}
@@ -375,11 +403,13 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                 {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
               </div>
               <div className="space-y-2">
-                <Label>Date of Birth *</Label>
+                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
                 <Input
+                  id="dateOfBirth"
                   type="date"
                   value={formData.dateOfBirth}
                   onChange={(e) => updateField('dateOfBirth', e.target.value)}
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
                 />
                 {errors.dateOfBirth && <p className="text-sm text-destructive">{errors.dateOfBirth}</p>}
               </div>

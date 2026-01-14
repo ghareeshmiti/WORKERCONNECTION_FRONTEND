@@ -18,16 +18,17 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
   const [search, setSearch] = useState('');
   const [selectedWorkers, setSelectedWorkers] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
-  
+
   const { data: workers, isLoading } = useUnmappedWorkers();
   const mapWorker = useMapWorker();
   const bulkMapWorkers = useBulkMapWorkers();
 
-  const filteredWorkers = workers?.filter(w => 
-    w.worker_id.toLowerCase().includes(search.toLowerCase()) ||
-    w.first_name.toLowerCase().includes(search.toLowerCase()) ||
-    w.last_name.toLowerCase().includes(search.toLowerCase()) ||
-    (w.phone && w.phone.includes(search))
+  const filteredWorkers = workers?.filter(w =>
+    (w.is_active === true && w.status !== 'new') && // Only active workers can be mapped
+    (w.worker_id.toLowerCase().includes(search.toLowerCase()) ||
+      w.first_name.toLowerCase().includes(search.toLowerCase()) ||
+      w.last_name.toLowerCase().includes(search.toLowerCase()) ||
+      (w.phone && w.phone.includes(search)))
   ) || [];
 
   const handleMap = async (workerId: string) => {
@@ -42,13 +43,13 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
 
   const handleBulkMap = async () => {
     if (selectedWorkers.size === 0) return;
-    
+
     await bulkMapWorkers.mutateAsync({
       workerIds: Array.from(selectedWorkers),
       establishmentId,
       mappedBy,
     });
-    
+
     setOpen(false);
     setSearch('');
     setSelectedWorkers(new Set());
@@ -94,12 +95,12 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
         <DialogHeader>
           <DialogTitle>Map Worker to Establishment</DialogTitle>
           <DialogDescription>
-            {bulkMode 
-              ? `Select multiple workers to add (${selectedWorkers.size} selected)` 
+            {bulkMode
+              ? `Select multiple workers to add (${selectedWorkers.size} selected)`
               : 'Search and select an unmapped worker to add to your establishment'}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="flex items-center gap-2 mb-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -163,9 +164,8 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
               {filteredWorkers.map((worker) => (
                 <div
                   key={worker.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors ${
-                    bulkMode ? 'cursor-pointer' : ''
-                  } ${selectedWorkers.has(worker.id) ? 'border-primary bg-primary/5' : ''}`}
+                  className={`flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors ${bulkMode ? 'cursor-pointer' : ''
+                    } ${selectedWorkers.has(worker.id) ? 'border-primary bg-primary/5' : ''}`}
                   onClick={bulkMode ? () => toggleWorkerSelection(worker.id) : undefined}
                 >
                   {bulkMode && (

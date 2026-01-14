@@ -32,10 +32,19 @@ import {
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   useDepartmentEstablishments,
   useDepartmentStats,
   useDepartmentAttendanceTrendByRange,
   useDepartmentWorkers,
+  useUnmappedWorkers,
 } from "@/hooks/use-dashboard-data";
 import { useDepartmentDashboardRealtime } from "@/hooks/use-realtime-subscriptions";
 import { AttendanceChart, AttendanceRateChart } from "@/components/AttendanceChart";
@@ -81,6 +90,7 @@ export default function DepartmentDashboard() {
   const [selectedEstablishment, setSelectedEstablishment] = useState<any | null>(null);
   const [establishmentToActivate, setEstablishmentToActivate] = useState<any | null>(null);
   const [establishmentToDeactivate, setEstablishmentToDeactivate] = useState<any | null>(null);
+  const [workerToApprove, setWorkerToApprove] = useState<any | null>(null);
 
   // Report filters
   const [reportEstablishmentFilter, setReportEstablishmentFilter] = useState<string | undefined>(undefined);
@@ -102,7 +112,21 @@ export default function DepartmentDashboard() {
     startDate,
     endDate,
   );
-  const { data: workers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
+  const { data: mappedWorkers, isLoading: workersLoading } = useDepartmentWorkers(userContext?.departmentId);
+  const { data: unmappedWorkers } = useUnmappedWorkers(userContext?.district);
+
+  // Merge mapped and unmapped workers
+  const workers = useMemo(() => {
+    const mapped = mappedWorkers || [];
+    const unmapped = (unmappedWorkers || []).map(w => ({
+      id: `temp-${w.id}`,
+      workers: w,
+      establishments: { name: 'Unassigned' },
+      establishment_id: null
+    }));
+    return [...unmapped, ...mapped];
+  }, [mappedWorkers, unmappedWorkers]);
+
 
   // Report data
   const { data: reportData, isLoading: reportLoading } = useDepartmentAttendanceReport(userContext?.departmentId, {
@@ -672,6 +696,7 @@ export default function DepartmentDashboard() {
                             onSort={handleWorkerSort}
                             className="py-3"
                           />
+
                           <SortableTableHeader
                             label="Status"
                             sortKey="status"
@@ -679,6 +704,7 @@ export default function DepartmentDashboard() {
                             onSort={handleWorkerSort}
                             className="py-3"
                           />
+                          <th className="text-right py-3 font-medium">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -708,9 +734,23 @@ export default function DepartmentDashboard() {
                               <Badge variant="outline">{mapping.establishments?.name}</Badge>
                             </td>
                             <td className="py-3">
-                              <Badge variant={mapping.workers?.is_active ? "default" : "secondary"}>
-                                {mapping.workers?.is_active ? "Active" : "Inactive"}
+                              <Badge variant={mapping.workers?.status === 'new' ? "outline" : (mapping.workers?.is_active ? "default" : "secondary")}>
+                                {mapping.workers?.status === 'new' ? "New Request" : (mapping.workers?.is_active ? "Active" : "Inactive")}
                               </Badge>
+                            </td>
+                            <td className="py-3 text-right">
+                              {mapping.workers?.status === 'new' && (
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs bg-success hover:bg-success/90"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setWorkerToApprove(mapping.workers);
+                                  }}
+                                >
+                                  Approve
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -758,6 +798,38 @@ export default function DepartmentDashboard() {
         establishment={establishmentToDeactivate}
         onClose={() => setEstablishmentToDeactivate(null)}
       />
+
+      {/* Approve Worker Dialog */}
+      <Dialog open={!!workerToApprove} onOpenChange={(o) => !o && setWorkerToApprove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Worker Registration</DialogTitle>
+            <DialogDescription>
+              Activate <b>{workerToApprove?.first_name} {workerToApprove?.last_name}</b>?
+              <br />
+              They will be able to check in once a card is assigned.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="ghost" onClick={() => setWorkerToApprove(null)}>Cancel</Button>
+            <Button
+              className="bg-success hover:bg-success/90"
+              onClick={async () => {
+                try {
+                  const { approveWorker } = await import("@/lib/api");
+                  await approveWorker(workerToApprove.id, userContext?.departmentId);
+                  toast.success("Worker Approved");
+                  setWorkerToApprove(null);
+                } catch (e: any) {
+                  toast.error(e.message);
+                }
+              }}
+            >
+              Confirm Approval
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

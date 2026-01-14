@@ -62,8 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (deptData) {
           profileData = {
             department_id: deptData.id,
-            full_name: deptData.name, // Mapping Query Result to Context Expectation
-            // code: deptData.code 
+            full_name: deptData.name,
+            district: deptData.district,
           };
         }
       } else if (role === 'ESTABLISHMENT_ADMIN') {
@@ -79,7 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (estData) {
           profileData = {
             establishment_id: estData.id,
-            full_name: estData.name
+            full_name: estData.name,
+            district: undefined
           };
         } else {
           // Fallback if record missing but role exists? 
@@ -101,6 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         departmentId: profileData?.department_id || undefined,
         fullName: profileData?.full_name || undefined,
         email: user.email || undefined,
+        district: profileData?.district || undefined,
       };
 
       return context;

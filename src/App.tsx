@@ -16,6 +16,7 @@ const LandingPage = lazy(() => import("@/pages/Landing"));
 const AuthPage = lazy(() => import("@/pages/Auth"));
 const EstablishmentRegister = lazy(() => import("@/pages/EstablishmentRegister"));
 const DepartmentRegister = lazy(() => import("@/pages/DepartmentRegister"));
+const WorkerSelfRegistration = lazy(() => import("@/pages/WorkerSelfRegistration"));
 const OverviewDashboard = lazy(() => import("@/pages/OverviewDashboard"));
 const WorkerDashboard = lazy(() => import("@/pages/WorkerDashboard"));
 const EstablishmentDashboard = lazy(() => import("@/pages/EstablishmentDashboard"));
@@ -49,56 +50,57 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/register/establishment" element={<EstablishmentRegister />} />
               <Route path="/register/department" element={<DepartmentRegister />} />
-              
+              <Route path="/register/worker" element={<WorkerSelfRegistration />} />
+
               {/* Mock THALES auth screen */}
               <Route path="/thales-auth" element={
                 <ProtectedRoute>
                   <MockThalesAuth />
                 </ProtectedRoute>
               } />
-              
+
               {/* Overview Dashboard - accessible to department admins */}
               <Route path="/overview" element={
                 <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']}>
                   <OverviewDashboard />
                 </ProtectedRoute>
               } />
-              
+
               {/* Protected Worker routes */}
               <Route path="/worker/dashboard" element={
                 <ProtectedRoute allowedRoles={['WORKER']}>
                   <WorkerDashboard />
                 </ProtectedRoute>
               } />
-              
+
               {/* Protected Establishment routes */}
               <Route path="/establishment/dashboard" element={
                 <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
                   <EstablishmentDashboard />
                 </ProtectedRoute>
               } />
-              
+
               {/* Establishment Attendance Page */}
               <Route path="/establishment/attendance" element={
                 <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
                   <EstablishmentAttendance />
                 </ProtectedRoute>
               } />
-              
+
               {/* Establishment Manage Workers Page */}
               <Route path="/establishment/workers" element={
                 <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
                   <EstablishmentWorkers />
                 </ProtectedRoute>
               } />
-              
+
               {/* Protected Department routes */}
               <Route path="/department/dashboard" element={
                 <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']}>
                   <DepartmentDashboard />
                 </ProtectedRoute>
               } />
-              
+
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
