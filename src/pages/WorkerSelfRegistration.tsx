@@ -116,7 +116,8 @@ export default function WorkerSelfRegistration() {
         }, 1000);
     };
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 
     const handleSubmit = async () => {
         setLoading(true);
