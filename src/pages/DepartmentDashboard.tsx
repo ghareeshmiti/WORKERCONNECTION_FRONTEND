@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +71,7 @@ import {
 } from "@/hooks/use-attendance-reports";
 
 export default function DepartmentDashboard() {
+  const queryClient = useQueryClient();
   // Enable real-time updates
   useDepartmentDashboardRealtime();
   const { userContext, signOut } = useAuth();
@@ -826,7 +828,7 @@ export default function DepartmentDashboard() {
           <DialogHeader>
             <DialogTitle>Approve & Activate Worker</DialogTitle>
             <DialogDescription>
-              Assign a FIDO Smart Card to activate <b>{workerToApprove?.first_name} {workerToApprove?.last_name}</b>.
+              Assign a Smart Card to activate <b>{workerToApprove?.first_name} {workerToApprove?.last_name}</b>.
               This will enable them to check in.
             </DialogDescription>
           </DialogHeader>
@@ -838,7 +840,7 @@ export default function DepartmentDashboard() {
 
             <div className="text-center space-y-2">
               <p className="font-medium">Ready to Assign Card</p>
-              <p className="text-sm text-muted-foreground">Place the FIDO card on the reader and click below.</p>
+              <p className="text-sm text-muted-foreground">Place the Smart Card on the reader and click below.</p>
             </div>
 
             <div className="flex w-full gap-2">
@@ -854,7 +856,7 @@ export default function DepartmentDashboard() {
 
                     // 1. Register Card (WebAuthn)
                     // Use worker_id string (e.g., WKR00000001) as username
-                    toast({ title: "Setup", description: "Follow browser prompts to register FIDO card..." });
+                    toast.message("Setup", { description: "Follow browser prompts to register Smart Card..." });
                     const success = await registerUser(workerToApprove.worker_id);
 
                     if (success) {
@@ -862,6 +864,11 @@ export default function DepartmentDashboard() {
                       await approveWorker(workerToApprove.id, userContext?.departmentId);
                       toast.success("Success", { description: "Card assigned and worker approved!" });
                       setWorkerToApprove(null);
+
+                      // Refresh lists immediately
+                      queryClient.invalidateQueries({ queryKey: ['unmapped-workers'] });
+                      queryClient.invalidateQueries({ queryKey: ['department-workers'] });
+                      queryClient.invalidateQueries({ queryKey: ['department-stats'] });
                     } else {
                       toast.error("Card registration failed.");
                     }
@@ -887,6 +894,11 @@ export default function DepartmentDashboard() {
                     await approveWorker(workerToApprove.id, userContext?.departmentId);
                     toast.success("Worker Approved (No Card Assigned)");
                     setWorkerToApprove(null);
+
+                    // Refresh lists
+                    queryClient.invalidateQueries({ queryKey: ['unmapped-workers'] });
+                    queryClient.invalidateQueries({ queryKey: ['department-workers'] });
+                    queryClient.invalidateQueries({ queryKey: ['department-stats'] });
                   } catch (e: any) { toast.error(e.message); }
                 }}
               >
