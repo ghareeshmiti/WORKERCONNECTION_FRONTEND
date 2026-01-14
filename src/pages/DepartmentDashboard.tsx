@@ -451,8 +451,35 @@ export default function DepartmentDashboard() {
 
 
         {/* Tabbed Sections */}
-        <Tabs defaultValue="attendance" className="w-full">
+        <Tabs defaultValue="mapped" className="w-full">
           <TabsList className="mb-4">
+            <TabsTrigger value="mapped" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Mapped Workers
+              {mappedWorkers && mappedWorkers.length > 0 && (
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-200 ml-1">
+                  {mappedWorkers.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="unmapped" className="flex items-center gap-2">
+              <MapPin className="w-4 h-4" />
+              Unmapped Workers
+              {activeUnmappedWorkers && activeUnmappedWorkers.length > 0 && (
+                <Badge variant="secondary" className="bg-orange-100 text-orange-700 hover:bg-orange-200 ml-1">
+                  {activeUnmappedWorkers.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Pending Approval
+              {pendingWorkers && pendingWorkers.length > 0 && (
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200 ml-1">
+                  {pendingWorkers.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="attendance" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Detailed Attendance
@@ -460,10 +487,6 @@ export default function DepartmentDashboard() {
             <TabsTrigger value="establishments" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               Establishments Overview
-            </TabsTrigger>
-            <TabsTrigger value="workers" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Worker Admin
             </TabsTrigger>
           </TabsList>
 
