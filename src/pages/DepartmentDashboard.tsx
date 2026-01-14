@@ -24,6 +24,7 @@ import {
   Clock, // Added
   Eye, // Added
   Check, // Added
+  CreditCard,
 } from "lucide-react";
 import {
   generateCSV,
@@ -820,33 +821,78 @@ export default function DepartmentDashboard() {
       />
 
       {/* Approve Worker Dialog */}
-      <Dialog open={!!workerToApprove} onOpenChange={(o) => !o && setWorkerToApprove(null)}>
-        <DialogContent>
+      <Dialog open={!!workerToApprove} onOpenChange={(o) => { if (!o) setWorkerToApprove(null); }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Approve Worker Registration</DialogTitle>
+            <DialogTitle>Approve & Activate Worker</DialogTitle>
             <DialogDescription>
-              Activate <b>{workerToApprove?.first_name} {workerToApprove?.last_name}</b>?
-              <br />
-              They will be able to check in once a card is assigned.
+              Assign a FIDO Smart Card to activate <b>{workerToApprove?.first_name} {workerToApprove?.last_name}</b>.
+              This will enable them to check in.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="ghost" onClick={() => setWorkerToApprove(null)}>Cancel</Button>
-            <Button
-              className="bg-success hover:bg-success/90"
-              onClick={async () => {
-                try {
-                  const { approveWorker } = await import("@/lib/api");
-                  await approveWorker(workerToApprove.id, userContext?.departmentId);
-                  toast.success("Worker Approved");
-                  setWorkerToApprove(null);
-                } catch (e: any) {
-                  toast.error(e.message);
-                }
-              }}
-            >
-              Confirm Approval
-            </Button>
+
+          <div className="py-6 flex flex-col items-center justify-center gap-6">
+            <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center animate-pulse">
+              <CreditCard className="w-10 h-10 text-blue-600" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <p className="font-medium">Ready to Assign Card</p>
+              <p className="text-sm text-muted-foreground">Place the FIDO card on the reader and click below.</p>
+            </div>
+
+            <div className="flex w-full gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setWorkerToApprove(null)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 gap-2"
+                onClick={async () => {
+                  if (!workerToApprove) return;
+                  try {
+                    const { registerUser, approveWorker } = await import("@/lib/api");
+
+                    // 1. Register Card (WebAuthn)
+                    // Use worker_id string (e.g., WKR00000001) as username
+                    toast({ title: "Setup", description: "Follow browser prompts to register FIDO card..." });
+                    const success = await registerUser(workerToApprove.worker_id);
+
+                    if (success) {
+                      // 2. Approve Worker (Set status to active)
+                      await approveWorker(workerToApprove.id, userContext?.departmentId);
+                      toast.success("Success", { description: "Card assigned and worker approved!" });
+                      setWorkerToApprove(null);
+                    } else {
+                      toast.error("Card registration failed.");
+                    }
+                  } catch (e: any) {
+                    console.error(e);
+                    toast.error("Error", { description: e.message || "Operation failed" });
+                  }
+                }}
+              >
+                <CreditCard className="w-4 h-4" />
+                Assign & Approve
+              </Button>
+            </div>
+
+            <div className="pt-4 border-t w-full text-center">
+              <button
+                className="text-xs text-muted-foreground hover:underline"
+                onClick={async () => {
+                  // Bypass card assignment
+                  if (!confirm("Are you sure you want to approve without assigning a card? They won't be able to check in.")) return;
+                  try {
+                    const { approveWorker } = await import("@/lib/api");
+                    await approveWorker(workerToApprove.id, userContext?.departmentId);
+                    toast.success("Worker Approved (No Card Assigned)");
+                    setWorkerToApprove(null);
+                  } catch (e: any) { toast.error(e.message); }
+                }}
+              >
+                Approve without card (Not Recommended)
+              </button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
