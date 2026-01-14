@@ -67,20 +67,20 @@ const getErrorMessage = (code: string | undefined, defaultMessage?: string): str
   return defaultMessage || 'Attendance failed. Please try again.';
 };
 
-// THALES authentication modal component (inline for attendance)
-function ThalesAuthOverlay({ stage }: { stage: 'authenticating' | 'verified' }) {
+// Authentication modal component (inline for attendance)
+function AuthStatusOverlay({ stage }: { stage: 'authenticating' | 'verified' }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-sidebar to-sidebar-accent">
       <div className="bg-card p-12 rounded-xl shadow-2xl max-w-md w-full mx-4 animate-fade-in">
         <div className="flex flex-col items-center gap-6">
-          {/* THALES Logo placeholder */}
+          {/* Logo placeholder */}
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
             <Shield className="w-10 h-10 text-primary" />
           </div>
 
           <div className="text-center">
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">THALES Authentication</h1>
-            <p className="text-muted-foreground text-sm">Secure Identity Verification</p>
+            <h1 className="text-2xl font-display font-bold text-foreground mb-2">Secure Authentication</h1>
+            <p className="text-muted-foreground text-sm">Identity Verification</p>
           </div>
 
           {/* Status */}
@@ -125,8 +125,8 @@ export default function EstablishmentAttendance() {
   const [workerIdentifier, setWorkerIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AttendanceResult | null>(null);
-  const [showThales, setShowThales] = useState(false);
-  const [thalesStage, setThalesStage] = useState<'authenticating' | 'verified'>('authenticating');
+  const [showAuthOverlay, setShowAuthOverlay] = useState(false);
+  const [authStage, setAuthStage] = useState<'authenticating' | 'verified'>('authenticating');
   const { toast } = useToast();
 
   // Fetch establishment details to check approval status (for UI display only)
@@ -420,7 +420,7 @@ export default function EstablishmentAttendance() {
 
   return (
     <>
-      {showThales && <ThalesAuthOverlay stage={thalesStage} />}
+      {showAuthOverlay && <AuthStatusOverlay stage={authStage} />}
 
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
 
