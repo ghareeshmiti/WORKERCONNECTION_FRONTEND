@@ -23,7 +23,8 @@ import {
   Settings,
   Scan,
   Fingerprint,
-  MapPin
+  MapPin,
+  ArrowRight
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
