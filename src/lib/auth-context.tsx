@@ -66,11 +66,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // code: deptData.code 
           };
         }
+      } else if (role === 'ESTABLISHMENT_ADMIN') {
+        const { data: estData, error: estError } = await supabase
+          .from('establishments')
+          .select('id, name')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (estError) {
+          console.error('Error fetching establishment profile:', estError);
+        }
+        if (estData) {
+          profileData = {
+            establishment_id: estData.id,
+            full_name: estData.name
+          };
+        } else {
+          // Fallback if record missing but role exists? 
+          // Usually implies sync issue, but for now allow ID to populate
+          profileData = {
+            establishment_id: userId,
+            full_name: user.email // Fallback name
+          };
+        }
       } else {
-        // Assume Worker or existing Profile mechanism for others?
-        // Since 'profiles' table is missing, we skip it.
-        // If you have a 'workers' table mapped to auth, query that here.
-        // For now, let's leave generic profile empty to unblock Department Login.
+        // Worker or others
       }
 
       const context: UserContext = {
