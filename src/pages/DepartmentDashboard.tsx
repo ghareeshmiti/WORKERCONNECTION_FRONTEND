@@ -736,12 +736,7 @@ export default function DepartmentDashboard() {
                   <p className="text-sm text-muted-foreground">Manage approvals, mapping, and worker status</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                  <Dialog>
-                    <DialogTrigger asChild><Button><UserCheck className="mr-2 h-4 w-4" /> Enroll Worker</Button></DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                      {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
-                    </DialogContent>
-                  </Dialog>
+                  {userContext?.departmentId && <EnrollWorkerDialog departmentId={userContext.departmentId} />}
                   {/* Export Button if needed */}
                   <Button
                     variant="outline"
