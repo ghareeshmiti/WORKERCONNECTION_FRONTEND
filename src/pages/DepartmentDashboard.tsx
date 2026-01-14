@@ -33,6 +33,7 @@ import {
   establishmentColumns,
   attendanceTrendColumns,
 } from "@/lib/csv-export";
+import { formatLocationString } from "@/lib/location-utils";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -180,12 +181,11 @@ export default function DepartmentDashboard() {
                 <td className="p-4 align-middle font-medium text-gray-900">{worker.first_name} {worker.last_name}</td>
                 <td className="p-4 align-middle text-sm text-gray-500">{worker.phone}</td>
                 <td className="p-4 align-middle text-sm text-gray-500">
-                  {worker.district || worker.mandal || worker.village ? (
-                    <span className="flex flex-col">
-                      <span className="font-medium text-gray-700">{worker.district}</span>
-                      <span className="text-xs">{worker.mandal || worker.village}</span>
+                  <td className="p-4 align-middle text-sm text-gray-500">
+                    <span className="text-gray-700 font-medium break-words max-w-[200px] inline-block">
+                      {formatLocationString(worker.district, worker.mandal, worker.village)}
                     </span>
-                  ) : <span className="text-muted-foreground italic">--</span>}
+                  </td>
                 </td>
                 {viewOnly && (
                   <td className="p-4 align-middle">
