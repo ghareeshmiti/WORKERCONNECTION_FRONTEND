@@ -19,7 +19,11 @@ import {
   Ban,
   Landmark,
   Shield,
-  CheckCircle
+  CheckCircle,
+  Settings,
+  Scan,
+  Fingerprint,
+  MapPin
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -130,7 +134,7 @@ export default function EstablishmentAttendance() {
       if (!userContext?.establishmentId) return null;
       const { data, error } = await supabase
         .from('establishments')
-        .select('id, name, is_approved, department_id, departments(name)')
+        .select('id, name, is_active, department_id, departments(name)')
         .eq('id', userContext.establishmentId)
         .single();
       if (error) throw error;
@@ -284,164 +288,194 @@ export default function EstablishmentAttendance() {
   };
 
   // Check if establishment is active
-  const isApproved = establishment?.is_approved ?? false;
+  const isActive = establishment?.is_active ?? false;
   const isLoadingEstablishment = !establishment;
   const departmentName = (establishment?.departments as any)?.name || 'Unknown Department';
+  const establishmentName = establishment?.name || 'Unknown Station';
+
+  const [scanOpen, setScanOpen] = useState(false);
+
+  const handleTap = () => {
+    setScanOpen(true);
+    // Auto focus the input when dialog opens (handled by autoFocus prop)
+  };
+
+  const onScanSubmit = async () => {
+    setScanOpen(false);
+    // Trigger the actual submission logic
+    // reusing handleSubmit logic but adapting for direct call
+    if (!workerIdentifier.trim()) {
+      toast({ title: 'Error', description: 'Please enter Worker ID', variant: 'destructive' });
+      return;
+    }
+
+    if (!userContext?.establishmentId) {
+      toast({ title: 'Error', description: 'Establishment context not available', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    setResult(null);
+    setShowThales(true);
+    setThalesStage('authenticating');
+
+    try {
+      const { authenticateUser } = await import("@/lib/api");
+      const fidoResult = await authenticateUser(workerIdentifier, 'toggle', establishmentName);
+
+      if (fidoResult && fidoResult.verified) {
+        setThalesStage('verified');
+        const successResult: AttendanceResult = {
+          success: true,
+          message: fidoResult.message || 'Verification Successful',
+          data: {
+            eventType: fidoResult.status === 'in' ? 'CHECK_IN' : 'CHECK_OUT',
+            workerName: fidoResult.username || workerIdentifier,
+            workerId: workerIdentifier,
+            establishmentName: establishmentName,
+            occurredAt: new Date().toISOString()
+          }
+        };
+
+        setTimeout(() => {
+          setResult(successResult);
+          setShowThales(false);
+          setWorkerIdentifier('');
+          toast({ title: 'Success', description: successResult.message });
+        }, 1000);
+
+      } else {
+        throw new Error('Verification failed or declined.');
+      }
+    } catch (err: any) {
+      console.error("FIDO Check-in Failed", err);
+      setShowThales(false);
+      setResult({
+        success: false,
+        message: err.message || "Authentication failed",
+        code: 'AUTH_FAILED'
+      });
+      toast({ title: 'Error', description: err.message || "Authentication failed", variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
-      {/* THALES Authentication Overlay - shown only during attendance submission */}
       {showThales && <ThalesAuthOverlay stage={thalesStage} />}
 
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="border-b bg-card sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-accent-foreground" />
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+
+        {/* Settings / Back */}
+        <div className="absolute top-6 right-6 flex gap-4">
+          <Link to="/establishment/dashboard">
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200">
+              <ArrowLeft className="w-6 h-6 text-slate-600" />
+            </Button>
+          </Link>
+          {/* Settings Icon */}
+          <Button variant="ghost" size="icon" className="rounded-full shadow-sm bg-white hover:bg-slate-100 border">
+            <Settings className="w-5 h-5 text-slate-600" />
+          </Button>
+        </div>
+
+        {/* KIOSK CARD */}
+        <Card className="w-full max-w-md shadow-xl border-0 rounded-3xl overflow-hidden bg-white/90 backdrop-blur-sm ring-1 ring-slate-100">
+          <CardContent className="flex flex-col items-center p-12 text-center space-y-8">
+
+            {/* Logo/Icon Area */}
+            <div className="relative">
+              <div className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-3xl flex items-center justify-center shadow-lg transform rotate-3">
+                <Shield className="w-12 h-12 text-white" />
               </div>
-              <span className="text-xl font-display font-bold">Worker Connect</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground">{userContext?.fullName}</span>
-              <Button variant="ghost" size="icon" onClick={handleLogout}>
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <main className="container mx-auto px-4 py-8">
-          <div className="mb-6">
-            <Link to="/establishment/dashboard" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Link>
-          </div>
-
-          {/* Inactive Establishment Warning */}
-          {!isLoadingEstablishment && !isApproved && (
-            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
-              <div className="flex items-center gap-2 text-destructive">
-                <Ban className="w-5 h-5" />
-                <span className="font-medium">Establishment Inactive</span>
+              <div className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow-md">
+                <Fingerprint className="w-6 h-6 text-cyan-600" />
               </div>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                <Landmark className="w-3 h-3" />
-                This establishment must be activated by <strong className="mx-1">{departmentName}</strong> before attendance can be recorded.
-              </p>
             </div>
-          )}
 
-          <div className="max-w-lg mx-auto">
-            <div className="text-center mb-8">
-              <div className="flex justify-center mb-4">
-                <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${isApproved ? 'bg-accent' : 'bg-muted'}`}>
-                  {isApproved ? (
-                    <Clock className="w-8 h-8 text-accent-foreground" />
-                  ) : (
-                    <Ban className="w-8 h-8 text-muted-foreground" />
-                  )}
-                </div>
+            {/* Header */}
+            <div className="space-y-2">
+              <h1 className="text-3xl font-display font-bold text-slate-800 tracking-tight">Worker Connect</h1>
+              <h2 className="text-lg font-medium text-slate-500 uppercase tracking-widest">Access System</h2>
+            </div>
+
+            {/* Status Display */}
+            <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-6 space-y-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Status</span>
+              <div className="text-3xl font-bold text-slate-700 animate-pulse">READY</div>
+            </div>
+
+            {/* Tap Action Button */}
+            <Button
+              size="lg"
+              className="w-full h-20 text-xl font-bold rounded-2xl shadow-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+              onClick={handleTap}
+              disabled={!isActive || loading}
+            >
+              {loading ? (
+                <Loader2 className="w-8 h-8 animate-spin mr-3" />
+              ) : (
+                <Scan className="w-8 h-8 mr-3" />
+              )}
+              {loading ? "Processing..." : "Tap to Check In / Out"}
+            </Button>
+
+            {!isActive && (
+              <p className="text-red-500 text-sm font-medium">Establishment is Inactive</p>
+            )}
+
+            {/* Footer Location */}
+            <div className="pt-8 border-t border-slate-100 w-full">
+              <div className="flex items-center justify-center gap-2 text-slate-400 text-sm font-mono uppercase">
+                <MapPin className="w-4 h-4" />
+                <span>Location: <span className="text-slate-600 font-bold">{establishmentName}</span></span>
               </div>
-              <h1 className="text-2xl font-display font-bold">Worker Check-in / Check-out</h1>
-              <p className="text-muted-foreground">Record attendance for workers at {establishment?.name || 'this establishment'}</p>
             </div>
 
-            <Card className={!isApproved ? 'opacity-60' : ''}>
-              <CardHeader>
-                <CardTitle>Submit Attendance</CardTitle>
-                <CardDescription>
-                  {isApproved
-                    ? 'Enter Worker ID or Employee ID'
-                    : 'Attendance disabled — establishment is inactive'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="workerIdentifier">Worker ID / Employee ID</Label>
-                    <Input
-                      id="workerIdentifier"
-                      placeholder="e.g., WKR00000001"
-                      value={workerIdentifier}
-                      onChange={(e) => setWorkerIdentifier(e.target.value.toUpperCase())}
-                      disabled={loading || !isApproved}
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={loading || !isApproved}
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {!isApproved ? (
-                      <>
-                        <Ban className="w-4 h-4 mr-2" />
-                        Attendance Disabled
-                      </>
-                    ) : (
-                      'Submit Attendance'
-                    )}
-                  </Button>
-                </form>
+          </CardContent>
+        </Card>
 
-                {result && !result.success && (
-                  <div className="mt-6 p-4 bg-destructive/10 rounded-lg animate-fade-in">
-                    <div className="flex items-center gap-2 text-destructive mb-2">
-                      <AlertCircle className="w-5 h-5" />
-                      <span className="font-medium">Attendance Failed</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{result.message}</p>
-                  </div>
-                )}
-
-                {result?.success && result.data && (
-                  <div className="mt-6 p-4 bg-success/10 rounded-lg animate-fade-in">
-                    <div className="flex items-center gap-2 text-success mb-3">
-                      {result.data.eventType === 'CHECK_IN' ? (
-                        <LogIn className="w-5 h-5" />
-                      ) : (
-                        <LogOutIcon className="w-5 h-5" />
-                      )}
-                      <span className="font-medium">
-                        {result.data.eventType === 'CHECK_IN' ? 'Checked In' : 'Checked Out'}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <span><strong>Worker:</strong> {result.data.workerName}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {result.data.workerId}
-                        </Badge>
-                      </div>
-                      {result.data.establishmentName && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Building2 className="w-4 h-4 text-muted-foreground" />
-                          <span><strong>Establishment:</strong> {result.data.establishmentName}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span>
-                          <strong>Time:</strong>{' '}
-                          {new Date(result.data.occurredAt).toLocaleString('en-IN', {
-                            timeZone: 'Asia/Kolkata'
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </main>
+        {/* Brand Faded Background */}
+        <div className="absolute bottom-4 text-slate-300 text-xs font-mono">
+          SECURE ACCESS V1.0
+        </div>
       </div>
+
+      {/* Input Dialog for "Scanning" */}
+      {scanOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95">
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                <Scan className="w-8 h-8 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">Scan Worker ID</h3>
+                <p className="text-slate-500 text-sm">Use the reader or enter ID manually</p>
+              </div>
+
+              <Input
+                autoFocus
+                placeholder="WKR..."
+                value={workerIdentifier}
+                onChange={(e) => setWorkerIdentifier(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onScanSubmit();
+                }}
+                className="text-center text-2xl font-mono tracking-wider h-14 border-2 border-slate-200 focus:border-blue-500 rounded-xl"
+              />
+
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1 h-12" onClick={() => setScanOpen(false)}>Cancel</Button>
+                <Button className="flex-1 h-12 bg-blue-600 hover:bg-blue-700" onClick={onScanSubmit}>
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
