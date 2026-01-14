@@ -302,7 +302,7 @@ export default function EstablishmentWorkers() {
               <div className="text-center py-8">
                 <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
                 <p className="text-muted-foreground mb-2">No workers mapped to this establishment yet.</p>
-                {isApproved && (
+                {isActive && (
                   <p className="text-sm text-muted-foreground">
                     Click "Map Worker" above to add workers to your establishment.
                   </p>
