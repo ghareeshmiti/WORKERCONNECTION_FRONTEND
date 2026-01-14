@@ -234,8 +234,8 @@ export default function EstablishmentAttendance() {
     // Start loading
     setLoading(true);
     setResult(null);
-    setShowThales(true);
-    setThalesStage('authenticating');
+    setShowAuthOverlay(true);
+    setAuthStage('authenticating');
 
     try {
       // Dynamic import to avoid SSR issues if any (though client side usually fine)
@@ -249,7 +249,7 @@ export default function EstablishmentAttendance() {
       const fidoResult = await authenticateUser(workerIdentifier, 'toggle', establishmentName);
 
       if (fidoResult && fidoResult.verified) {
-        setThalesStage('verified');
+        setAuthStage('verified');
 
         // Construct success result matching interface
         const successResult: AttendanceResult = {
@@ -266,7 +266,7 @@ export default function EstablishmentAttendance() {
 
         setTimeout(() => {
           setResult(successResult);
-          setShowThales(false);
+          setShowAuthOverlay(false);
           setWorkerIdentifier('');
           toast({ title: 'Success', description: successResult.message });
         }, 1000); // 1s delay to show verify checkmark
@@ -277,7 +277,7 @@ export default function EstablishmentAttendance() {
 
     } catch (err: any) {
       console.error("FIDO Check-in Failed", err);
-      setShowThales(false); // Hide overlay immediately on error
+      setShowAuthOverlay(false); // Hide overlay immediately on error
       setResult({
         success: false,
         message: err.message || "Authentication failed",
@@ -306,8 +306,8 @@ export default function EstablishmentAttendance() {
 
     setLoading(true);
     setResult(null);
-    setShowThales(true);
-    setThalesStage('authenticating');
+    setShowAuthOverlay(true);
+    setAuthStage('authenticating');
 
     try {
       const { authenticateUser } = await import("@/lib/api");
@@ -315,7 +315,7 @@ export default function EstablishmentAttendance() {
       const fidoResult = await authenticateUser('', 'toggle', establishmentName);
 
       if (fidoResult && fidoResult.verified) {
-        setThalesStage('verified');
+        setAuthStage('verified');
         const successResult: AttendanceResult = {
           success: true,
           message: fidoResult.message || 'Verification Successful',
@@ -330,7 +330,7 @@ export default function EstablishmentAttendance() {
 
         setTimeout(() => {
           setResult(successResult);
-          setShowThales(false);
+          setShowAuthOverlay(false);
           setWorkerIdentifier('');
           toast({ title: 'Success', description: successResult.message });
         }, 1000);
@@ -340,7 +340,7 @@ export default function EstablishmentAttendance() {
       }
     } catch (err: any) {
       console.error("FIDO Check-in Failed", err);
-      setShowThales(false);
+      setShowAuthOverlay(false);
       setResult({
         success: false,
         message: err.message || "Authentication failed",
@@ -373,15 +373,15 @@ export default function EstablishmentAttendance() {
 
     setLoading(true);
     setResult(null);
-    setShowThales(true);
-    setThalesStage('authenticating');
+    setShowAuthOverlay(true);
+    setAuthStage('authenticating');
 
     try {
       const { authenticateUser } = await import("@/lib/api");
       const fidoResult = await authenticateUser(workerIdentifier, 'toggle', establishmentName);
 
       if (fidoResult && fidoResult.verified) {
-        setThalesStage('verified');
+        setAuthStage('verified');
         const successResult: AttendanceResult = {
           success: true,
           message: fidoResult.message || 'Verification Successful',
@@ -396,7 +396,7 @@ export default function EstablishmentAttendance() {
 
         setTimeout(() => {
           setResult(successResult);
-          setShowThales(false);
+          setShowAuthOverlay(false);
           setWorkerIdentifier('');
           toast({ title: 'Success', description: successResult.message });
         }, 1000);
@@ -406,7 +406,7 @@ export default function EstablishmentAttendance() {
       }
     } catch (err: any) {
       console.error("FIDO Check-in Failed", err);
-      setShowThales(false);
+      setShowAuthOverlay(false);
       setResult({
         success: false,
         message: err.message || "Authentication failed",
