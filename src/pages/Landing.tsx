@@ -22,7 +22,7 @@ export default function Landing() {
       <section className="p-4">
         <div className="container mx-auto text-center max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">Real-time Attendance Management</h1>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-lg text-muted-foreground mb-0">
             Streamline attendance tracking across departments and establishments with our secure, efficient platform.
           </p>
         </div>
@@ -31,7 +31,7 @@ export default function Landing() {
       {/* Role Cards */}
       <section className="p-4 bg-muted/50">
         <div className="container mx-auto">
-          <h2 className="text-2xl font-display font-bold text-center mb-12">Choose Your Role</h2>
+          <h2 className="text-2xl font-display font-bold text-center mb-4">Choose Your Role</h2>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* Worker - Login only */}
             <Card className="hover:shadow-lg transition-shadow">
@@ -99,7 +99,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>Worker Connect © 2025.</p>
+          <p>Worker Connect © 2026.</p>
         </div>
       </footer>
     </div>
