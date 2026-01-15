@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, Loader2, ArrowLeft, Eye, EyeOff, Mail, Phone, KeyRound } from "lucide-react";
+import { Clock, Loader2, ArrowLeft, Eye, EyeOff, Mail, Phone, KeyRound, CreditCard } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // Password validation regex
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -23,14 +24,17 @@ export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [identifier, setIdentifier] = useState(""); // email or mobile
   const [password, setPassword] = useState("");
+  // Worker Aadhaar Auth State
+  const [aadhaar, setAadhaar] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
   const [otpVerified, setOtpVerified] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -38,6 +42,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [redirecting, setRedirecting] = useState(false);
+  const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   // Effect to redirect after successful login when userContext is loaded
   useEffect(() => {
@@ -46,6 +51,14 @@ export default function Auth() {
       navigate(dashboardPath, { replace: true });
     }
   }, [redirecting, userContext, authLoading, navigate]);
+
+  // If already logged in, redirect
+  useEffect(() => {
+    if (userContext && !authLoading) {
+      setRedirecting(true);
+    }
+  }, [userContext, authLoading]);
+
 
   const getRoleTitle = () => {
     switch (role) {
@@ -63,9 +76,9 @@ export default function Auth() {
   const validateIdentifier = (): boolean => {
     setErrors({});
     if (isWorker) {
-      // Validate mobile number for worker
-      if (!/^[6-9]\d{9}$/.test(identifier)) {
-        setErrors({ identifier: "Please enter a valid 10-digit mobile number" });
+      // Validate aadhaar number for worker
+      if (!/^\d{12}$/.test(aadhaar)) {
+        setErrors({ aadhaar: "Please enter a valid 12-digit Aadhaar number" });
         return false;
       }
     } else {
@@ -104,20 +117,15 @@ export default function Auth() {
       return;
     }
 
-    // For worker login via mobile, we need to construct an email-like identifier
-    // In a real app, the backend would handle mobile-based auth
-    const loginIdentifier = isWorker ? `${identifier}@worker.local` : identifier;
-
     setLoading(true);
     try {
-      const { error } = await signIn(loginIdentifier, password);
+      const { error } = await signIn(identifier, password);
 
       if (error) {
         toast({ title: "Login Failed", description: error.message, variant: "destructive" });
         setLoading(false);
       } else {
         toast({ title: "Success", description: "Login successful!" });
-        // Set redirecting flag - the useEffect will handle navigation once userContext is ready
         setRedirecting(true);
       }
     } catch (err) {
@@ -125,6 +133,70 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
+  // --- Worker Aadhaar Handlers ---
+
+  const handleWorkerSendOTP = async () => {
+    if (!/^\d{12}$/.test(aadhaar)) {
+      setErrors({ aadhaar: "Please enter a valid 12-digit Aadhaar number" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL.replace(/\/$/, '')}/api/auth/worker-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aadhaar })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+
+      setOtpSent(true);
+      toast({ title: "OTP Sent", description: "Verification code sent to mobile." });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWorkerVerifyLogin = async () => {
+    if (otp.length !== 6) {
+      setErrors({ otp: "Enter 6-digit OTP" });
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL.replace(/\/$/, '')}/api/auth/worker-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aadhaar, otp })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      // Success: Set Supabase Session
+      const { error } = await supabase.auth.setSession(data.session);
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Login verified!" });
+      setRedirecting(true);
+
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Login Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Standard Reset Handlers ---
 
   const handleSendOTP = async () => {
     if (!validateIdentifier()) return;
@@ -211,7 +283,8 @@ export default function Auth() {
               {mode === "reset" && "Reset Password"}
             </CardTitle>
             <CardDescription>
-              {mode === "login" && "Enter your credentials to access your dashboard"}
+              {mode === "login" && isWorker && "Enter your Aadhaar to access your dashboard"}
+              {mode === "login" && !isWorker && "Enter your credentials to access your dashboard"}
               {mode === "forgot" &&
                 (isWorker
                   ? "Enter your registered mobile number to reset password"
@@ -222,61 +295,124 @@ export default function Auth() {
           <CardContent>
             {/* Login Mode */}
             {mode === "login" && (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="identifier">{isWorker ? "Mobile Number" : "Email"}</Label>
-                  <div className="relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {isWorker ? <Phone className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
+              <>
+                {isWorker ? (
+                  // Worker Aadhaar Login Form
+                  <div className="space-y-4">
+                    {!otpSent ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="aadhaar">Aadhaar Number</Label>
+                        <div className="relative">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            <CreditCard className="w-4 h-4" />
+                          </div>
+                          <Input
+                            id="aadhaar"
+                            type="text"
+                            placeholder="XXXX XXXX XXXX"
+                            value={aadhaar}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, "").slice(0, 12);
+                              setAadhaar(val);
+                              setErrors({});
+                            }}
+                            disabled={loading}
+                            className="pl-10 tracking-widest"
+                            maxLength={12}
+                          />
+                        </div>
+                        {errors.aadhaar && <p className="text-sm text-destructive">{errors.aadhaar}</p>}
+                        <Button onClick={handleWorkerSendOTP} className="w-full" disabled={loading || aadhaar.length !== 12}>
+                          {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                          Send OTP
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="bg-primary/10 p-3 rounded-md text-sm text-center">
+                          <p>OTP sent to registered mobile.</p>
+                          <p className="text-xs text-muted-foreground">(Use any 6 digit number for Demo)</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="otp">Enter OTP</Label>
+                          <Input
+                            id="otp"
+                            className="text-center tracking-[1em] text-lg"
+                            placeholder="------"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            maxLength={6}
+                          />
+                          {errors.otp && <p className="text-sm text-destructive">{errors.otp}</p>}
+                        </div>
+                        <Button onClick={handleWorkerVerifyLogin} className="w-full" disabled={loading || otp.length !== 6}>
+                          {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                          Verify & Login
+                        </Button>
+                        <Button variant="link" className="w-full text-xs" onClick={() => setOtpSent(false)}>
+                          Change Aadhaar Number
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Standard Login Form
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="identifier">Email</Label>
+                      <div className="relative">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <Input
+                          id="identifier"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={identifier}
+                          onChange={(e) =>
+                            setIdentifier(e.target.value)
+                          }
+                          disabled={loading}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                    <Input
-                      id="identifier"
-                      type={isWorker ? "tel" : "email"}
-                      placeholder={isWorker ? "9876543210" : "you@example.com"}
-                      value={identifier}
-                      onChange={(e) =>
-                        setIdentifier(isWorker ? e.target.value.replace(/\D/g, "").slice(0, 10) : e.target.value)
-                      }
-                      disabled={loading}
-                      className="pl-10"
-                      maxLength={isWorker ? 10 : undefined}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={loading}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={loading}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button type="button" variant="link" className="px-0 text-sm" onClick={() => setMode("forgot")}>
+                        Forgot Password?
+                      </Button>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                      Sign In
                     </Button>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button type="button" variant="link" className="px-0 text-sm" onClick={() => setMode("forgot")}>
-                    Forgot Password?
-                  </Button>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                  Sign In
-                </Button>
-              </form>
+                  </form>
+                )}
+              </>
             )}
 
             {/* Forgot Password Mode */}
