@@ -15,9 +15,6 @@ export default function Landing() {
             </div>
             <span className="text-xl font-display font-bold">Worker Connect</span>
           </div>
-          <Link to="/auth">
-            <Button variant="outline">Sign In</Button>
-          </Link>
         </div>
       </header>
 
@@ -28,51 +25,6 @@ export default function Landing() {
           <p className="text-lg text-muted-foreground mb-8">
             Streamline attendance tracking across departments and establishments with our secure, efficient platform.
           </p>
-
-          {/* Quick Check-in Section */}
-          <Card className="max-w-md mx-auto border-primary/20 shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                Quick Check-In
-              </CardTitle>
-              <CardDescription>Enter your Worker ID to mark attendance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <input
-                  id="worker-id-input"
-                  type="text"
-                  placeholder="Worker ID (e.g. WKR...)"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-                <Button onClick={async () => {
-                  const input = document.getElementById('worker-id-input') as HTMLInputElement;
-                  const username = input.value;
-                  if (!username) {
-                    alert("Please enter Worker ID");
-                    return;
-                  }
-                  try {
-                    const { authenticateUser } = await import("@/lib/api");
-                    // @ts-ignore
-                    const result = await authenticateUser(username, null, "Landing Page");
-
-                    if (result && result.verified) {
-                      alert(`Success! Marked ${result.newStatus || 'attendance'} for ${username}`);
-                    } else {
-                      alert("Verification failed");
-                    }
-                  } catch (e: any) {
-                    console.error(e);
-                    alert("Check-in failed: " + e.message);
-                  }
-                }}>
-                  Check In
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </section>
 
@@ -92,7 +44,7 @@ export default function Landing() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link to="/register/worker" className="block">
-                  <Button className="w-full mb-2" variant="secondary">Register</Button>
+                  <Button className="w-full mb-2 bg-accent hover:bg-accent/90">Register</Button>
                 </Link>
                 <Link to="/auth?role=worker" className="block">
                   <Button className="w-full" variant="default">
