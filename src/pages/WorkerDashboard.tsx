@@ -20,7 +20,7 @@ export default function WorkerDashboard() {
   useWorkerDashboardRealtime();
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
-  
+
   // Default to last 30 days
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
@@ -55,8 +55,8 @@ export default function WorkerDashboard() {
 
   const formatTime = (timestamp: string | null) => {
     if (!timestamp) return '--:--';
-    return new Date(timestamp).toLocaleTimeString('en-IN', { 
-      hour: '2-digit', 
+    return new Date(timestamp).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
       minute: '2-digit',
       timeZone: 'Asia/Kolkata'
     });
@@ -116,7 +116,7 @@ export default function WorkerDashboard() {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
@@ -188,10 +188,10 @@ export default function WorkerDashboard() {
 
         {/* Attendance Trend Chart */}
         <div className="mb-8">
-          <AttendanceChart 
-            data={trendData || []} 
-            isLoading={trendLoading} 
-            title="Attendance Trend (Last 14 Days)" 
+          <AttendanceChart
+            data={trendData || []}
+            isLoading={trendLoading}
+            title="Attendance Trend (Last 14 Days)"
             type="area"
           />
         </div>
@@ -199,13 +199,13 @@ export default function WorkerDashboard() {
         {/* Attendance History with Date Filter */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle>Attendance History</CardTitle>
-              <div className="flex flex-col md:flex-row md:items-end gap-2">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <CardTitle className="whitespace-nowrap">Attendance History</CardTitle>
+              <div className="flex flex-col md:flex-row md:items-center gap-2 flex-1">
                 <div className="flex flex-col gap-2">
-                  <DateRangePicker 
-                    dateRange={dateRange} 
-                    onDateRangeChange={setDateRange} 
+                  <DateRangePicker
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
                   />
                   <DateRangePresets onSelect={setDateRange} />
                 </div>
@@ -233,7 +233,7 @@ export default function WorkerDashboard() {
               </div>
             ) : history && history.length > 0 ? (
               <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 font-medium">Date</th>
@@ -250,7 +250,7 @@ export default function WorkerDashboard() {
                       const est = record.establishments;
                       const locationParts = est ? [est.district, est.mandal].filter(Boolean) : [];
                       const locationStr = locationParts.length > 0 ? locationParts.join(', ') : '—';
-                      
+
                       return (
                         <tr key={record.id} className="border-b border-muted">
                           <td className="py-2">
