@@ -561,15 +561,10 @@ export default function Auth() {
             {mode === "login" && (
               <div className="mt-6 text-center text-sm">
                 <p className="text-muted-foreground">
-                  {(role === "establishment" || role === "department") && <span> Don't have an account? </span>}
+                  {role === "establishment" && <span> Don't have an account? </span>}
                   {role === "establishment" && (
                     <Link to="/register/establishment" className="text-primary hover:underline">
                       Register as Establishment
-                    </Link>
-                  )}
-                  {role === "department" && (
-                    <Link to="/register/department" className="text-primary hover:underline">
-                      Register as Department
                     </Link>
                   )}
                   {!role && (
@@ -583,6 +578,6 @@ export default function Auth() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   );
 }
