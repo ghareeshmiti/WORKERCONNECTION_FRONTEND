@@ -199,10 +199,10 @@ export default function WorkerDashboard() {
         {/* Attendance History with Date Filter */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <CardTitle className="whitespace-nowrap">Attendance History</CardTitle>
-              <div className="flex flex-col md:flex-row md:items-center gap-2 flex-1">
-                <div className="flex flex-col gap-2">
+            <div className="flex flex-col md:flex-row md:items-center gap-4 w-full">
+              <CardTitle className="whitespace-nowrap shrink-0">Attendance History</CardTitle>
+              <div className="flex flex-col md:flex-row md:items-center gap-2 flex-1 w-full overflow-x-auto">
+                <div className="flex items-center gap-2 flex-nowrap">
                   <DateRangePicker
                     dateRange={dateRange}
                     onDateRangeChange={setDateRange}
