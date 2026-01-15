@@ -91,25 +91,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
         }
       } else if (role === 'WORKER') {
-        // Worker Profile from Metadata (Shadow User)
-        // The backend puts worker_id in user_metadata, so we can use that directly.
-        // Or we could fetch from 'workers' table if we needed more info, but metadata is faster.
         const meta = user.user_metadata || {};
         profileData = {
-          worker_id: meta.worker_id,
+          worker_id: meta.worker_id, // Default to string ID
           full_name: meta.full_name || 'Worker',
-          // Note: If full_name isn't in metadata yet, we might want to fetch it.
-          // But for now, let's rely on metadata or default.
         };
 
-        // Optional: Fetch from workers table to ensure validity or get name if missing
-        if (meta.worker_id) {
-          const { data: wData } = await supabase.from('workers').select('id, first_name, last_name').eq('worker_id', meta.worker_id).maybeSingle();
-          if (wData) {
-            profileData.full_name = `${wData.first_name || ''} ${wData.last_name || ''}`.trim();
-            // IMPORTANT: The app and DB expects UUID for worker_id in queries (e.g. attendance), not the string ID.
-            // So we must override the metadata (string) ID with the actual UUID from the table.
-            profileData.worker_id = wData.id;
+        // Prefer UUID from metadata if available (Added by backend login)
+        if (meta.worker_uuid) {
+          profileData.worker_id = meta.worker_uuid;
+        } else if (meta.worker_id) {
+          // Fallback: Try to fetch if metadata is stale (older logins)
+          try {
+            const { data: wData } = await supabase.from('workers').select('id, first_name, last_name').eq('worker_id', meta.worker_id).maybeSingle();
+            if (wData) {
+              profileData.full_name = `${wData.first_name || ''} ${wData.last_name || ''}`.trim();
+              profileData.worker_id = wData.id;
+            }
+          } catch (e) {
+            console.warn('Could not fetch worker profile', e);
           }
         }
       }
