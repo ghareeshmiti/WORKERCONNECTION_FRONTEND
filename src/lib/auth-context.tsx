@@ -113,99 +113,99 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       }
-    }
+
 
       const context: UserContext = {
-      authUserId: userId,
-      role: role,
-      workerId: profileData?.worker_id || undefined,
-      establishmentId: profileData?.establishment_id || undefined,
-      departmentId: profileData?.department_id || undefined,
-      fullName: profileData?.full_name || undefined,
-      email: user.email || undefined,
-      district: profileData?.district || undefined,
-    };
+        authUserId: userId,
+        role: role,
+        workerId: profileData?.worker_id || undefined,
+        establishmentId: profileData?.establishment_id || undefined,
+        departmentId: profileData?.department_id || undefined,
+        fullName: profileData?.full_name || undefined,
+        email: user.email || undefined,
+        district: profileData?.district || undefined,
+      };
 
-    return context;
-  } catch (error) {
-    console.error('Error in fetchUserContext:', error);
-    return null;
-  }
-};
+      return context;
+    } catch (error) {
+      console.error('Error in fetchUserContext:', error);
+      return null;
+    }
+  };
 
-const refreshUserContext = async () => {
-  if (user) {
-    const context = await fetchUserContext(user);
-    setUserContext(context);
-  }
-};
+  const refreshUserContext = async () => {
+    if (user) {
+      const context = await fetchUserContext(user);
+      setUserContext(context);
+    }
+  };
 
-useEffect(() => {
-  // Set up auth state listener FIRST
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    (event, session) => {
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        // Defer fetching user context
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserContext(session.user).then(setUserContext);
+          }, 0);
+        } else {
+          setUserContext(null);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
 
-      // Defer fetching user context
       if (session?.user) {
-        setTimeout(() => {
-          fetchUserContext(session.user).then(setUserContext);
-        }, 0);
+        fetchUserContext(session.user).then((context) => {
+          setUserContext(context);
+          setLoading(false);
+        });
       } else {
-        setUserContext(null);
-      }
-    }
-  );
-
-  // THEN check for existing session
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setSession(session);
-    setUser(session?.user ?? null);
-
-    if (session?.user) {
-      fetchUserContext(session.user).then((context) => {
-        setUserContext(context);
         setLoading(false);
-      });
-    } else {
-      setLoading(false);
-    }
-  });
+      }
+    });
 
-  return () => subscription.unsubscribe();
-}, []);
+    return () => subscription.unsubscribe();
+  }, []);
 
-const signIn = async (email: string, password: string) => {
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { error };
-};
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
 
-const signOut = async () => {
-  await supabase.auth.signOut();
-  setUser(null);
-  setSession(null);
-  setUserContext(null);
-};
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+    setUserContext(null);
+  };
 
-return (
-  <AuthContext.Provider
-    value={{
-      user,
-      session,
-      userContext,
-      loading,
-      signIn,
-      signOut,
-      refreshUserContext,
-    }}
-  >
-    {children}
-  </AuthContext.Provider>
-);
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        userContext,
+        loading,
+        signIn,
+        signOut,
+        refreshUserContext,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
