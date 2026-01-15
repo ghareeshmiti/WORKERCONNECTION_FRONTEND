@@ -157,8 +157,6 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
     }
   };
 
-  if (!worker) return null;
-
   const districts = useMemo(() => getDistricts(), []);
 
   const watchedDistrict = form.watch('district');
@@ -168,6 +166,8 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
     const distName = selected ? (typeof selected === 'string' ? selected : selected.name) : watchedDistrict;
     return getMandalsForDistrict(distName);
   }, [watchedDistrict, districts]);
+
+  if (!worker) return null;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
