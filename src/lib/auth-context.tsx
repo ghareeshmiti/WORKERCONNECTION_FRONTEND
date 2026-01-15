@@ -90,8 +90,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             full_name: user.email // Fallback name
           };
         }
-      } else {
-        // Worker or others
+      } else if (role === 'WORKER') {
+        // Worker Profile from Metadata (Shadow User)
+        // The backend puts worker_id in user_metadata, so we can use that directly.
+        // Or we could fetch from 'workers' table if we needed more info, but metadata is faster.
+        const meta = user.user_metadata || {};
+        profileData = {
+          worker_id: meta.worker_id,
+          full_name: meta.full_name || 'Worker',
+          // Note: If full_name isn't in metadata yet, we might want to fetch it.
+          // But for now, let's rely on metadata or default.
+        };
+
+        // Optional: Fetch from workers table to ensure validity or get name if missing
+        if (meta.worker_id) {
+          const { data: wData } = await supabase.from('workers').select('first_name, last_name').eq('worker_id', meta.worker_id).maybeSingle();
+          if (wData) {
+            profileData.full_name = `${wData.first_name || ''} ${wData.last_name || ''}`.trim();
+          }
+        }
       }
 
       const context: UserContext = {
