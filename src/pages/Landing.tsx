@@ -47,7 +47,9 @@ export default function Landing() {
                   <Button className="w-full" variant="default">Register</Button>
                 </Link>
                 <Link to="/auth?role=worker" className="block">
-                  <Button className="w-full" variant="outline">
+                  <Button variant="outline"
+                    className="w-full border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600"
+                  >
                     Login
                   </Button>
                 </Link>
