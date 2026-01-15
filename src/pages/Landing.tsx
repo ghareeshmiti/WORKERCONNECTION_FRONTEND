@@ -44,10 +44,10 @@ export default function Landing() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Link to="/register/worker" className="block">
-                  <Button className="w-full mb-2 bg-accent hover:bg-accent/90">Register</Button>
+                  <Button className="w-full" variant="default">Register</Button>
                 </Link>
                 <Link to="/auth?role=worker" className="block">
-                  <Button className="w-full" variant="default">
+                  <Button className="w-full" variant="outline">
                     Login
                   </Button>
                 </Link>
