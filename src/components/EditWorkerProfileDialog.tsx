@@ -159,9 +159,8 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
 
   if (!worker) return null;
 
-  return (
   const districts = useMemo(() => getDistricts(), []);
-  
+
   const watchedDistrict = form.watch('district');
   const mandals = useMemo(() => {
     if (!watchedDistrict) return [];
