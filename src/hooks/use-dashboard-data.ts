@@ -286,7 +286,6 @@ export function useDepartmentEstablishments(departmentId: string | undefined) {
         .from('establishments')
         .select('*')
         .eq('department_id', departmentId)
-        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
@@ -346,8 +345,7 @@ export function useDepartmentStats(departmentId: string | undefined) {
       const { count: estCount } = await supabase
         .from('establishments')
         .select('*', { count: 'exact', head: true })
-        .eq('department_id', departmentId)
-        .eq('is_active', true);
+        .eq('department_id', departmentId);
 
       // Get establishment IDs
       const { data: establishments } = await supabase
