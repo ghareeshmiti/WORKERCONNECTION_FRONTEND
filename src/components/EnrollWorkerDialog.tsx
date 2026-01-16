@@ -167,7 +167,10 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
 
     try {
       // 1. Create worker
-      const generatedWorkerId = `WKR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+      // Generate a numeric-like ID: WKR + Timestamp(last 6) + Random(4)
+      const timestamp = Date.now().toString().slice(-6);
+      const random = Math.floor(1000 + Math.random() * 9000).toString();
+      const generatedWorkerId = `WKR${timestamp}${random}`;
 
       const { data: worker, error: workerError } = await supabase
         .from('workers')
@@ -223,8 +226,10 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
       }
 
       setNewWorkerId(worker.id);
-      toast({ title: "Worker Enrolled", description: "Worker profile created successfully." });
+      toast({ title: "Worker Enrolled", description: `Worker ${generatedWorkerId} enrolled successfully.` });
+      // Invalidate both establishment workers (if mapped) and unmapped workers (for department view)
       queryClient.invalidateQueries({ queryKey: [establishmentId ? 'establishment-workers' : 'workers'] });
+      queryClient.invalidateQueries({ queryKey: ['unmapped-workers'] });
       setStep(3); // Move to card setup
 
     } catch (err: any) {
