@@ -206,7 +206,7 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
           nres_member: formData.nresMember || 'No',
           trade_union_member: formData.tradeUnionMember || 'No',
 
-          status: 'APPROVED', // Direct enrollment implies approval
+          status: 'active', // Direct enrollment implies approval
         })
         .select()
         .single();
