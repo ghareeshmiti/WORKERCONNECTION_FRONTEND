@@ -228,16 +228,7 @@ export default function DepartmentDashboard() {
                           </Button>
                         </>
                       )}
-                      {!viewOnly && worker.status === 'active' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-2 lg:px-3 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
-                          onClick={() => setWorkerToAssignCard(worker)}
-                        >
-                          <CreditCard className="mr-2 h-3.5 w-3.5" /> Assign Card
-                        </Button>
-                      )}
+                      {/* Removed Assign Card Button per user request */}
                     </div>
                   </td>
                 )}
