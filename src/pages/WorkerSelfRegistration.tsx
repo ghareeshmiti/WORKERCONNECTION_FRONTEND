@@ -9,12 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, ArrowRight, Check, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Check, ShieldCheck } from 'lucide-react';
 import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/data/india-locations';
 import { supabase } from '@/integrations/supabase/client';
-
-// Password validation regex
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 const formatAadhaar = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 12);
@@ -33,6 +30,13 @@ const calculateAge = (dob: string): number => {
     return age;
 };
 
+// Calculate max date for 18 years ago
+const getMaxDOB = () => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() - 18);
+    return today.toISOString().split('T')[0];
+};
+
 // --- Validation Schemas ---
 
 const identitySchema = z.object({
@@ -46,11 +50,6 @@ const personalSchema = z.object({
     gender: z.string().min(1, 'Gender is required'),
     dateOfBirth: z.string().min(1, 'Date of birth is required'),
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit mobile number required'),
-    password: z.string().regex(passwordRegex, 'Password: 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special char'),
-    confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
 }).refine((data) => calculateAge(data.dateOfBirth) >= 18, {
     message: "Must be at least 18 years old",
     path: ["dateOfBirth"],
@@ -95,7 +94,6 @@ const addressSchema = z.object({
 type FormData = {
     aadhaar: string; otp: string; otpVerified: boolean; otpSent: boolean;
     firstName: string; lastName: string; gender: string; dateOfBirth: string; phone: string;
-    password: string; confirmPassword: string;
 
     fatherName: string; motherName: string;
     maritalStatus: string; caste: string; disabilityStatus: string;
@@ -121,12 +119,10 @@ export default function WorkerSelfRegistration() {
     const [otpLoading, setOtpLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const [showPassword, setShowPassword] = useState(false);
 
     const [formData, setFormData] = useState<FormData>({
         aadhaar: '', otp: '', otpVerified: false, otpSent: false,
         firstName: '', lastName: '', gender: '', dateOfBirth: '', phone: '',
-        password: '', confirmPassword: '',
 
         fatherName: '', motherName: '', maritalStatus: '', caste: '', disabilityStatus: 'None',
         photoUrl: '', bankAccountNumber: '', ifscCode: '',
@@ -242,6 +238,9 @@ export default function WorkerSelfRegistration() {
         try {
             const presentAddress = `${formData.presentDoorNo}, ${formData.presentStreet}, ${formData.presentVillage}, ${formData.presentMandal}, ${formData.presentDistrict} - ${formData.presentPincode}`;
 
+            // Generate a tough random password as the user doesn't need to know it (auth by Aadhaar/OTP)
+            const randomPassword = `W@rker${Math.random().toString(36).slice(-8)}!${Math.floor(Math.random() * 100)}`;
+
             const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-worker`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -250,7 +249,7 @@ export default function WorkerSelfRegistration() {
                     firstName: formData.firstName.trim(),
                     lastName: formData.lastName.trim(),
                     phone: formData.phone,
-                    password: formData.password,
+                    password: randomPassword,
                     dateOfBirth: formData.dateOfBirth,
                     gender: formData.gender.toLowerCase(),
                     aadhaarLastFour: formData.aadhaar.replace(/-/g, '').slice(-4),
@@ -321,7 +320,7 @@ export default function WorkerSelfRegistration() {
                                 <span className={`text-xs ${idx === step ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{s}</span>
                             </div>
                         ))}
-                        {/* Connector Line could be added here */}
+                        {/* Connector Line */}
                     </div>
                 </div>
 
@@ -405,7 +404,7 @@ export default function WorkerSelfRegistration() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Date of Birth <ReqStar /></Label>
-                                        <Input type="date" value={formData.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
+                                        <Input type="date" value={formData.dateOfBirth} max={getMaxDOB()} onChange={e => updateField('dateOfBirth', e.target.value)} />
                                         <ErrorMsg id="dateOfBirth" />
                                     </div>
                                 </div>
@@ -413,21 +412,6 @@ export default function WorkerSelfRegistration() {
                                     <Label>Phone Number <ReqStar /></Label>
                                     <Input value={formData.phone} onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="9876543210" />
                                     <ErrorMsg id="phone" />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Password <ReqStar /></Label>
-                                        <div className="relative">
-                                            <Input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={e => updateField('password', e.target.value)} />
-                                            <Button variant="ghost" size="icon" className="absolute right-0 top-0" onClick={() => setShowPassword(!showPassword)}><Eye className="h-4 w-4" /></Button>
-                                        </div>
-                                        <ErrorMsg id="password" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Confirm Password <ReqStar /></Label>
-                                        <Input type="password" value={formData.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} />
-                                        <ErrorMsg id="confirmPassword" />
-                                    </div>
                                 </div>
                             </div>
                         )}
