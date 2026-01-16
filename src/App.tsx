@@ -24,6 +24,7 @@ const EstablishmentWorkers = lazy(() => import("@/pages/EstablishmentWorkers"));
 const DepartmentDashboard = lazy(() => import("@/pages/DepartmentDashboard"));
 const EstablishmentAttendance = lazy(() => import("@/pages/EstablishmentAttendance"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const PublicWorkerProfile = lazy(() => import("@/pages/PublicWorkerProfile"));
 
 function PageLoader() {
   return (
@@ -47,6 +48,7 @@ const App = () => (
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
+              <Route path="/public/worker" element={<PublicWorkerProfile />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/register/establishment" element={<EstablishmentRegister />} />
               <Route path="/register/department" element={<DepartmentRegister />} />
