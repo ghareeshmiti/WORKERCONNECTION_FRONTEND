@@ -19,6 +19,25 @@ import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/dat
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
+// Helper to calculate age
+const calculateAge = (dob: string) => {
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+// Calculate max date for 18 years ago
+const getMaxDOB = () => {
+  const today = new Date();
+  today.setFullYear(today.getFullYear() - 18);
+  return today.toISOString().split('T')[0];
+};
+
 const personalSchema = z.object({
   aadhaar: z.string().regex(/^\d{12}$/, 'Must be valid 12-digit Aadhaar'),
   eshramId: z.string().optional(),
@@ -26,7 +45,9 @@ const personalSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   gender: z.string().min(1, 'Gender is required'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  dateOfBirth: z.string().min(1, 'Date of birth is required').refine((dob) => calculateAge(dob) >= 18, {
+    message: "Worker must be at least 18 years old"
+  }),
   phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
   fatherName: z.string().optional(),
   motherName: z.string().optional(),
@@ -276,7 +297,12 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
                   </div>
                   <div className="space-y-2">
                     <Label>Date of Birth</Label>
-                    <Input type="date" value={formData.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
+                    <Input
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={e => updateField('dateOfBirth', e.target.value)}
+                      max={getMaxDOB()}
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
