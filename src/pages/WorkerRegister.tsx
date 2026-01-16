@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, ArrowRight, Check, User, Eye, EyeOff, ShieldCheck, Info } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Check, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/data/india-locations';
 
 // Password validation regex
@@ -45,15 +46,17 @@ const identitySchema = z.object({
 
 const personalSchema = z.object({
   firstName: z.string().trim().min(2, 'First name must be at least 2 characters').max(50),
-  middleName: z.string().max(50).optional(),
   lastName: z.string().trim().min(2, 'Last name must be at least 2 characters').max(50),
   gender: z.string().min(1, 'Gender is required'),
   maritalStatus: z.string().min(1, 'Marital status is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  fatherHusbandName: z.string().trim().min(2, 'This field is required').max(100),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
   phone: z.string().regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit mobile number'),
   password: z.string().regex(passwordRegex, 'Password must have min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special character'),
   confirmPassword: z.string(),
+  caste: z.string().optional(),
+  disabilityStatus: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -63,6 +66,18 @@ const personalSchema = z.object({
 }, {
   message: "Must be at least 18 years old",
   path: ["dateOfBirth"],
+});
+
+const professionalSchema = z.object({
+  educationLevel: z.string().optional(),
+  skillCategory: z.string().optional(),
+  workHistory: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  ifscCode: z.string().optional(),
+  nresMember: z.string().optional(),
+  tradeUnionMember: z.string().optional(),
+  eshramId: z.string().optional(),
+  bocwId: z.string().optional(),
 });
 
 const addressSchema = z.object({
@@ -80,30 +95,36 @@ const addressSchema = z.object({
   permanentPincode: z.string().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits'),
 });
 
-const otherSchema = z.object({
-  nresMember: z.string().min(1, 'Please select Yes or No'),
-  tradeUnionMember: z.string().min(1, 'Please select Yes or No'),
-});
 
 type FormData = {
   aadhaar: string;
   otp: string;
   otpVerified: boolean;
   otpSent: boolean;
-  eshramId: string;
-  bocwId: string;
   firstName: string;
-  middleName: string;
   lastName: string;
   gender: string;
   maritalStatus: string;
   dateOfBirth: string;
-  fatherHusbandName: string;
+  fatherName: string;
+  motherName: string;
   caste: string;
-  subCaste: string;
+  disabilityStatus: string;
   phone: string;
   password: string;
   confirmPassword: string;
+
+  educationLevel: string;
+  skillCategory: string;
+  workHistory: string;
+  bankAccountNumber: string;
+  ifscCode: string;
+  nresMember: string;
+  tradeUnionMember: string;
+  eshramId: string;
+  bocwId: string;
+  photoUrl: string;
+
   presentDoorNo: string;
   presentStreet: string;
   presentDistrict: string;
@@ -117,11 +138,9 @@ type FormData = {
   permanentVillage: string;
   permanentPincode: string;
   sameAsPresent: boolean;
-  nresMember: string;
-  tradeUnionMember: string;
 };
 
-const STEPS = ['Identity Verification', 'Personal Information', 'Address', 'Other Details', 'Review'];
+const STEPS = ['Identity', 'Personal', 'Professional', 'Address', 'Review'];
 const GENDERS = ['Male', 'Female', 'Other'];
 const MARITAL_STATUSES = ['Single', 'Married', 'Widowed', 'Divorced'];
 
@@ -134,28 +153,30 @@ export default function WorkerRegister() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     aadhaar: '', otp: '', otpVerified: false, otpSent: false,
-    eshramId: '', bocwId: '',
-    firstName: '', middleName: '', lastName: '',
+    firstName: '', lastName: '',
     gender: '', maritalStatus: '', dateOfBirth: '',
-    fatherHusbandName: '', caste: '', subCaste: '',
+    fatherName: '', motherName: '', caste: '', disabilityStatus: 'None',
     phone: '', password: '', confirmPassword: '',
+
+    educationLevel: '', skillCategory: '', workHistory: '',
+    bankAccountNumber: '', ifscCode: '',
+    nresMember: 'No', tradeUnionMember: 'No',
+    eshramId: '', bocwId: '', photoUrl: '',
+
     presentDoorNo: '', presentStreet: '', presentDistrict: '',
     presentMandal: '', presentVillage: '', presentPincode: '',
     permanentDoorNo: '', permanentStreet: '', permanentDistrict: '',
     permanentMandal: '', permanentVillage: '', permanentPincode: '',
     sameAsPresent: false,
-    nresMember: '', tradeUnionMember: '',
   });
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Memoized dropdown options for present address
   const districts = useMemo(() => getDistricts(), []);
   const presentMandals = useMemo(() => getMandalsForDistrict(formData.presentDistrict), [formData.presentDistrict]);
   const presentVillages = useMemo(() => getVillagesForMandal(formData.presentDistrict, formData.presentMandal), [formData.presentDistrict, formData.presentMandal]);
 
-  // Memoized dropdown options for permanent address
   const permanentMandals = useMemo(() => getMandalsForDistrict(formData.permanentDistrict), [formData.permanentDistrict]);
   const permanentVillages = useMemo(() => getVillagesForMandal(formData.permanentDistrict, formData.permanentMandal), [formData.permanentDistrict, formData.permanentMandal]);
 
@@ -165,7 +186,6 @@ export default function WorkerRegister() {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
 
-      // Reset dependent dropdowns for present address
       if (field === 'presentDistrict') {
         newData.presentMandal = '';
         newData.presentVillage = '';
@@ -173,7 +193,6 @@ export default function WorkerRegister() {
         newData.presentVillage = '';
       }
 
-      // Reset dependent dropdowns for permanent address
       if (field === 'permanentDistrict') {
         newData.permanentMandal = '';
         newData.permanentVillage = '';
@@ -181,7 +200,6 @@ export default function WorkerRegister() {
         newData.permanentVillage = '';
       }
 
-      // Handle same as present checkbox
       if (field === 'sameAsPresent' && value === true) {
         newData.permanentDoorNo = prev.presentDoorNo;
         newData.permanentStreet = prev.presentStreet;
@@ -199,7 +217,6 @@ export default function WorkerRegister() {
   const handleAadhaarChange = (value: string) => {
     const formatted = formatAadhaar(value);
     updateField('aadhaar', formatted);
-    // Reset OTP state if aadhaar changes
     if (formData.otpVerified || formData.otpSent) {
       setFormData(prev => ({ ...prev, otpVerified: false, otpSent: false, otp: '' }));
     }
@@ -210,7 +227,6 @@ export default function WorkerRegister() {
   const handleGenerateOTP = () => {
     if (!isValidAadhaar) return;
     setOtpLoading(true);
-    // Simulate OTP sending
     setTimeout(() => {
       setFormData(prev => ({ ...prev, otpSent: true }));
       toast({ title: 'OTP Sent', description: 'A verification OTP has been sent (simulated).' });
@@ -219,7 +235,6 @@ export default function WorkerRegister() {
   };
 
   const handleVerifyOTP = () => {
-    // Accept any 4-digit OTP for POC
     if (formData.otp.length === 4 && /^\d{4}$/.test(formData.otp)) {
       setFormData(prev => ({ ...prev, otpVerified: true }));
       toast({ title: 'Verified!', description: 'Aadhaar verification successful.' });
@@ -239,40 +254,13 @@ export default function WorkerRegister() {
           });
           break;
         case 1:
-          personalSchema.parse({
-            firstName: formData.firstName,
-            middleName: formData.middleName,
-            lastName: formData.lastName,
-            gender: formData.gender,
-            maritalStatus: formData.maritalStatus,
-            dateOfBirth: formData.dateOfBirth,
-            fatherHusbandName: formData.fatherHusbandName,
-            phone: formData.phone,
-            password: formData.password,
-            confirmPassword: formData.confirmPassword,
-          });
+          personalSchema.parse(formData);
           break;
         case 2:
-          addressSchema.parse({
-            presentDoorNo: formData.presentDoorNo,
-            presentStreet: formData.presentStreet,
-            presentDistrict: formData.presentDistrict,
-            presentMandal: formData.presentMandal,
-            presentVillage: formData.presentVillage,
-            presentPincode: formData.presentPincode,
-            permanentDoorNo: formData.permanentDoorNo,
-            permanentStreet: formData.permanentStreet,
-            permanentDistrict: formData.permanentDistrict,
-            permanentMandal: formData.permanentMandal,
-            permanentVillage: formData.permanentVillage,
-            permanentPincode: formData.permanentPincode,
-          });
+          professionalSchema.parse(formData);
           break;
         case 3:
-          otherSchema.parse({
-            nresMember: formData.nresMember,
-            tradeUnionMember: formData.tradeUnionMember,
-          });
+          addressSchema.parse(formData);
           break;
       }
       return true;
@@ -314,15 +302,32 @@ export default function WorkerRegister() {
             dateOfBirth: formData.dateOfBirth,
             gender: formData.gender.toLowerCase(),
             aadhaarLastFour: formData.aadhaar.replace(/-/g, '').slice(-4),
+            aadhaarNumber: formData.aadhaar,
             state: 'Andhra Pradesh',
             district: formData.presentDistrict,
             mandal: formData.presentMandal,
+            village: formData.presentVillage,
             pincode: formData.presentPincode,
             addressLine: presentAddress,
-            emergencyContactName: formData.fatherHusbandName.trim(),
+            emergencyContactName: formData.fatherName?.trim() || '',
             emergencyContactPhone: null,
-            skills: [],
-            experienceYears: null,
+
+            fatherName: formData.fatherName,
+            motherName: formData.motherName,
+            maritalStatus: formData.maritalStatus,
+            caste: formData.caste,
+            disabilityStatus: formData.disabilityStatus,
+
+            educationLevel: formData.educationLevel,
+            skillCategory: formData.skillCategory,
+            workHistory: formData.workHistory,
+            bankAccountNumber: formData.bankAccountNumber,
+            ifscCode: formData.ifscCode,
+            photoUrl: formData.photoUrl,
+            nresMember: formData.nresMember,
+            tradeUnionMember: formData.tradeUnionMember,
+            eshramId: formData.eshramId,
+            bocwId: formData.bocwId,
           }),
         }
       );
@@ -365,8 +370,8 @@ export default function WorkerRegister() {
           {STEPS.map((stepName, index) => (
             <div key={stepName} className="flex items-center">
               <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${index < step ? 'bg-primary text-primary-foreground' :
-                  index === step ? 'bg-primary text-primary-foreground' :
-                    'bg-muted text-muted-foreground'
+                index === step ? 'bg-primary text-primary-foreground' :
+                  'bg-muted text-muted-foreground'
                 }`}>
                 {index < step ? <Check className="w-4 h-4" /> : index + 1}
               </div>
@@ -386,8 +391,8 @@ export default function WorkerRegister() {
             <CardDescription>
               {step === 0 && 'Verify your identity using Aadhaar'}
               {step === 1 && 'Enter your personal details'}
-              {step === 2 && 'Enter your present and permanent address'}
-              {step === 3 && 'Additional information'}
+              {step === 2 && 'Professional & Banking Details'}
+              {step === 3 && 'Enter your present and permanent address'}
               {step === 4 && 'Review your information before submitting'}
             </CardDescription>
           </CardHeader>
@@ -453,33 +458,6 @@ export default function WorkerRegister() {
                     </div>
                   </div>
                 )}
-
-                {formData.otpVerified && (
-                  <div className="space-y-4 pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">Optional identification numbers:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="eshramId">eShram ID</Label>
-                        <Input
-                          id="eshramId"
-                          value={formData.eshramId}
-                          onChange={e => updateField('eshramId', e.target.value)}
-                          placeholder="Enter eShram ID"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="bocwId">BoCW ID</Label>
-                        <Input
-                          id="bocwId"
-                          value={formData.bocwId}
-                          onChange={e => updateField('bocwId', e.target.value)}
-                          placeholder="Enter BoCW ID"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {errors.otpVerified && <p className="text-sm text-destructive">{errors.otpVerified}</p>}
               </div>
             )}
@@ -487,71 +465,33 @@ export default function WorkerRegister() {
             {/* Step 1: Personal Information */}
             {step === 1 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name *</Label>
-                    <Input
-                      id="firstName"
-                      value={formData.firstName}
-                      onChange={e => updateField('firstName', e.target.value)}
-                    />
+                    <Label>First Name *</Label>
+                    <Input value={formData.firstName} onChange={e => updateField('firstName', e.target.value)} />
                     {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="middleName">Middle Name</Label>
-                    <Input
-                      id="middleName"
-                      value={formData.middleName}
-                      onChange={e => updateField('middleName', e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input
-                      id="lastName"
-                      value={formData.lastName}
-                      onChange={e => updateField('lastName', e.target.value)}
-                    />
+                    <Label>Last Name *</Label>
+                    <Input value={formData.lastName} onChange={e => updateField('lastName', e.target.value)} />
                     {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="gender">Gender *</Label>
+                    <Label>Gender *</Label>
                     <Select value={formData.gender} onValueChange={v => updateField('gender', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50">
-                        {GENDERS.map(g => (
-                          <SelectItem key={g} value={g}>{g}</SelectItem>
-                        ))}
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {GENDERS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="maritalStatus">Marital Status *</Label>
-                    <Select value={formData.maritalStatus} onValueChange={v => updateField('maritalStatus', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50">
-                        {MARITAL_STATUSES.map(s => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.maritalStatus && <p className="text-sm text-destructive">{errors.maritalStatus}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                    <Label>Date of Birth *</Label>
                     <Input
-                      id="dateOfBirth"
                       type="date"
                       value={formData.dateOfBirth}
                       onChange={e => updateField('dateOfBirth', e.target.value)}
@@ -559,45 +499,52 @@ export default function WorkerRegister() {
                     />
                     {errors.dateOfBirth && <p className="text-sm text-destructive">{errors.dateOfBirth}</p>}
                   </div>
-                  <div className="space-y-2">
-                    <Label>Age</Label>
-                    <Input value={age > 0 ? `${age} years` : ''} disabled className="bg-muted" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fatherHusbandName">Father / Husband Name *</Label>
-                  <Input
-                    id="fatherHusbandName"
-                    value={formData.fatherHusbandName}
-                    onChange={e => updateField('fatherHusbandName', e.target.value)}
-                  />
-                  {errors.fatherHusbandName && <p className="text-sm text-destructive">{errors.fatherHusbandName}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="caste">Caste (Optional)</Label>
-                    <Input
-                      id="caste"
-                      value={formData.caste}
-                      onChange={e => updateField('caste', e.target.value)}
-                    />
+                    <Label>Father Name</Label>
+                    <Input value={formData.fatherName} onChange={e => updateField('fatherName', e.target.value)} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="subCaste">Sub-caste (Optional)</Label>
-                    <Input
-                      id="subCaste"
-                      value={formData.subCaste}
-                      onChange={e => updateField('subCaste', e.target.value)}
-                    />
+                    <Label>Mother Name</Label>
+                    <Input value={formData.motherName} onChange={e => updateField('motherName', e.target.value)} />
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Marital Status *</Label>
+                    <Select value={formData.maritalStatus} onValueChange={v => updateField('maritalStatus', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {errors.maritalStatus && <p className="text-sm text-destructive">{errors.maritalStatus}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Caste</Label>
+                    <Input value={formData.caste} onChange={e => updateField('caste', e.target.value)} />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Mobile Number *</Label>
+                  <Label>Disability Status</Label>
+                  <Select value={formData.disabilityStatus} onValueChange={v => updateField('disabilityStatus', v)}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="None">None</SelectItem>
+                      <SelectItem value="Physical">Physical</SelectItem>
+                      <SelectItem value="Visual">Visual</SelectItem>
+                      <SelectItem value="Hearing">Hearing</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Mobile Number *</Label>
                   <Input
-                    id="phone"
                     value={formData.phone}
                     onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                     placeholder="9876543210"
@@ -608,19 +555,16 @@ export default function WorkerRegister() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password *</Label>
+                    <Label>Password *</Label>
                     <div className="relative">
                       <Input
-                        id="password"
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={e => updateField('password', e.target.value)}
-                        placeholder="Min 8 chars, 1 upper, 1 lower, 1 number, 1 special"
+                        placeholder="Min 8 chars..."
                       />
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
+                        type="button" variant="ghost" size="sm"
                         className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                       >
@@ -630,19 +574,16 @@ export default function WorkerRegister() {
                     {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                    <Label>Confirm Password *</Label>
                     <div className="relative">
                       <Input
-                        id="confirmPassword"
                         type={showConfirmPassword ? "text" : "password"}
                         value={formData.confirmPassword}
                         onChange={e => updateField('confirmPassword', e.target.value)}
                         placeholder="Re-enter password"
                       />
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
+                        type="button" variant="ghost" size="sm"
                         className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       >
@@ -655,32 +596,116 @@ export default function WorkerRegister() {
               </div>
             )}
 
-            {/* Step 2: Address */}
+            {/* Step 2: Professional Details */}
             {step === 2 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Education Level</Label>
+                    <Select value={formData.educationLevel} onValueChange={v => updateField('educationLevel', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Illiterate">Illiterate</SelectItem>
+                        <SelectItem value="5th Pass">5th Pass</SelectItem>
+                        <SelectItem value="8th Pass">8th Pass</SelectItem>
+                        <SelectItem value="10th Pass">10th Pass</SelectItem>
+                        <SelectItem value="12th Pass">12th Pass</SelectItem>
+                        <SelectItem value="ITI/Diploma">ITI/Diploma</SelectItem>
+                        <SelectItem value="Graduate">Graduate</SelectItem>
+                        <SelectItem value="Post Graduate">Post Graduate</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Skill Category</Label>
+                    <Select value={formData.skillCategory} onValueChange={v => updateField('skillCategory', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Unskilled">Unskilled</SelectItem>
+                        <SelectItem value="Semi-Skilled">Semi-Skilled</SelectItem>
+                        <SelectItem value="Skilled">Skilled</SelectItem>
+                        <SelectItem value="Highly Skilled">Highly Skilled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Work History</Label>
+                  <Textarea
+                    value={formData.workHistory}
+                    onChange={e => updateField('workHistory', e.target.value)}
+                    placeholder="List past employers, dates, and roles..."
+                  />
+                </div>
+
+                <h3 className="font-medium pt-4 border-t">Banking & IDs</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Bank Account Number</Label>
+                    <Input value={formData.bankAccountNumber} onChange={e => updateField('bankAccountNumber', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>IFSC Code</Label>
+                    <Input value={formData.ifscCode} onChange={e => updateField('ifscCode', e.target.value.toUpperCase())} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Photo URL</Label>
+                  <Input value={formData.photoUrl} onChange={e => updateField('photoUrl', e.target.value)} placeholder="https://..." />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>eShram ID</Label>
+                    <Input value={formData.eshramId} onChange={e => updateField('eshramId', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>BoCW ID</Label>
+                    <Input value={formData.bocwId} onChange={e => updateField('bocwId', e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>NRES Member</Label>
+                    <Select value={formData.nresMember} onValueChange={v => updateField('nresMember', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Trade Union Member</Label>
+                    <Select value={formData.tradeUnionMember} onValueChange={v => updateField('tradeUnionMember', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Address */}
+            {step === 3 && (
               <div className="space-y-6">
                 {/* Present Address */}
                 <div className="space-y-4">
                   <h3 className="font-semibold">Present Address</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="presentDoorNo">Door No *</Label>
+                      <Label>Door No *</Label>
                       <Input
-                        id="presentDoorNo"
                         value={formData.presentDoorNo}
                         onChange={e => updateField('presentDoorNo', e.target.value)}
                         placeholder="e.g., 1-2-34/A"
-                        maxLength={20}
                       />
                       {errors.presentDoorNo && <p className="text-sm text-destructive">{errors.presentDoorNo}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="presentStreet">Street *</Label>
+                      <Label>Street *</Label>
                       <Input
-                        id="presentStreet"
                         value={formData.presentStreet}
                         onChange={e => updateField('presentStreet', e.target.value)}
                         placeholder="Street name"
-                        maxLength={100}
                       />
                       {errors.presentStreet && <p className="text-sm text-destructive">{errors.presentStreet}</p>}
                     </div>
@@ -689,9 +714,7 @@ export default function WorkerRegister() {
                   <div className="space-y-2">
                     <Label>District *</Label>
                     <Select value={formData.presentDistrict} onValueChange={v => updateField('presentDistrict', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select district" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="bg-background border shadow-lg z-50">
                         {districts.map(d => (
                           <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
@@ -709,9 +732,7 @@ export default function WorkerRegister() {
                         onValueChange={v => updateField('presentMandal', v)}
                         disabled={!formData.presentDistrict}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder={formData.presentDistrict ? "Select mandal" : "Select district first"} />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                         <SelectContent className="bg-background border shadow-lg z-50">
                           {presentMandals.map(m => (
                             <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
@@ -727,9 +748,7 @@ export default function WorkerRegister() {
                         onValueChange={v => updateField('presentVillage', v)}
                         disabled={!formData.presentMandal}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder={formData.presentMandal ? "Select village" : "Select mandal first"} />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                         <SelectContent className="bg-background border shadow-lg z-50 max-h-[200px]">
                           {presentVillages.map(v => (
                             <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>
@@ -741,9 +760,8 @@ export default function WorkerRegister() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="presentPincode">Pincode *</Label>
+                    <Label>Pincode *</Label>
                     <Input
-                      id="presentPincode"
                       value={formData.presentPincode}
                       onChange={e => updateField('presentPincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
                       placeholder="6-digit pincode"
@@ -768,26 +786,20 @@ export default function WorkerRegister() {
                   <h3 className="font-semibold">Permanent Address</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="permanentDoorNo">Door No *</Label>
+                      <Label>Door No *</Label>
                       <Input
-                        id="permanentDoorNo"
                         value={formData.permanentDoorNo}
                         onChange={e => updateField('permanentDoorNo', e.target.value)}
-                        placeholder="e.g., 1-2-34/A"
-                        maxLength={20}
                         disabled={formData.sameAsPresent}
                         className={formData.sameAsPresent ? 'bg-muted' : ''}
                       />
                       {errors.permanentDoorNo && <p className="text-sm text-destructive">{errors.permanentDoorNo}</p>}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="permanentStreet">Street *</Label>
+                      <Label>Street *</Label>
                       <Input
-                        id="permanentStreet"
                         value={formData.permanentStreet}
                         onChange={e => updateField('permanentStreet', e.target.value)}
-                        placeholder="Street name"
-                        maxLength={100}
                         disabled={formData.sameAsPresent}
                         className={formData.sameAsPresent ? 'bg-muted' : ''}
                       />
@@ -802,9 +814,7 @@ export default function WorkerRegister() {
                       onValueChange={v => updateField('permanentDistrict', v)}
                       disabled={formData.sameAsPresent}
                     >
-                      <SelectTrigger className={formData.sameAsPresent ? 'bg-muted' : ''}>
-                        <SelectValue placeholder="Select district" />
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent className="bg-background border shadow-lg z-50">
                         {districts.map(d => (
                           <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
@@ -822,9 +832,7 @@ export default function WorkerRegister() {
                         onValueChange={v => updateField('permanentMandal', v)}
                         disabled={formData.sameAsPresent || !formData.permanentDistrict}
                       >
-                        <SelectTrigger className={formData.sameAsPresent ? 'bg-muted' : ''}>
-                          <SelectValue placeholder={formData.permanentDistrict ? "Select mandal" : "Select district first"} />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                         <SelectContent className="bg-background border shadow-lg z-50">
                           {permanentMandals.map(m => (
                             <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
@@ -840,9 +848,7 @@ export default function WorkerRegister() {
                         onValueChange={v => updateField('permanentVillage', v)}
                         disabled={formData.sameAsPresent || !formData.permanentMandal}
                       >
-                        <SelectTrigger className={formData.sameAsPresent ? 'bg-muted' : ''}>
-                          <SelectValue placeholder={formData.permanentMandal ? "Select village" : "Select mandal first"} />
-                        </SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                         <SelectContent className="bg-background border shadow-lg z-50 max-h-[200px]">
                           {permanentVillages.map(v => (
                             <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>
@@ -852,14 +858,11 @@ export default function WorkerRegister() {
                       {errors.permanentVillage && <p className="text-sm text-destructive">{errors.permanentVillage}</p>}
                     </div>
                   </div>
-
                   <div className="space-y-2">
-                    <Label htmlFor="permanentPincode">Pincode *</Label>
+                    <Label>Pincode *</Label>
                     <Input
-                      id="permanentPincode"
                       value={formData.permanentPincode}
                       onChange={e => updateField('permanentPincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="6-digit pincode"
                       maxLength={6}
                       disabled={formData.sameAsPresent}
                       className={formData.sameAsPresent ? 'bg-muted' : ''}
@@ -870,120 +873,68 @@ export default function WorkerRegister() {
               </div>
             )}
 
-            {/* Step 3: Other Details */}
-            {step === 3 && (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Are you a NRES Member? *</Label>
-                  <Select value={formData.nresMember} onValueChange={v => updateField('nresMember', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Yes or No" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.nresMember && <p className="text-sm text-destructive">{errors.nresMember}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Are you a Trade Union Member? *</Label>
-                  <Select value={formData.tradeUnionMember} onValueChange={v => updateField('tradeUnionMember', v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Yes or No" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.tradeUnionMember && <p className="text-sm text-destructive">{errors.tradeUnionMember}</p>}
-                </div>
-
-                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex items-start gap-3">
-                  <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium text-blue-800 dark:text-blue-200">Information</p>
-                    <p className="text-blue-600 dark:text-blue-400">
-                      NRES (National Rural Employment Scheme) and Trade Union membership helps in
-                      providing additional benefits and protection under labor laws. This information
-                      is collected for statistical purposes only.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Step 4: Review */}
             {step === 4 && (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm uppercase text-muted-foreground">Identity Verification</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm bg-muted/50 p-4 rounded-lg">
-                    <div><strong>Aadhaar:</strong> {formData.aadhaar.replace(/\d{4}-\d{4}/, 'XXXX-XXXX')}</div>
-                    <div><strong>Verified:</strong> <span className="text-green-600">Yes</span></div>
-                    {formData.eshramId && <div><strong>eShram ID:</strong> {formData.eshramId}</div>}
-                    {formData.bocwId && <div><strong>BoCW ID:</strong> {formData.bocwId}</div>}
+              <div className="space-y-4">
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium">Personal Information</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Name:</span>
+                    <span>{formData.firstName} {formData.lastName}</span>
+                    <span className="text-muted-foreground">Gender:</span>
+                    <span>{formData.gender}</span>
+                    <span className="text-muted-foreground">Phone:</span>
+                    <span>{formData.phone}</span>
+                    <span className="text-muted-foreground">Aadhaar:</span>
+                    <span>XXXX-XXXX-{formData.aadhaar.slice(-4)}</span>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm uppercase text-muted-foreground">Personal Information</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm bg-muted/50 p-4 rounded-lg">
-                    <div><strong>Name:</strong> {formData.firstName} {formData.middleName} {formData.lastName}</div>
-                    <div><strong>Gender:</strong> {formData.gender}</div>
-                    <div><strong>Date of Birth:</strong> {formData.dateOfBirth}</div>
-                    <div><strong>Age:</strong> {age} years</div>
-                    <div><strong>Marital Status:</strong> {formData.maritalStatus}</div>
-                    <div><strong>Father/Husband:</strong> {formData.fatherHusbandName}</div>
-                    <div><strong>Mobile:</strong> {formData.phone}</div>
-                    {formData.caste && <div><strong>Caste:</strong> {formData.caste}</div>}
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium">Professional & Banking</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Education:</span>
+                    <span>{formData.educationLevel || '-'}</span>
+                    <span className="text-muted-foreground">Bank Account:</span>
+                    <span>{formData.bankAccountNumber ? 'Provided' : 'Not Provided'}</span>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm uppercase text-muted-foreground">Present Address</h3>
-                  <div className="text-sm bg-muted/50 p-4 rounded-lg">
-                    {formData.presentDoorNo}, {formData.presentStreet}, {formData.presentVillage}, {formData.presentMandal}, {formData.presentDistrict} - {formData.presentPincode}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm uppercase text-muted-foreground">Permanent Address</h3>
-                  <div className="text-sm bg-muted/50 p-4 rounded-lg">
-                    {formData.permanentDoorNo}, {formData.permanentStreet}, {formData.permanentVillage}, {formData.permanentMandal}, {formData.permanentDistrict} - {formData.permanentPincode}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm uppercase text-muted-foreground">Other Details</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm bg-muted/50 p-4 rounded-lg">
-                    <div><strong>NRES Member:</strong> {formData.nresMember === 'yes' ? 'Yes' : 'No'}</div>
-                    <div><strong>Trade Union Member:</strong> {formData.tradeUnionMember === 'yes' ? 'Yes' : 'No'}</div>
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium">Address</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">District:</span>
+                    <span>{formData.presentDistrict}</span>
+                    <span className="text-muted-foreground">Mandal:</span>
+                    <span>{formData.presentMandal}</span>
+                    <span className="text-muted-foreground">Village:</span>
+                    <span>{formData.presentVillage}</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Navigation */}
+            {/* Buttons */}
             <div className="flex justify-between mt-6">
-              <Button variant="outline" onClick={prevStep} disabled={step === 0 || loading}>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Previous
-              </Button>
-              {step < STEPS.length - 1 ? (
-                <Button onClick={nextStep} className="bg-primary hover:bg-primary/90">
+              {step > 0 && (
+                <Button variant="outline" onClick={prevStep} disabled={loading}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </Button>
+              )}
+              {step < 4 ? (
+                <Button onClick={nextStep} className="ml-auto">
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={loading} className="bg-primary hover:bg-primary/90">
-                  {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <Button onClick={handleSubmit} disabled={loading} className="ml-auto">
+                  {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                   Submit Registration
                 </Button>
               )}
             </div>
+
           </CardContent>
         </Card>
       </div>

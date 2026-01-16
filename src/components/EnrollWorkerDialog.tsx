@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -49,12 +50,27 @@ const personalSchema = z.object({
   gender: z.string().min(1, 'Gender is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   phone: z.string().regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit mobile number'),
+  fatherName: z.string().optional(),
+  motherName: z.string().optional(),
+  maritalStatus: z.string().optional(),
+  caste: z.string().optional(),
+  disabilityStatus: z.string().optional(),
 }).refine((data) => {
   const age = calculateAge(data.dateOfBirth);
   return age >= 18;
 }, {
   message: "Must be at least 18 years old",
   path: ["dateOfBirth"],
+});
+
+const professionalSchema = z.object({
+  educationLevel: z.string().optional(),
+  skillCategory: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  ifscCode: z.string().optional(),
+  workHistory: z.string().optional(),
+  nresMember: z.string().optional(),
+  tradeUnionMember: z.string().optional(),
 });
 
 const addressSchema = z.object({
@@ -72,6 +88,20 @@ type FormData = {
   gender: string;
   dateOfBirth: string;
   phone: string;
+  fatherName: string;
+  motherName: string;
+  maritalStatus: string;
+  caste: string;
+  disabilityStatus: string;
+
+  educationLevel: string;
+  skillCategory: string;
+  bankAccountNumber: string;
+  ifscCode: string;
+  workHistory: string;
+  nresMember: string;
+  tradeUnionMember: string;
+
   district: string;
   mandal: string;
   village: string;
@@ -80,6 +110,7 @@ type FormData = {
   accessCardId: string;
   eshramId: string;
   bocwId: string;
+  photoUrl: string;
 };
 
 const GENDERS = ['Male', 'Female', 'Other'];
@@ -103,6 +134,18 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
     gender: '',
     dateOfBirth: '',
     phone: '',
+    fatherName: '',
+    motherName: '',
+    maritalStatus: '',
+    caste: '',
+    disabilityStatus: 'None',
+    educationLevel: '',
+    skillCategory: '',
+    bankAccountNumber: '',
+    ifscCode: '',
+    workHistory: '',
+    nresMember: 'No',
+    tradeUnionMember: 'No',
     district: '',
     mandal: '',
     village: '',
@@ -111,6 +154,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
     accessCardId: '',
     eshramId: '',
     bocwId: '',
+    photoUrl: '',
   });
 
   const districts = useMemo(() => getDistricts(), []);
@@ -160,6 +204,8 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       if (step === 0) {
         personalSchema.parse(formData);
       } else if (step === 1) {
+        professionalSchema.parse(formData);
+      } else if (step === 2) {
         addressSchema.parse(formData);
       }
       return true;
@@ -177,7 +223,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
 
   const nextStep = () => {
     if (validateStep()) {
-      setStep(prev => Math.min(prev + 1, 2));
+      setStep(prev => Math.min(prev + 1, 3)); // 0: Personal, 1: Prof, 2: Address, 3: Review -> 4: Success
     }
   };
 
@@ -194,6 +240,18 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       gender: '',
       dateOfBirth: '',
       phone: '',
+      fatherName: '',
+      motherName: '',
+      maritalStatus: '',
+      caste: '',
+      disabilityStatus: 'None',
+      educationLevel: '',
+      skillCategory: '',
+      bankAccountNumber: '',
+      ifscCode: '',
+      workHistory: '',
+      nresMember: 'No',
+      tradeUnionMember: 'No',
       district: '',
       mandal: '',
       village: '',
@@ -202,6 +260,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       accessCardId: '',
       eshramId: '',
       bocwId: '',
+      photoUrl: '',
     });
     setErrors({});
   };
@@ -225,7 +284,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       const aadhaarDigits = formData.aadhaar.replace(/-/g, '');
       const aadhaarLastFour = aadhaarDigits.length >= 4 ? aadhaarDigits.slice(-4) : null;
 
-      // Insert worker with department_id
+      // Insert worker
       const { data: workerData, error: workerError } = await supabase
         .from('workers')
         .insert({
@@ -243,12 +302,28 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           village: formData.village || null,
           pincode: formData.pincode || null,
           address_line: formData.addressLine || null,
+
+          father_name: formData.fatherName || null,
+          mother_name: formData.motherName || null,
+          marital_status: formData.maritalStatus || null,
+          caste: formData.caste || null,
+          disability_status: formData.disabilityStatus || null,
+
+          education_level: formData.educationLevel || null,
+          skill_category: formData.skillCategory || null,
+          work_history: formData.workHistory || null,
+          bank_account_number: formData.bankAccountNumber || null,
+          ifsc_code: formData.ifscCode || null,
+          nres_member: formData.nresMember || 'No',
+          trade_union_member: formData.tradeUnionMember || 'No',
+          photo_url: formData.photoUrl || null,
+
           access_card_id: formData.accessCardId || null,
           department_id: departmentId,
           eshram_id: formData.eshramId || null,
           bocw_id: formData.bocwId || null,
           is_active: true,
-          status: 'active', // Auto-approve for Admin enrollment
+          status: 'active',
         })
         .select('id, worker_id')
         .single();
@@ -263,8 +338,8 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['department-workers'] });
       queryClient.invalidateQueries({ queryKey: ['department-stats'] });
 
-      // Move to Card Setup step (Index 3)
-      setStep(3);
+      // Move to Card Setup step (Index 4)
+      setStep(4);
 
     } catch (error) {
       console.error('Enrollment error:', error);
@@ -298,7 +373,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
     }
   };
 
-  const STEPS = ['Personal Information', 'Address', 'Review & Create', 'Card Setup'];
+  const STEPS = ['Personal', 'Professional', 'Address', 'Review', 'Card'];
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -311,7 +386,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           Enroll Worker
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Enroll New Worker</DialogTitle>
           <DialogDescription>
@@ -327,7 +402,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                 i === step ? 'bg-primary text-primary-foreground' :
                   'bg-muted text-muted-foreground'
                 }`}>
-                {i < step || (i === 3 && step === 3) ? <Check className="w-4 h-4" /> : i + 1}
+                {i < step || (i === 4 && step === 4) ? <Check className="w-4 h-4" /> : i + 1}
               </div>
               {i < STEPS.length - 1 && (
                 <div className={`w-8 md:w-16 h-1 mx-1 ${i < step ? 'bg-success' : 'bg-muted'}`} />
@@ -339,32 +414,19 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
         {/* Step 0: Personal Information */}
         {step === 0 && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Aadhaar Number (Optional)</Label>
-              <Input
-                placeholder="XXXX-XXXX-XXXX"
-                value={formData.aadhaar}
-                onChange={(e) => handleAadhaarChange(e.target.value)}
-                maxLength={14}
-              />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>eShram ID</Label>
+                <Label>Aadhaar (Optional)</Label>
                 <Input
-                  value={formData.eshramId}
-                  onChange={(e) => updateField('eshramId', e.target.value)}
-                  placeholder="12-digit eShram ID"
+                  placeholder="XXXX-XXXX-XXXX"
+                  value={formData.aadhaar}
+                  onChange={(e) => handleAadhaarChange(e.target.value)}
+                  maxLength={14}
                 />
               </div>
               <div className="space-y-2">
-                <Label>BOCW ID</Label>
-                <Input
-                  value={formData.bocwId}
-                  onChange={(e) => updateField('bocwId', e.target.value)}
-                  placeholder="BOCW Registration ID"
-                />
+                <Label>Photo URL</Label>
+                <Input value={formData.photoUrl} onChange={e => updateField('photoUrl', e.target.value)} placeholder="https://..." />
               </div>
             </div>
 
@@ -415,6 +477,49 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Father Name</Label>
+                <Input value={formData.fatherName} onChange={e => updateField('fatherName', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mother Name</Label>
+                <Input value={formData.motherName} onChange={e => updateField('motherName', e.target.value)} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Marital Status</Label>
+                <Select value={formData.maritalStatus} onValueChange={v => updateField('maritalStatus', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Single">Single</SelectItem>
+                    <SelectItem value="Married">Married</SelectItem>
+                    <SelectItem value="Widowed">Widowed</SelectItem>
+                    <SelectItem value="Divorced">Divorced</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Caste</Label>
+                <Input value={formData.caste} onChange={e => updateField('caste', e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Disability Status</Label>
+              <Select value={formData.disabilityStatus} onValueChange={v => updateField('disabilityStatus', v)}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="None">None</SelectItem>
+                  <SelectItem value="Physical">Physical</SelectItem>
+                  <SelectItem value="Visual">Visual</SelectItem>
+                  <SelectItem value="Hearing">Hearing</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label>Mobile Number *</Label>
               <Input
@@ -428,8 +533,99 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           </div>
         )}
 
-        {/* Step 1: Address & Access Card */}
+        {/* Step 1: Professional & Banking */}
         {step === 1 && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Education Level</Label>
+                <Select value={formData.educationLevel} onValueChange={v => updateField('educationLevel', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Illiterate">Illiterate</SelectItem>
+                    <SelectItem value="5th Pass">5th Pass</SelectItem>
+                    <SelectItem value="8th Pass">8th Pass</SelectItem>
+                    <SelectItem value="10th Pass">10th Pass</SelectItem>
+                    <SelectItem value="12th Pass">12th Pass</SelectItem>
+                    <SelectItem value="ITI/Diploma">ITI/Diploma</SelectItem>
+                    <SelectItem value="Graduate">Graduate</SelectItem>
+                    <SelectItem value="Post Graduate">Post Graduate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Skill Category</Label>
+                <Select value={formData.skillCategory} onValueChange={v => updateField('skillCategory', v)}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Unskilled">Unskilled</SelectItem>
+                    <SelectItem value="Semi-Skilled">Semi-Skilled</SelectItem>
+                    <SelectItem value="Skilled">Skilled</SelectItem>
+                    <SelectItem value="Highly Skilled">Highly Skilled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Work History</Label>
+              <Textarea
+                value={formData.workHistory}
+                onChange={e => updateField('workHistory', e.target.value)}
+                placeholder="Describe past work experience..."
+              />
+            </div>
+
+            <h4 className="font-medium text-sm pt-2 border-t">Banking Details</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Account Number</Label>
+                <Input value={formData.bankAccountNumber} onChange={e => updateField('bankAccountNumber', e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>IFSC Code</Label>
+                <Input value={formData.ifscCode} onChange={e => updateField('ifscCode', e.target.value.toUpperCase())} />
+              </div>
+            </div>
+
+            <h4 className="font-medium text-sm pt-2 border-t">Other IDs</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>eShram ID</Label>
+                <Input
+                  value={formData.eshramId}
+                  onChange={(e) => updateField('eshramId', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>BOCW ID</Label>
+                <Input
+                  value={formData.bocwId}
+                  onChange={(e) => updateField('bocwId', e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>NRES Member</Label>
+                <Select value={formData.nresMember} onValueChange={v => updateField('nresMember', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Trade Union Member</Label>
+                <Select value={formData.tradeUnionMember} onValueChange={v => updateField('tradeUnionMember', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Address */}
+        {step === 2 && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -511,8 +707,8 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           </div>
         )}
 
-        {/* Step 2: Review */}
-        {step === 2 && (
+        {/* Step 3: Review */}
+        {step === 3 && (
           <div className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <h4 className="font-medium">Personal Information</h4>
@@ -521,16 +717,22 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                 <span>{formData.firstName} {formData.lastName}</span>
                 <span className="text-muted-foreground">Gender:</span>
                 <span>{formData.gender}</span>
-                <span className="text-muted-foreground">Date of Birth:</span>
-                <span>{formData.dateOfBirth}</span>
                 <span className="text-muted-foreground">Phone:</span>
                 <span>{formData.phone}</span>
-                {formData.aadhaar && (
-                  <>
-                    <span className="text-muted-foreground">Aadhaar:</span>
-                    <span>XXXX-XXXX-{formData.aadhaar.slice(-4)}</span>
-                  </>
-                )}
+                <span className="text-muted-foreground">Father Name:</span>
+                <span>{formData.fatherName || '-'}</span>
+              </div>
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <h4 className="font-medium">Professional & Banking</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-muted-foreground">Education:</span>
+                <span>{formData.educationLevel || '-'}</span>
+                <span className="text-muted-foreground">Skill Category:</span>
+                <span>{formData.skillCategory || '-'}</span>
+                <span className="text-muted-foreground">Bank Account:</span>
+                <span>{formData.bankAccountNumber ? 'Provided' : '-'}</span>
               </div>
             </div>
 
@@ -541,25 +743,15 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
                 <span>{formData.district}</span>
                 <span className="text-muted-foreground">Mandal:</span>
                 <span>{formData.mandal}</span>
-                {formData.pincode && (
-                  <>
-                    <span className="text-muted-foreground">Pincode:</span>
-                    <span>{formData.pincode}</span>
-                  </>
-                )}
-                {formData.addressLine && (
-                  <>
-                    <span className="text-muted-foreground">Address:</span>
-                    <span>{formData.addressLine}</span>
-                  </>
-                )}
+                <span className="text-muted-foreground">Village:</span>
+                <span>{formData.village || '-'}</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Step 3: Card Setup */}
-        {step === 3 && (
+        {/* Step 4: Card Setup */}
+        {step === 4 && (
           <div className="space-y-6 py-6 text-center">
             <div className="mx-auto w-16 h-16 bg-success/20 rounded-full flex items-center justify-center">
               <Check className="w-8 h-8 text-success" />
@@ -584,7 +776,7 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
 
         {/* Navigation Buttons */}
         <div className="flex justify-between mt-6">
-          {step > 0 && step < 3 ? (
+          {step > 0 && step < 4 ? (
             <Button variant="outline" onClick={prevStep} disabled={loading}>
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
@@ -593,12 +785,12 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
             <div />
           )}
 
-          {step < 2 ? (
+          {step < 3 ? (
             <Button onClick={nextStep}>
               Next
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-          ) : step === 2 ? (
+          ) : step === 3 ? (
             <Button onClick={handleSubmit} disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Create & Proceed to Card

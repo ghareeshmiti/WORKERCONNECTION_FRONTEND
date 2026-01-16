@@ -20,12 +20,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Pencil, Loader2 } from 'lucide-react';
+import { Pencil, Loader2, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getDistricts, getMandalsForDistrict } from '@/data/india-locations';
+import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/data/india-locations';
 import { useMemo } from 'react';
 
 const editWorkerSchema = z.object({
@@ -38,12 +38,28 @@ const editWorkerSchema = z.object({
   state: z.string().optional(),
   district: z.string().optional(),
   mandal: z.string().optional(),
+  village: z.string().optional(),
   pincode: z.string().optional(),
   address_line: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
   skills: z.string().optional(), // Comma separated
   experience_years: z.coerce.number().min(0).optional(),
+  father_name: z.string().optional(),
+  mother_name: z.string().optional(),
+  marital_status: z.string().optional(),
+  caste: z.string().optional(),
+  bank_account_number: z.string().optional(),
+  ifsc_code: z.string().optional(),
+  photo_url: z.string().optional(),
+  nres_member: z.string().optional(),
+  trade_union_member: z.string().optional(),
+  eshram_id: z.string().optional(),
+  bocw_id: z.string().optional(),
+  disability_status: z.string().optional(),
+  education_level: z.string().optional(),
+  skill_category: z.string().optional(),
+  work_history: z.string().optional(),
 });
 
 type EditWorkerFormData = z.infer<typeof editWorkerSchema>;
@@ -60,12 +76,29 @@ interface EditWorkerProfileDialogProps {
     state?: string | null;
     district?: string | null;
     mandal?: string | null;
+    village?: string | null;
     pincode?: string | null;
     address_line?: string | null;
     emergency_contact_name?: string | null;
     emergency_contact_phone?: string | null;
     skills?: string[] | null;
     experience_years?: number | null;
+    father_name?: string | null;
+    mother_name?: string | null;
+    marital_status?: string | null;
+    caste?: string | null;
+    bank_account_number?: string | null;
+    ifsc_code?: string | null;
+    photo_url?: string | null;
+    nres_member?: string | null;
+    trade_union_member?: string | null;
+    eshram_id?: string | null;
+    bocw_id?: string | null;
+    aadhaar_number?: string | null;
+    disability_status?: string | null;
+    education_level?: string | null;
+    skill_category?: string | null;
+    work_history?: string | null;
   } | null | undefined;
 }
 
@@ -86,12 +119,28 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
       state: 'Andhra Pradesh',
       district: '',
       mandal: '',
+      village: '',
       pincode: '',
       address_line: '',
       emergency_contact_name: '',
       emergency_contact_phone: '',
       skills: '',
       experience_years: 0,
+      father_name: '',
+      mother_name: '',
+      marital_status: '',
+      caste: '',
+      bank_account_number: '',
+      ifsc_code: '',
+      photo_url: '',
+      nres_member: 'No',
+      trade_union_member: 'No',
+      eshram_id: '',
+      bocw_id: '',
+      disability_status: 'None',
+      education_level: '',
+      skill_category: '',
+      work_history: '',
     },
   });
 
@@ -109,12 +158,28 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
         state: worker.state || 'Andhra Pradesh',
         district: worker.district || '',
         mandal: worker.mandal || '',
+        village: worker.village || '',
         pincode: worker.pincode || '',
         address_line: worker.address_line || '',
         emergency_contact_name: worker.emergency_contact_name || '',
         emergency_contact_phone: worker.emergency_contact_phone || '',
         skills: worker.skills?.join(', ') || '',
         experience_years: worker.experience_years || 0,
+        father_name: worker.father_name || '',
+        mother_name: worker.mother_name || '',
+        marital_status: worker.marital_status || '',
+        caste: worker.caste || '',
+        bank_account_number: worker.bank_account_number || '',
+        ifsc_code: worker.ifsc_code || '',
+        photo_url: worker.photo_url || '',
+        nres_member: worker.nres_member || 'No',
+        trade_union_member: worker.trade_union_member || 'No',
+        eshram_id: worker.eshram_id || '',
+        bocw_id: worker.bocw_id || '',
+        disability_status: worker.disability_status || 'None',
+        education_level: worker.education_level || '',
+        skill_category: worker.skill_category || '',
+        work_history: worker.work_history || '',
       });
     }
   };
@@ -136,12 +201,28 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
           state: data.state || 'Andhra Pradesh',
           district: data.district || null,
           mandal: data.mandal || null,
+          village: data.village || null,
           pincode: data.pincode || null,
           address_line: data.address_line || null,
           emergency_contact_name: data.emergency_contact_name || null,
           emergency_contact_phone: data.emergency_contact_phone || null,
           skills: data.skills ? data.skills.split(',').map(s => s.trim()).filter(Boolean) : null,
           experience_years: data.experience_years,
+          father_name: data.father_name || null,
+          mother_name: data.mother_name || null,
+          marital_status: data.marital_status || null,
+          caste: data.caste || null,
+          bank_account_number: data.bank_account_number || null,
+          ifsc_code: data.ifsc_code || null,
+          photo_url: data.photo_url || null,
+          nres_member: data.nres_member || 'No',
+          trade_union_member: data.trade_union_member || 'No',
+          eshram_id: data.eshram_id || null,
+          bocw_id: data.bocw_id || null,
+          disability_status: data.disability_status || null,
+          education_level: data.education_level || null,
+          skill_category: data.skill_category || null,
+          work_history: data.work_history || null,
         })
         .eq('id', worker.id);
 
@@ -160,12 +241,21 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
   const districts = useMemo(() => getDistricts(), []);
 
   const watchedDistrict = form.watch('district');
+  const watchedMandal = form.watch('mandal');
+
   const mandals = useMemo(() => {
     if (!watchedDistrict) return [];
     const selected = districts.find((d: any) => d.code === watchedDistrict || d.name === watchedDistrict || d === watchedDistrict);
     const distName = selected ? (typeof selected === 'string' ? selected : selected.name) : watchedDistrict;
     return getMandalsForDistrict(distName);
   }, [watchedDistrict, districts]);
+
+  const villages = useMemo(() => {
+    if (!watchedDistrict || !watchedMandal) return [];
+    const selected = districts.find((d: any) => d.code === watchedDistrict || d.name === watchedDistrict || d === watchedDistrict);
+    const distName = selected ? (typeof selected === 'string' ? selected : selected.name) : watchedDistrict;
+    return getVillagesForMandal(distName, watchedMandal);
+  }, [watchedDistrict, watchedMandal, districts]);
 
   if (!worker) return null;
 
@@ -177,12 +267,67 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
           Edit Profile
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Your Profile</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+            {/* Photo & IDs */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-sm text-muted-foreground border-b pb-2">Identification & Photo</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <FormLabel>Aadhaar Number</FormLabel>
+                  <Input value={worker.aadhaar_number || ''} disabled className="bg-muted" />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="photo_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Photo URL</FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2">
+                          <Input placeholder="https://..." {...field} />
+                          {field.value && (
+                            <a href={field.value} target="_blank" rel="noreferrer" className="flex items-center justify-center p-2 border rounded hover:bg-muted">
+                              <Upload className="w-4 h-4" />
+                            </a>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="eshram_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>eShram ID</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bocw_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>BOCW ID</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             {/* Personal Info */}
             <div className="space-y-4">
@@ -252,34 +397,143 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                   )}
                 />
               </div>
-            </div>
-
-            {/* Contact Info */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-sm text-muted-foreground border-b pb-2">Contact Information</h4>
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="father_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="10-digit number" {...field} maxLength={10} />
-                      </FormControl>
+                      <FormLabel>Father Name</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="mother_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="example@email.com" {...field} />
-                      </FormControl>
+                      <FormLabel>Mother Name</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="marital_status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Marital Status</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Single">Single</SelectItem>
+                          <SelectItem value="Married">Married</SelectItem>
+                          <SelectItem value="Widowed">Widowed</SelectItem>
+                          <SelectItem value="Divorced">Divorced</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="caste"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Caste</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="disability_status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Disability Status</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="None">None</SelectItem>
+                          <SelectItem value="Physical">Physical</SelectItem>
+                          <SelectItem value="Visual">Visual</SelectItem>
+                          <SelectItem value="Hearing">Hearing</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="education_level"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Education Level</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Illiterate">Illiterate</SelectItem>
+                          <SelectItem value="5th Pass">5th Pass</SelectItem>
+                          <SelectItem value="8th Pass">8th Pass</SelectItem>
+                          <SelectItem value="10th Pass">10th Pass</SelectItem>
+                          <SelectItem value="12th Pass">12th Pass</SelectItem>
+                          <SelectItem value="ITI/Diploma">ITI/Diploma</SelectItem>
+                          <SelectItem value="Graduate">Graduate</SelectItem>
+                          <SelectItem value="Post Graduate">Post Graduate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Banking Details */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-sm text-muted-foreground border-b pb-2">Banking Details</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="bank_account_number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Account Number</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="ifsc_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>IFSC Code</FormLabel>
+                      <FormControl><Input {...field} className="uppercase" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -300,6 +554,7 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                       <Select value={field.value} onValueChange={(val) => {
                         field.onChange(val);
                         form.setValue('mandal', ''); // Reset mandal
+                        form.setValue('village', '');
                       }}>
                         <FormControl>
                           <SelectTrigger>
@@ -322,7 +577,10 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Mandal</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange} disabled={!watchedDistrict}>
+                      <Select value={field.value} onValueChange={(val) => {
+                        field.onChange(val);
+                        form.setValue('village', '');
+                      }} disabled={!watchedDistrict}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select Mandal" />
@@ -342,6 +600,28 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  name="village"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Village</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange} disabled={!watchedMandal}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Village" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {villages.map((v: any) => (
+                            <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="pincode"
                   render={({ field }) => (
                     <FormItem>
@@ -353,6 +633,8 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1">
                 <FormField
                   control={form.control}
                   name="address_line"
@@ -375,6 +657,65 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  name="nres_member"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>NRES Member</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="trade_union_member"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Trade Union Member</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="skill_category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Skill Category</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Unskilled">Unskilled</SelectItem>
+                          <SelectItem value="Semi-Skilled">Semi-Skilled</SelectItem>
+                          <SelectItem value="Skilled">Skilled</SelectItem>
+                          <SelectItem value="Highly Skilled">Highly Skilled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="experience_years"
                   render={({ field }) => (
                     <FormItem>
@@ -386,14 +727,31 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1">
                 <FormField
                   control={form.control}
                   name="skills"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Skills (Comma separated)</FormLabel>
+                      <FormLabel>Specific Skills (Comma separated)</FormLabel>
                       <FormControl>
                         <Input placeholder="Painter, Driver, etc." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1">
+                <FormField
+                  control={form.control}
+                  name="work_history"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Work History</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Past employers, roles, duration..." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
