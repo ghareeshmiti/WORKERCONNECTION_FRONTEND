@@ -235,13 +235,13 @@ export default function WorkerSelfRegistration() {
 
     const handleSubmit = async () => {
         setLoading(true);
+        // --- 4. Submit to Backend ---
         try {
-            const presentAddress = `${formData.presentDoorNo}, ${formData.presentStreet}, ${formData.presentVillage}, ${formData.presentMandal}, ${formData.presentDistrict} - ${formData.presentPincode}`;
-
-            // Generate a tough random password as the user doesn't need to know it (auth by Aadhaar/OTP)
+            // Generate a random internal password for backend compatibility (since auth is Aadhaar based)
             const randomPassword = `W@rker${Math.random().toString(36).slice(-8)}!${Math.floor(Math.random() * 100)}`;
+            const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-worker`, {
+            const response = await fetch(`${BASE_URL.replace(/\/$/, '')}/api/public/register-worker`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -249,27 +249,21 @@ export default function WorkerSelfRegistration() {
                     firstName: formData.firstName.trim(),
                     lastName: formData.lastName.trim(),
                     phone: formData.phone,
-                    password: randomPassword,
+                    password: randomPassword, // Use generated password
                     dateOfBirth: formData.dateOfBirth,
-                    gender: formData.gender.toLowerCase(),
-                    aadhaarLastFour: formData.aadhaar.replace(/-/g, '').slice(-4),
+
                     aadhaarNumber: formData.aadhaar,
-                    state: 'Andhra Pradesh',
+                    gender: formData.gender, // e.g. "Male"
+
+                    // Address
+                    state: "Andhra Pradesh", // Default or form data
                     district: formData.presentDistrict,
                     mandal: formData.presentMandal,
                     village: formData.presentVillage,
                     pincode: formData.presentPincode,
-                    addressLine: presentAddress,
+                    addressLine: `${formData.presentDoorNo}, ${formData.presentStreet}`,
 
-                    fatherName: formData.fatherName,
-                    motherName: formData.motherName,
-                    maritalStatus: formData.maritalStatus,
-                    caste: formData.caste,
-                    disabilityStatus: formData.disabilityStatus,
-                    photoUrl: formData.photoUrl,
-
-                    bankAccountNumber: formData.bankAccountNumber,
-                    ifscCode: formData.ifscCode,
+                    // Other IDs
                     eshramId: formData.eshramId,
                     bocwId: formData.bocwId,
                     nresMember: formData.nresMember,
