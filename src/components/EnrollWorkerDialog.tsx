@@ -14,7 +14,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Loader2, UserPlus, Check, ArrowRight, ArrowLeft, CreditCard } from 'lucide-react';
 import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/data/india-locations';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -78,14 +78,16 @@ const professionalSchema = z.object({
 interface EnrollWorkerDialogProps {
   establishmentId?: string;
   mappedBy?: string;
+  departmentId?: string;
 }
 
-export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDialogProps) {
+export function EnrollWorkerDialog({ establishmentId, mappedBy, departmentId }: EnrollWorkerDialogProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0); // 0: Personal, 1: Professional, 2: Address, 3: Card Setup
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [newWorkerId, setNewWorkerId] = useState<string | null>(null);
+  const [newWorkerFriendlyId, setNewWorkerFriendlyId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -206,7 +208,7 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
           nres_member: formData.nresMember || 'No',
           trade_union_member: formData.tradeUnionMember || 'No',
 
-          status: 'active', // Direct enrollment implies approval
+          status: 'new', // Default to 'new' (Pending) until card is assigned
         })
         .select()
         .single();
@@ -216,7 +218,7 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
       // 2. Map to establishment if provided
       if (establishmentId && mappedBy && worker) {
         const { error: mapError } = await supabase
-          .from('worker_establishment_mapping')
+          .from('worker_mappings')
           .insert({
             worker_id: worker.id,
             establishment_id: establishmentId,
@@ -226,7 +228,8 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
       }
 
       setNewWorkerId(worker.id);
-      toast({ title: "Worker Enrolled", description: `Worker ${generatedWorkerId} enrolled successfully.` });
+      setNewWorkerFriendlyId(generatedWorkerId);
+      toast({ title: "Worker Enrolled", description: `Worker ${generatedWorkerId} enrolled successfully. Status: Pending Card.` });
       // Invalidate both establishment workers (if mapped) and unmapped workers (for department view)
       queryClient.invalidateQueries({ queryKey: [establishmentId ? 'establishment-workers' : 'workers'] });
       queryClient.invalidateQueries({ queryKey: ['unmapped-workers'] });
@@ -239,6 +242,38 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
     }
   };
 
+  const handleRegisterCard = async () => {
+    if (!newWorkerFriendlyId || !newWorkerId) return;
+
+    try {
+      // Dynamic import to avoid SSR issues if any, though here it's client side
+      const { registerUser, approveWorker } = await import("@/lib/api");
+      toast({ title: "Ready to Scan", description: "Follow browser prompts to register FIDO card..." });
+
+      // Register using the Worker ID
+      const success = await registerUser(newWorkerFriendlyId);
+
+      if (success) {
+        // Approve the worker (set status 'active')
+        // Pass departmentId if available
+        await approveWorker(newWorkerId, departmentId || '');
+
+        toast({ title: "Success", description: `Card assigned & Worker Activated!` });
+
+        // Refresh lists to show as active/unmapped
+        queryClient.invalidateQueries({ queryKey: ['unmapped-workers'] });
+        queryClient.invalidateQueries({ queryKey: ['establishment-workers'] });
+
+        setOpen(false); // Close dialog on success
+      } else {
+        toast({ title: "Failed", description: "Card registration failed.", variant: "destructive" });
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Error", description: "Registration failed: " + e.message, variant: "destructive" });
+    }
+  };
+
   const STEPS_LABELS = ['Personal', 'Professional', 'Address', 'Card Setup'];
 
   return (
@@ -246,6 +281,7 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
       if (!v) {
         setStep(0);
         setNewWorkerId(null);
+        setNewWorkerFriendlyId(null);
       }
       setOpen(v);
     }}>
@@ -502,17 +538,32 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
           </div>
         ) : (
           // Card Setup Step
-          <div className="py-6 text-center space-y-4">
-            <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
-              <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+          <div className="py-6 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-lg font-bold">Worker Enrolled!</h3>
+              <p className="text-muted-foreground">
+                Worker ID: <span className="font-mono font-medium text-foreground">{newWorkerFriendlyId}</span>
+              </p>
             </div>
-            <div>
-              <h3 className="text-lg font-bold">Worker Enrolled Successfully!</h3>
-              <p className="text-muted-foreground">The worker profile has been created.</p>
+
+            <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg bg-muted/50">
+              <CreditCard className="w-12 h-12 text-primary mb-2" />
+              <p className="text-sm text-center text-muted-foreground max-w-xs">
+                Tap <strong>"Register Card"</strong> and touch the FIDO key/card to assign it to this worker.
+              </p>
             </div>
-            {/* Placeholder for Card Setup - separate flow or integrated later */}
-            <div className="p-4 border rounded bg-muted/20">
-              <p className="text-sm">Smart Card Setup can be done from the Worker List for this worker.</p>
+
+            <div className="flex gap-3 justify-center">
+              <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
+                Skip / Pending
+              </Button>
+              <Button onClick={handleRegisterCard} className="w-full sm:w-auto gap-2">
+                <CreditCard className="w-4 h-4" />
+                Register Card
+              </Button>
             </div>
           </div>
         )}
@@ -530,11 +581,6 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
                 {step !== 2 && <ArrowRight className="w-4 h-4 ml-2" />}
               </Button>
             </>
-          )}
-          {step === 3 && (
-            <Button onClick={() => setOpen(false)} className="w-full">
-              Done
-            </Button>
           )}
         </div>
 
