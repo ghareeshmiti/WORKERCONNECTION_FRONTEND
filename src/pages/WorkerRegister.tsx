@@ -9,139 +9,108 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, ArrowRight, Check, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, Check, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/data/india-locations';
 import { supabase } from '@/integrations/supabase/client';
 
 // Password validation regex
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-// Format Aadhaar with hyphens
 const formatAadhaar = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 12);
   const parts = [];
-  for (let i = 0; i < digits.length; i += 4) {
-    parts.push(digits.slice(i, i + 4));
-  }
+  for (let i = 0; i < digits.length; i += 4) parts.push(digits.slice(i, i + 4));
   return parts.join('-');
 };
 
-// Calculate age
 const calculateAge = (dob: string): number => {
   if (!dob) return 0;
   const today = new Date();
   const birthDate = new Date(dob);
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
   return age;
 };
 
-// Validation schemas
+// --- Validation Schemas ---
+
 const identitySchema = z.object({
   aadhaar: z.string().regex(/^\d{4}-\d{4}-\d{4}$/, 'Aadhaar must be in XXXX-XXXX-XXXX format'),
   otpVerified: z.literal(true, { errorMap: () => ({ message: 'Please verify OTP' }) }),
 });
 
 const personalSchema = z.object({
-  firstName: z.string().trim().min(2, 'First name must be at least 2 characters').max(50),
-  lastName: z.string().trim().min(2, 'Last name must be at least 2 characters').max(50),
+  firstName: z.string().trim().min(2, 'First name is required').max(50),
+  lastName: z.string().trim().min(2, 'Last name is required').max(50),
   gender: z.string().min(1, 'Gender is required'),
-  maritalStatus: z.string().min(1, 'Marital status is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  fatherName: z.string().optional(),
-  motherName: z.string().optional(),
-  phone: z.string().regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit mobile number'),
-  password: z.string().regex(passwordRegex, 'Password must have min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special character'),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit mobile number required'),
+  password: z.string().regex(passwordRegex, 'Password: 8+ chars, 1 uppercase, 1 lowercase, 1 number, 1 special char'),
   confirmPassword: z.string(),
-  caste: z.string().optional(),
-  disabilityStatus: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
-}).refine((data) => {
-  const age = calculateAge(data.dateOfBirth);
-  return age >= 18;
-}, {
+}).refine((data) => calculateAge(data.dateOfBirth) >= 18, {
   message: "Must be at least 18 years old",
   path: ["dateOfBirth"],
 });
 
-const professionalSchema = z.object({
-  educationLevel: z.string().optional(),
-  skillCategory: z.string().optional(),
-  workHistory: z.string().optional(),
-  bankAccountNumber: z.string().optional(),
-  ifscCode: z.string().optional(),
-  nresMember: z.string().optional(),
-  tradeUnionMember: z.string().optional(),
+const otherDetailsSchema = z.object({
+  fatherName: z.string().min(1, 'Father Name is required'),
+  motherName: z.string().min(1, 'Mother Name is required'),
+  maritalStatus: z.string().min(1, 'Marital Status is required'),
+  caste: z.string().min(1, 'Caste is required'),
+  disabilityStatus: z.string().optional(),
+  photoUrl: z.string().min(1, 'Photo is required'),
+  bankAccountNumber: z.string().min(1, 'Account Number is required'),
+  ifscCode: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, 'Invalid IFSC Code format'),
   eshramId: z.string().optional(),
   bocwId: z.string().optional(),
+  nresMember: z.string().optional(),
+  tradeUnionMember: z.string().optional(),
+});
+
+const professionalSchema = z.object({
+  educationLevel: z.string().optional(), // Made optional based on request? Or strictly required? Keep optional for now unless specified.
+  skillCategory: z.string().optional(),
+  workHistory: z.string().optional(),
 });
 
 const addressSchema = z.object({
-  presentDoorNo: z.string().trim().min(1, 'Door number is required').max(20),
-  presentStreet: z.string().trim().min(1, 'Street is required').max(100),
+  presentDoorNo: z.string().trim().min(1, 'Door number is required'),
+  presentStreet: z.string().trim().min(1, 'Street is required'),
   presentDistrict: z.string().min(1, 'District is required'),
-  presentMandal: z.string().min(1, 'Mandal/City is required'),
-  presentVillage: z.string().min(1, 'Village/Area is required'),
-  presentPincode: z.string().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits'),
-  permanentDoorNo: z.string().trim().min(1, 'Door number is required').max(20),
-  permanentStreet: z.string().trim().min(1, 'Street is required').max(100),
+  presentMandal: z.string().min(1, 'Mandal is required'),
+  presentVillage: z.string().min(1, 'Village is required'),
+  presentPincode: z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits'),
+  permanentDoorNo: z.string().trim().min(1, 'Door number is required'),
+  permanentStreet: z.string().trim().min(1, 'Street is required'),
   permanentDistrict: z.string().min(1, 'District is required'),
-  permanentMandal: z.string().min(1, 'Mandal/City is required'),
-  permanentVillage: z.string().min(1, 'Village/Area is required'),
-  permanentPincode: z.string().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits'),
+  permanentMandal: z.string().min(1, 'Mandal is required'),
+  permanentVillage: z.string().min(1, 'Village is required'),
+  permanentPincode: z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits'),
 });
 
-
 type FormData = {
-  aadhaar: string;
-  otp: string;
-  otpVerified: boolean;
-  otpSent: boolean;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  maritalStatus: string;
-  dateOfBirth: string;
-  fatherName: string;
-  motherName: string;
-  caste: string;
-  disabilityStatus: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
+  aadhaar: string; otp: string; otpVerified: boolean; otpSent: boolean;
+  firstName: string; lastName: string; gender: string; dateOfBirth: string; phone: string;
+  password: string; confirmPassword: string;
 
-  educationLevel: string;
-  skillCategory: string;
-  workHistory: string;
-  bankAccountNumber: string;
-  ifscCode: string;
-  nresMember: string;
-  tradeUnionMember: string;
-  eshramId: string;
-  bocwId: string;
+  fatherName: string; motherName: string;
+  maritalStatus: string; caste: string; disabilityStatus: string;
   photoUrl: string;
+  bankAccountNumber: string; ifscCode: string;
+  eshramId: string; bocwId: string; nresMember: string; tradeUnionMember: string;
 
-  presentDoorNo: string;
-  presentStreet: string;
-  presentDistrict: string;
-  presentMandal: string;
-  presentVillage: string;
-  presentPincode: string;
-  permanentDoorNo: string;
-  permanentStreet: string;
-  permanentDistrict: string;
-  permanentMandal: string;
-  permanentVillage: string;
-  permanentPincode: string;
+  educationLevel: string; skillCategory: string; workHistory: string;
+
+  presentDoorNo: string; presentStreet: string; presentDistrict: string; presentMandal: string; presentVillage: string; presentPincode: string;
+  permanentDoorNo: string; permanentStreet: string; permanentDistrict: string; permanentMandal: string; permanentVillage: string; permanentPincode: string;
   sameAsPresent: boolean;
 };
 
-const STEPS = ['Identity', 'Personal', 'Professional', 'Address', 'Review'];
+const STEPS = ['Identity', 'Personal', 'Other Details', 'Professional', 'Address', 'Review'];
 const GENDERS = ['Male', 'Female', 'Other'];
 const MARITAL_STATUSES = ['Single', 'Married', 'Widow', 'Divorced'];
 const CASTES = ['OC', 'BC', 'SC', 'ST', 'Other'];
@@ -154,22 +123,20 @@ export default function WorkerRegister() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [formData, setFormData] = useState<FormData>({
     aadhaar: '', otp: '', otpVerified: false, otpSent: false,
-    firstName: '', lastName: '',
-    gender: '', maritalStatus: '', dateOfBirth: '',
-    fatherName: '', motherName: '', caste: '', disabilityStatus: 'None',
-    phone: '', password: '', confirmPassword: '',
+    firstName: '', lastName: '', gender: '', dateOfBirth: '', phone: '',
+    password: '', confirmPassword: '',
+
+    fatherName: '', motherName: '', maritalStatus: '', caste: '', disabilityStatus: 'None',
+    photoUrl: '', bankAccountNumber: '', ifscCode: '',
+    eshramId: '', bocwId: '', nresMember: 'No', tradeUnionMember: 'No',
 
     educationLevel: '', skillCategory: '', workHistory: '',
-    bankAccountNumber: '', ifscCode: '',
-    nresMember: 'No', tradeUnionMember: 'No',
-    eshramId: '', bocwId: '', photoUrl: '',
 
-    presentDoorNo: '', presentStreet: '', presentDistrict: '',
-    presentMandal: '', presentVillage: '', presentPincode: '',
-    permanentDoorNo: '', permanentStreet: '', permanentDistrict: '',
-    permanentMandal: '', permanentVillage: '', permanentPincode: '',
+    presentDoorNo: '', presentStreet: '', presentDistrict: '', presentMandal: '', presentVillage: '', presentPincode: '',
+    permanentDoorNo: '', permanentStreet: '', permanentDistrict: '', permanentMandal: '', permanentVillage: '', permanentPincode: '',
     sameAsPresent: false,
   });
 
@@ -183,23 +150,15 @@ export default function WorkerRegister() {
   const permanentMandals = useMemo(() => getMandalsForDistrict(formData.permanentDistrict), [formData.permanentDistrict]);
   const permanentVillages = useMemo(() => getVillagesForMandal(formData.permanentDistrict, formData.permanentMandal), [formData.permanentDistrict, formData.permanentMandal]);
 
-  const updateField = (field: keyof FormData, value: string | boolean) => {
+  const updateField = (field: keyof FormData, value: any) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
 
-      if (field === 'presentDistrict') {
-        newData.presentMandal = '';
-        newData.presentVillage = '';
-      } else if (field === 'presentMandal') {
-        newData.presentVillage = '';
-      }
-
-      if (field === 'permanentDistrict') {
-        newData.permanentMandal = '';
-        newData.permanentVillage = '';
-      } else if (field === 'permanentMandal') {
-        newData.permanentVillage = '';
-      }
+      // Auto-clear dependent fields
+      if (field === 'presentDistrict') { newData.presentMandal = ''; newData.presentVillage = ''; }
+      if (field === 'presentMandal') { newData.presentVillage = ''; }
+      if (field === 'permanentDistrict') { newData.permanentMandal = ''; newData.permanentVillage = ''; }
+      if (field === 'permanentMandal') { newData.permanentVillage = ''; }
 
       if (field === 'sameAsPresent' && value === true) {
         newData.permanentDoorNo = prev.presentDoorNo;
@@ -209,7 +168,6 @@ export default function WorkerRegister() {
         newData.permanentVillage = prev.presentVillage;
         newData.permanentPincode = prev.presentPincode;
       }
-
       return newData;
     });
     setErrors(prev => ({ ...prev, [field]: '' }));
@@ -219,81 +177,47 @@ export default function WorkerRegister() {
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: "Invalid File Type", description: "Only PNG, JPEG, and JPG formats are allowed.", variant: "destructive" });
+      return;
+    }
+
     const fileExt = file.name.split('.').pop();
-    // Use temp ID for upload if not created yet, or just random
-    const fileName = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const fileName = `reg-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
     setUploading(true);
+    setErrors(prev => ({ ...prev, photoUrl: '' }));
+
     try {
       const { error: uploadError } = await supabase.storage
         .from('worker_photos')
-        .upload(filePath, file);
+        .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
         .from('worker_photos')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
       updateField('photoUrl', publicUrl);
       toast({ title: "Success", description: "Photo uploaded successfully" });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Upload failed", variant: "destructive" });
+      toast({ title: "Upload Error", description: error.message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleAadhaarChange = (value: string) => {
-    const formatted = formatAadhaar(value);
-    updateField('aadhaar', formatted);
-    if (formData.otpVerified || formData.otpSent) {
-      setFormData(prev => ({ ...prev, otpVerified: false, otpSent: false, otp: '' }));
-    }
-  };
-
-  const isValidAadhaar = /^\d{4}-\d{4}-\d{4}$/.test(formData.aadhaar);
-
-  const handleGenerateOTP = () => {
-    if (!isValidAadhaar) return;
-    setOtpLoading(true);
-    setTimeout(() => {
-      setFormData(prev => ({ ...prev, otpSent: true }));
-      toast({ title: 'OTP Sent', description: 'A verification OTP has been sent (simulated).' });
-      setOtpLoading(false);
-    }, 1000);
-  };
-
-  const handleVerifyOTP = () => {
-    if (formData.otp.length === 4 && /^\d{4}$/.test(formData.otp)) {
-      setFormData(prev => ({ ...prev, otpVerified: true }));
-      toast({ title: 'Verified!', description: 'Aadhaar verification successful.' });
-    } else {
-      setErrors(prev => ({ ...prev, otp: 'Please enter a valid 4-digit OTP' }));
-    }
-  };
-
-  const validateStep = (stepIndex: number): boolean => {
+  const validateStep = (currentStep: number) => {
     try {
       setErrors({});
-      switch (stepIndex) {
-        case 0:
-          identitySchema.parse({
-            aadhaar: formData.aadhaar,
-            otpVerified: formData.otpVerified,
-          });
-          break;
-        case 1:
-          personalSchema.parse(formData);
-          break;
-        case 2:
-          professionalSchema.parse(formData);
-          break;
-        case 3:
-          addressSchema.parse(formData);
-          break;
-      }
+      if (currentStep === 0) identitySchema.parse({ aadhaar: formData.aadhaar, otpVerified: formData.otpVerified });
+      if (currentStep === 1) personalSchema.parse(formData);
+      if (currentStep === 2) otherDetailsSchema.parse(formData);
+      if (currentStep === 3) professionalSchema.parse(formData);
+      if (currentStep === 4) addressSchema.parse(formData);
       return true;
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -302,267 +226,261 @@ export default function WorkerRegister() {
           if (e.path[0]) newErrors[e.path[0] as string] = e.message;
         });
         setErrors(newErrors);
+        toast({ title: "Validation Failed", description: "Please fill all required fields correctly.", variant: "destructive" });
       }
       return false;
     }
   };
 
   const nextStep = () => {
-    if (validateStep(step)) {
-      setStep(prev => Math.min(prev + 1, STEPS.length - 1));
-    }
+    if (validateStep(step)) setStep(s => Math.min(s + 1, STEPS.length - 1));
   };
 
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 0));
+  const prevStep = () => setStep(s => Math.max(s - 1, 0));
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
       const presentAddress = `${formData.presentDoorNo}, ${formData.presentStreet}, ${formData.presentVillage}, ${formData.presentMandal}, ${formData.presentDistrict} - ${formData.presentPincode}`;
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-worker`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firstName: formData.firstName.trim(),
-            lastName: formData.lastName.trim(),
-            phone: formData.phone,
-            password: formData.password,
-            dateOfBirth: formData.dateOfBirth,
-            gender: formData.gender.toLowerCase(),
-            aadhaarLastFour: formData.aadhaar.replace(/-/g, '').slice(-4),
-            aadhaarNumber: formData.aadhaar,
-            state: 'Andhra Pradesh',
-            district: formData.presentDistrict,
-            mandal: formData.presentMandal,
-            village: formData.presentVillage,
-            pincode: formData.presentPincode,
-            addressLine: presentAddress,
-            emergencyContactName: formData.fatherName?.trim() || '',
-            emergencyContactPhone: null,
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/register-worker`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Mapped fields
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          phone: formData.phone,
+          password: formData.password,
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender.toLowerCase(),
+          aadhaarLastFour: formData.aadhaar.replace(/-/g, '').slice(-4),
+          aadhaarNumber: formData.aadhaar,
+          state: 'Andhra Pradesh',
+          district: formData.presentDistrict,
+          mandal: formData.presentMandal,
+          village: formData.presentVillage,
+          pincode: formData.presentPincode,
+          addressLine: presentAddress,
 
-            fatherName: formData.fatherName,
-            motherName: formData.motherName,
-            maritalStatus: formData.maritalStatus,
-            caste: formData.caste,
-            disabilityStatus: formData.disabilityStatus,
+          fatherName: formData.fatherName,
+          motherName: formData.motherName,
+          maritalStatus: formData.maritalStatus,
+          caste: formData.caste,
+          disabilityStatus: formData.disabilityStatus,
+          photoUrl: formData.photoUrl,
 
-            educationLevel: formData.educationLevel,
-            skillCategory: formData.skillCategory,
-            workHistory: formData.workHistory,
-            bankAccountNumber: formData.bankAccountNumber,
-            ifscCode: formData.ifscCode,
-            photoUrl: formData.photoUrl,
-            nresMember: formData.nresMember,
-            tradeUnionMember: formData.tradeUnionMember,
-            eshramId: formData.eshramId,
-            bocwId: formData.bocwId,
-          }),
-        }
-      );
+          bankAccountNumber: formData.bankAccountNumber,
+          ifscCode: formData.ifscCode,
+          eshramId: formData.eshramId,
+          bocwId: formData.bocwId,
+          nresMember: formData.nresMember,
+          tradeUnionMember: formData.tradeUnionMember,
+
+          educationLevel: formData.educationLevel,
+          skillCategory: formData.skillCategory,
+          workHistory: formData.workHistory,
+          // Emergency contact fallback to Father
+          emergencyContactName: formData.fatherName,
+        }),
+      });
 
       const data = await response.json();
-
       if (data.success) {
-        toast({ title: 'Success!', description: `Registration complete. Your Worker ID is ${data.worker_id}` });
+        toast({ title: 'Success!', description: `Worker ID: ${data.worker_id}` });
         navigate('/auth?role=worker');
       } else {
         toast({ title: 'Registration Failed', description: data.message, variant: 'destructive' });
       }
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to register. Please try again.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Network error or server unavailable.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
+  // UI Components
+  const ReqStar = () => <span className="text-destructive ml-1">*</span>;
+  const ErrorMsg = ({ id }: { id: string }) => errors[id] ? <p className="text-sm text-destructive mt-1">{errors[id]}</p> : null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted py-8 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-2xl mx-auto">
-        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
-        </Link>
+    <div className="min-h-screen bg-muted/30 py-8 px-4">
+      <div className="max-w-3xl mx-auto">
+        <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"><ArrowLeft className="w-4 h-4" /> Back to Home</Link>
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          {/* ... existing header ... */}
-          <h1 className="text-2xl font-display font-bold">Worker Registration</h1>
-        </div>
-
-        {/* Steps */}
-        <div className="flex items-center justify-center mb-8 flex-wrap gap-y-2">
-          {/* Same Steps UI */}
-          {STEPS.map((stepName, index) => (
-            <div key={stepName} className="flex items-center">
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${index < step ? 'bg-primary text-primary-foreground' :
-                index === step ? 'bg-primary text-primary-foreground' :
-                  'bg-muted text-muted-foreground'
-                }`}>
-                {index < step ? <Check className="w-4 h-4" /> : index + 1}
+        {/* Steps Indicator */}
+        <div className="mb-8 overflow-x-auto">
+          <div className="flex items-center justify-between min-w-[600px] px-2">
+            {STEPS.map((s, idx) => (
+              <div key={idx} className="flex flex-col items-center gap-2 relative z-10">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-colors
+                            ${idx < step ? 'bg-primary border-primary text-primary-foreground' :
+                    idx === step ? 'bg-background border-primary text-primary' :
+                      'bg-background border-muted text-muted-foreground'}`}>
+                  {idx < step ? <Check className="w-4 h-4" /> : idx + 1}
+                </div>
+                <span className={`text-xs ${idx === step ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{s}</span>
               </div>
-              <span className={`ml-2 text-xs hidden lg:inline ${index === step ? 'font-medium' : 'text-muted-foreground'}`}>
-                {stepName}
-              </span>
-              {index < STEPS.length - 1 && (
-                <div className={`w-6 md:w-8 h-0.5 mx-2 ${index < step ? 'bg-primary' : 'bg-muted'}`} />
-              )}
-            </div>
-          ))}
+            ))}
+            {/* Connector Line - simplified for brevity, better handled with absolute bars between nodes */}
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
+        <Card className="shadow-lg border-0">
+          <CardHeader className="bg-primary/5 border-b">
             <CardTitle>{STEPS[step]}</CardTitle>
             <CardDescription>
-              {step === 0 && 'Verify your identity using Aadhaar'}
-              {step === 1 && 'Enter your personal details'}
-              {step === 2 && 'Professional & Banking Details'}
-              {step === 3 && 'Enter your present and permanent address'}
-              {step === 4 && 'Review your information before submitting'}
+              {step === 0 && 'Verify your identity securely.'}
+              {step === 1 && 'Basic personal information.'}
+              {step === 2 && 'Family, caste, banking & photo.'}
+              {step === 3 && 'Skills & education details.'}
+              {step === 4 && 'Communication details.'}
+              {step === 5 && 'Review & Submit.'}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            {/* Step 0: Identity ... same as before ... */}
+          <CardContent className="p-6">
+
+            {/* --- Step 0: Identity --- */}
             {step === 0 && (
-              <div className="space-y-6">
+              <div className="space-y-6 max-w-md mx-auto">
                 <div className="space-y-2">
-                  <Label htmlFor="aadhaar">Aadhaar Number *</Label>
-                  <Input
-                    id="aadhaar"
-                    value={formData.aadhaar}
-                    onChange={e => handleAadhaarChange(e.target.value)}
-                    placeholder="XXXX-XXXX-XXXX"
-                    maxLength={14}
-                    disabled={formData.otpVerified}
-                    className={formData.otpVerified ? 'bg-muted' : ''}
-                  />
-                  {errors.aadhaar && <p className="text-sm text-destructive">{errors.aadhaar}</p>}
+                  <Label>Aadhaar Number <ReqStar /></Label>
+                  <Input value={formData.aadhaar} onChange={e => {
+                    const val = formatAadhaar(e.target.value);
+                    setFormData(p => ({ ...p, aadhaar: val }));
+                    if (formData.otpVerified) setFormData(p => ({ ...p, otpVerified: false }));
+                  }} placeholder="XXXX-XXXX-XXXX" maxLength={14} disabled={formData.otpVerified} />
+                  <ErrorMsg id="aadhaar" />
                 </div>
 
                 {!formData.otpVerified && (
-                  <div className="space-y-4">
-                    <Button
-                      onClick={handleGenerateOTP}
-                      disabled={!isValidAadhaar || otpLoading || formData.otpSent}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      {otpLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      {formData.otpSent ? 'OTP Sent' : 'Generate OTP'}
+                  <div className="space-y-4 pt-2">
+                    <Button onClick={() => { setOtpLoading(true); setTimeout(() => { setFormData(p => ({ ...p, otpSent: true })); setOtpLoading(false); }, 1500); }}
+                      className="w-full" variant="outline" disabled={formData.aadhaar.length !== 14 || otpLoading || formData.otpSent}>
+                      {otpLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />} {formData.otpSent ? 'OTP Sent' : 'Get OTP'}
                     </Button>
-
                     {formData.otpSent && (
-                      <div className="space-y-2">
-                        <Label htmlFor="otp">Enter OTP *</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="otp"
-                            value={formData.otp}
-                            onChange={e => updateField('otp', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                            placeholder="Enter 4-digit OTP"
-                            maxLength={4}
-                            className="flex-1"
-                          />
-                          <Button onClick={handleVerifyOTP} disabled={formData.otp.length !== 4}>
-                            Verify
-                          </Button>
-                        </div>
-                        {errors.otp && <p className="text-sm text-destructive">{errors.otp}</p>}
-                        <p className="text-xs text-muted-foreground">For POC: Enter any 4-digit number</p>
+                      <div className="flex gap-2">
+                        <Input value={formData.otp} onChange={e => setFormData(p => ({ ...p, otp: e.target.value }))} placeholder="Enter OTP" maxLength={4} />
+                        <Button onClick={() => {
+                          if (formData.otp.length === 4) setFormData(p => ({ ...p, otpVerified: true }));
+                          else setErrors(p => ({ ...p, otp: 'Invalid OTP' }));
+                        }}>Verify</Button>
                       </div>
                     )}
+                    <ErrorMsg id="otp" />
                   </div>
                 )}
                 {formData.otpVerified && (
-                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-center gap-3">
-                    <ShieldCheck className="w-6 h-6 text-green-600" />
-                    <div>
-                      <p className="font-medium text-green-800 dark:text-green-200">Aadhaar Verified Successfully</p>
-                      <p className="text-sm text-green-600 dark:text-green-400">Your identity has been verified</p>
-                    </div>
+                  <div className="bg-green-50 text-green-700 p-4 rounded-lg flex items-center gap-3 border border-green-200">
+                    <ShieldCheck className="w-5 h-5" /> Aadhaar Verified
                   </div>
                 )}
-                {errors.otpVerified && <p className="text-sm text-destructive">{errors.otpVerified}</p>}
-              </div>)}
+                <ErrorMsg id="otpVerified" />
+              </div>
+            )}
 
-            {/* Step 1: Personal */}
+            {/* --- Step 1: Personal --- */}
             {step === 1 && (
               <div className="space-y-4">
-                {/* Name Fields ... */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>First Name *</Label>
+                    <Label>First Name <ReqStar /></Label>
                     <Input value={formData.firstName} onChange={e => updateField('firstName', e.target.value)} />
-                    {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
+                    <ErrorMsg id="firstName" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Last Name *</Label>
+                    <Label>Last Name <ReqStar /></Label>
                     <Input value={formData.lastName} onChange={e => updateField('lastName', e.target.value)} />
-                    {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
+                    <ErrorMsg id="lastName" />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Gender *</Label>
+                    <Label>Gender <ReqStar /></Label>
                     <Select value={formData.gender} onValueChange={v => updateField('gender', v)}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {GENDERS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{GENDERS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
                     </Select>
-                    {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
+                    <ErrorMsg id="gender" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Date of Birth *</Label>
-                    <Input
-                      type="date"
-                      value={formData.dateOfBirth}
-                      onChange={e => updateField('dateOfBirth', e.target.value)}
-                      max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                    />
-                    {errors.dateOfBirth && <p className="text-sm text-destructive">{errors.dateOfBirth}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Father Name</Label>
-                    <Input value={formData.fatherName} onChange={e => updateField('fatherName', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Mother Name</Label>
-                    <Input value={formData.motherName} onChange={e => updateField('motherName', e.target.value)} />
-                  </div>
-                </div>
-
-                {/* Marital Status and Caste */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Marital Status *</Label>
-                    <Select value={formData.maritalStatus} onValueChange={v => updateField('maritalStatus', v)}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent>
-                        {MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    {errors.maritalStatus && <p className="text-sm text-destructive">{errors.maritalStatus}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Caste</Label>
-                    <Select value={formData.caste} onValueChange={v => updateField('caste', v)}>
-                      <SelectTrigger><SelectValue placeholder="Select Caste" /></SelectTrigger>
-                      <SelectContent>
-                        {CASTES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <Label>Date of Birth <ReqStar /></Label>
+                    <Input type="date" value={formData.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
+                    <ErrorMsg id="dateOfBirth" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Disability Status</Label>
+                  <Label>Phone Number <ReqStar /></Label>
+                  <Input value={formData.phone} onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="9876543210" />
+                  <ErrorMsg id="phone" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Password <ReqStar /></Label>
+                    <div className="relative">
+                      <Input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={e => updateField('password', e.target.value)} />
+                      <Button variant="ghost" size="icon" className="absolute right-0 top-0" onClick={() => setShowPassword(!showPassword)}><Eye className="h-4 w-4" /></Button>
+                    </div>
+                    <ErrorMsg id="password" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Confirm Password <ReqStar /></Label>
+                    <Input type="password" value={formData.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} />
+                    <ErrorMsg id="confirmPassword" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Step 2: Other Details (NEW) --- */}
+            {step === 2 && (
+              <div className="space-y-4">
+                {/* Photo Upload */}
+                <div className="space-y-2 p-4 border rounded-lg bg-muted/20">
+                  <Label>Profile Photo <ReqStar /> <span className="text-xs text-muted-foreground font-normal">(PNG/JPG only)</span></Label>
+                  <div className="flex gap-4 items-center">
+                    {formData.photoUrl && <img src={formData.photoUrl} alt="Preview" className="h-16 w-16 rounded object-cover border" />}
+                    <Input type="file" accept="image/png, image/jpeg, image/jpg" onChange={handleFileUpload} disabled={uploading} />
+                  </div>
+                  {uploading && <p className="text-xs text-blue-500">Uploading...</p>}
+                  <ErrorMsg id="photoUrl" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Father Name <ReqStar /></Label>
+                    <Input value={formData.fatherName} onChange={e => updateField('fatherName', e.target.value)} />
+                    <ErrorMsg id="fatherName" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mother Name <ReqStar /></Label>
+                    <Input value={formData.motherName} onChange={e => updateField('motherName', e.target.value)} />
+                    <ErrorMsg id="motherName" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Marital Status <ReqStar /></Label>
+                    <Select value={formData.maritalStatus} onValueChange={v => updateField('maritalStatus', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{MARITAL_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <ErrorMsg id="maritalStatus" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Caste <ReqStar /></Label>
+                    <Select value={formData.caste} onValueChange={v => updateField('caste', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>{CASTES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <ErrorMsg id="caste" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Disability</Label>
                   <Select value={formData.disabilityStatus} onValueChange={v => updateField('disabilityStatus', v)}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                     <SelectContent>
@@ -574,98 +492,61 @@ export default function WorkerRegister() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Phone & Passwords */}
-                <div className="space-y-2">
-                  <Label>Mobile Number *</Label>
-                  <Input
-                    value={formData.phone}
-                    onChange={e => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="9876543210"
-                    maxLength={10}
-                  />
-                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+
+                <div className="pt-4 border-t">
+                  <h4 className="font-medium mb-4">Banking Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Account Number <ReqStar /></Label>
+                      <Input value={formData.bankAccountNumber} onChange={e => updateField('bankAccountNumber', e.target.value)} />
+                      <ErrorMsg id="bankAccountNumber" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>IFSC Code <ReqStar /></Label>
+                      <Input value={formData.ifscCode} onChange={e => updateField('ifscCode', e.target.value.toUpperCase())} placeholder="ABCD0123456" />
+                      <ErrorMsg id="ifscCode" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Password *</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={e => updateField('password', e.target.value)}
-                        placeholder="Min 8 chars..."
-                      />
-                      <Button
-                        type="button" variant="ghost" size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+                <div className="pt-4 border-t">
+                  <h4 className="font-medium mb-4">Additional IDs (Optional)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>eShram ID</Label><Input value={formData.eshramId} onChange={e => updateField('eshramId', e.target.value)} /></div>
+                    <div className="space-y-2"><Label>BOCW ID</Label><Input value={formData.bocwId} onChange={e => updateField('bocwId', e.target.value)} /></div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Confirm Password *</Label>
-                    <div className="relative">
-                      <Input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={formData.confirmPassword}
-                        onChange={e => updateField('confirmPassword', e.target.value)}
-                        placeholder="Re-enter password"
-                      />
-                      <Button
-                        type="button" variant="ghost" size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="space-y-2">
+                      <Label>NRES Member</Label>
+                      <Select value={formData.nresMember} onValueChange={v => updateField('nresMember', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                      </Select>
                     </div>
-                    {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+                    <div className="space-y-2">
+                      <Label>Union Member</Label>
+                      <Select value={formData.tradeUnionMember} onValueChange={v => updateField('tradeUnionMember', v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Professional - Add Photo Upload */}
-            {step === 2 && (
+            {/* --- Step 3: Professional (Simplified) --- */}
+            {step === 3 && (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Photo</Label>
-                  <div className="flex gap-4 items-center">
-                    {formData.photoUrl && (
-                      <div className="h-16 w-16 rounded overflow-hidden border">
-                        <img src={formData.photoUrl} alt="Preview" className="h-full w-full object-cover" />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileUpload}
-                        disabled={uploading}
-                      />
-                      {uploading && <p className="text-xs text-muted-foreground mt-1">Uploading...</p>}
-                    </div>
-                  </div>
-                </div>
-                {/* Rest of professional fields... */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Education Level</Label>
                     <Select value={formData.educationLevel} onValueChange={v => updateField('educationLevel', v)}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Illiterate">Illiterate</SelectItem>
-                        <SelectItem value="5th Pass">5th Pass</SelectItem>
-                        <SelectItem value="8th Pass">8th Pass</SelectItem>
-                        <SelectItem value="10th Pass">10th Pass</SelectItem>
-                        <SelectItem value="12th Pass">12th Pass</SelectItem>
-                        <SelectItem value="ITI/Diploma">ITI/Diploma</SelectItem>
-                        <SelectItem value="Graduate">Graduate</SelectItem>
-                        <SelectItem value="Post Graduate">Post Graduate</SelectItem>
+                        {['Illiterate', '5th Pass', '8th Pass', '10th Pass', '12th Pass', 'ITI/Diploma', 'Graduate', 'Post Graduate'].map(l =>
+                          <SelectItem key={l} value={l}>{l}</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -674,294 +555,130 @@ export default function WorkerRegister() {
                     <Select value={formData.skillCategory} onValueChange={v => updateField('skillCategory', v)}>
                       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Unskilled">Unskilled</SelectItem>
-                        <SelectItem value="Semi-Skilled">Semi-Skilled</SelectItem>
-                        <SelectItem value="Skilled">Skilled</SelectItem>
-                        <SelectItem value="Highly Skilled">Highly Skilled</SelectItem>
+                        {['Unskilled', 'Semi-Skilled', 'Skilled', 'Highly Skilled'].map(s =>
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-
                 <div className="space-y-2">
-                  <Label>Work History</Label>
-                  <Textarea
-                    value={formData.workHistory}
-                    onChange={e => updateField('workHistory', e.target.value)}
-                    placeholder="List past employers, dates, and roles..."
-                  />
-                </div>
-
-                <h3 className="font-medium pt-4 border-t">Banking & IDs</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Bank Account Number</Label>
-                    <Input value={formData.bankAccountNumber} onChange={e => updateField('bankAccountNumber', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>IFSC Code</Label>
-                    <Input value={formData.ifscCode} onChange={e => updateField('ifscCode', e.target.value.toUpperCase())} />
-                  </div>
-                </div>
-
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>eShram ID</Label>
-                    <Input value={formData.eshramId} onChange={e => updateField('eshramId', e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>BoCW ID</Label>
-                    <Input value={formData.bocwId} onChange={e => updateField('bocwId', e.target.value)} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>NRES Member</Label>
-                    <Select value={formData.nresMember} onValueChange={v => updateField('nresMember', v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Trade Union Member</Label>
-                    <Select value={formData.tradeUnionMember} onValueChange={v => updateField('tradeUnionMember', v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-                    </Select>
-                  </div>
+                  <Label>Work History / Experience</Label>
+                  <Textarea value={formData.workHistory} onChange={e => updateField('workHistory', e.target.value)} placeholder="Describe previous work experience..." />
                 </div>
               </div>
             )}
 
-            {/* Step 3: Address ... Same as before ... */}
-            {step === 3 && (
-              <div className="space-y-6">
-                {/* Present Address */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Present Address</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Door No *</Label>
-                      <Input
-                        value={formData.presentDoorNo}
-                        onChange={e => updateField('presentDoorNo', e.target.value)}
-                        placeholder="e.g., 1-2-34/A"
-                      />
-                      {errors.presentDoorNo && <p className="text-sm text-destructive">{errors.presentDoorNo}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Street *</Label>
-                      <Input
-                        value={formData.presentStreet}
-                        onChange={e => updateField('presentStreet', e.target.value)}
-                        placeholder="Street name"
-                      />
-                      {errors.presentStreet && <p className="text-sm text-destructive">{errors.presentStreet}</p>}
-                    </div>
-                  </div>
-                  {/* ... other address fields ... */}
-                  <div className="space-y-2">
-                    <Label>District *</Label>
-                    <Select value={formData.presentDistrict} onValueChange={v => updateField('presentDistrict', v)}>
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50">
-                        {districts.map(d => (
-                          <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.presentDistrict && <p className="text-sm text-destructive">{errors.presentDistrict}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Mandal / City *</Label>
-                      <Select
-                        value={formData.presentMandal}
-                        onValueChange={v => updateField('presentMandal', v)}
-                        disabled={!formData.presentDistrict}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent className="bg-background border shadow-lg z-50">
-                          {presentMandals.map(m => (
-                            <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.presentMandal && <p className="text-sm text-destructive">{errors.presentMandal}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Village / Area *</Label>
-                      <Select
-                        value={formData.presentVillage}
-                        onValueChange={v => updateField('presentVillage', v)}
-                        disabled={!formData.presentMandal}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent className="bg-background border shadow-lg z-50 max-h-[200px]">
-                          {presentVillages.map(v => (
-                            <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.presentVillage && <p className="text-sm text-destructive">{errors.presentVillage}</p>}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Pincode *</Label>
-                    <Input
-                      value={formData.presentPincode}
-                      onChange={e => updateField('presentPincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="6-digit pincode"
-                      maxLength={6}
-                    />
-                    {errors.presentPincode && <p className="text-sm text-destructive">{errors.presentPincode}</p>}
-                  </div>
-                </div>
-
-                {/* Same as Present Checkbox */}
-                <div className="flex items-center space-x-2 py-2 border-t border-b">
-                  <Checkbox
-                    id="sameAsPresent"
-                    checked={formData.sameAsPresent}
-                    onCheckedChange={(checked) => updateField('sameAsPresent', !!checked)}
-                  />
-                  <Label htmlFor="sameAsPresent" className="cursor-pointer">Permanent address same as present address</Label>
-                </div>
-
-                {/* Permanent Address ... */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Permanent Address</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Door No *</Label>
-                      <Input
-                        value={formData.permanentDoorNo}
-                        onChange={e => updateField('permanentDoorNo', e.target.value)}
-                        disabled={formData.sameAsPresent}
-                        className={formData.sameAsPresent ? 'bg-muted' : ''}
-                      />
-                      {errors.permanentDoorNo && <p className="text-sm text-destructive">{errors.permanentDoorNo}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Street *</Label>
-                      <Input
-                        value={formData.permanentStreet}
-                        onChange={e => updateField('permanentStreet', e.target.value)}
-                        disabled={formData.sameAsPresent}
-                        className={formData.sameAsPresent ? 'bg-muted' : ''}
-                      />
-                      {errors.permanentStreet && <p className="text-sm text-destructive">{errors.permanentStreet}</p>}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>District *</Label>
-                    <Select
-                      value={formData.permanentDistrict}
-                      onValueChange={v => updateField('permanentDistrict', v)}
-                      disabled={formData.sameAsPresent}
-                    >
-                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent className="bg-background border shadow-lg z-50">
-                        {districts.map(d => (
-                          <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.permanentDistrict && <p className="text-sm text-destructive">{errors.permanentDistrict}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Mandal / City *</Label>
-                      <Select
-                        value={formData.permanentMandal}
-                        onValueChange={v => updateField('permanentMandal', v)}
-                        disabled={formData.sameAsPresent || !formData.permanentDistrict}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent className="bg-background border shadow-lg z-50">
-                          {permanentMandals.map(m => (
-                            <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.permanentMandal && <p className="text-sm text-destructive">{errors.permanentMandal}</p>}
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Village / Area *</Label>
-                      <Select
-                        value={formData.permanentVillage}
-                        onValueChange={v => updateField('permanentVillage', v)}
-                        disabled={formData.sameAsPresent || !formData.permanentMandal}
-                      >
-                        <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent className="bg-background border shadow-lg z-50 max-h-[200px]">
-                          {permanentVillages.map(v => (
-                            <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.permanentVillage && <p className="text-sm text-destructive">{errors.permanentVillage}</p>}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Pincode *</Label>
-                    <Input
-                      value={formData.permanentPincode}
-                      onChange={e => updateField('permanentPincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      maxLength={6}
-                      disabled={formData.sameAsPresent}
-                      className={formData.sameAsPresent ? 'bg-muted' : ''}
-                    />
-                    {errors.permanentPincode && <p className="text-sm text-destructive">{errors.permanentPincode}</p>}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Review ... */}
+            {/* --- Step 4: Address --- */}
             {step === 4 && (
               <div className="space-y-4">
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <h4 className="font-medium">Personal Information</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <span className="text-muted-foreground">Name:</span>
-                    <span>{formData.firstName} {formData.lastName}</span>
-                    <span className="text-muted-foreground">Gender:</span>
-                    <span>{formData.gender}</span>
-                    <span className="text-muted-foreground">Phone:</span>
-                    <span>{formData.phone}</span>
-                    <span className="text-muted-foreground">Caste:</span>
-                    <span>{formData.caste || '-'}</span>
+                <div className="space-y-4">
+                  <h4 className="font-medium text-primary">Present Address</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label>Door No <ReqStar /></Label><Input value={formData.presentDoorNo} onChange={e => updateField('presentDoorNo', e.target.value)} /><ErrorMsg id="presentDoorNo" /></div>
+                    <div className="space-y-2"><Label>Street <ReqStar /></Label><Input value={formData.presentStreet} onChange={e => updateField('presentStreet', e.target.value)} /><ErrorMsg id="presentStreet" /></div>
                   </div>
+                  <div className="space-y-2">
+                    <Label>District <ReqStar /></Label>
+                    <Select value={formData.presentDistrict} onValueChange={v => updateField('presentDistrict', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select District" /></SelectTrigger>
+                      <SelectContent>{districts.map(d => <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <ErrorMsg id="presentDistrict" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Mandal <ReqStar /></Label>
+                      <Select value={formData.presentMandal} onValueChange={v => updateField('presentMandal', v)} disabled={!formData.presentDistrict}>
+                        <SelectTrigger><SelectValue placeholder="Select Mandal" /></SelectTrigger>
+                        <SelectContent>{presentMandals.map(m => <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <ErrorMsg id="presentMandal" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Village <ReqStar /></Label>
+                      <Select value={formData.presentVillage} onValueChange={v => updateField('presentVillage', v)} disabled={!formData.presentMandal}>
+                        <SelectTrigger><SelectValue placeholder="Select Village" /></SelectTrigger>
+                        <SelectContent>{presentVillages.map(v => <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <ErrorMsg id="presentVillage" />
+                    </div>
+                  </div>
+                  <div className="space-y-2"><Label>Pincode <ReqStar /></Label><Input value={formData.presentPincode} onChange={e => updateField('presentPincode', e.target.value.slice(0, 6))} /><ErrorMsg id="presentPincode" /></div>
                 </div>
-                {/* ... other code */}
+
+                <div className="flex items-center space-x-2 py-4 border-t">
+                  <Checkbox id="sameAs" checked={formData.sameAsPresent} onCheckedChange={(c) => updateField('sameAsPresent', !!c)} />
+                  <Label htmlFor="sameAs">Permanent Address same as Present</Label>
+                </div>
+
+                {!formData.sameAsPresent && (
+                  <div className="space-y-4">
+                    <h4 className="font-medium text-primary">Permanent Address</h4>
+                    {/* Permanent address fields same structure... shortened for brevity in this response but essential to keep full implementation */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2"><Label>Door No <ReqStar /></Label><Input value={formData.permanentDoorNo} onChange={e => updateField('permanentDoorNo', e.target.value)} /><ErrorMsg id="permanentDoorNo" /></div>
+                      <div className="space-y-2"><Label>Street <ReqStar /></Label><Input value={formData.permanentStreet} onChange={e => updateField('permanentStreet', e.target.value)} /><ErrorMsg id="permanentStreet" /></div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>District <ReqStar /></Label>
+                      <Select value={formData.permanentDistrict} onValueChange={v => updateField('permanentDistrict', v)}>
+                        <SelectTrigger><SelectValue placeholder="Select District" /></SelectTrigger>
+                        <SelectContent>{districts.map(d => <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <ErrorMsg id="permanentDistrict" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Mandal <ReqStar /></Label>
+                        <Select value={formData.permanentMandal} onValueChange={v => updateField('permanentMandal', v)} disabled={!formData.permanentDistrict}>
+                          <SelectTrigger><SelectValue placeholder="Select Mandal" /></SelectTrigger>
+                          <SelectContent>{permanentMandals.map(m => <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <ErrorMsg id="permanentMandal" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Village <ReqStar /></Label>
+                        <Select value={formData.permanentVillage} onValueChange={v => updateField('permanentVillage', v)} disabled={!formData.permanentMandal}>
+                          <SelectTrigger><SelectValue placeholder="Select Village" /></SelectTrigger>
+                          <SelectContent>{permanentVillages.map(v => <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <ErrorMsg id="permanentVillage" />
+                      </div>
+                    </div>
+                    <div className="space-y-2"><Label>Pincode <ReqStar /></Label><Input value={formData.permanentPincode} onChange={e => updateField('permanentPincode', e.target.value.slice(0, 6))} /><ErrorMsg id="permanentPincode" /></div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Buttons ... */}
-            <div className="flex justify-between mt-6">
-              {step > 0 && (
-                <Button variant="outline" onClick={prevStep} disabled={loading}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Previous
-                </Button>
-              )}
-              {step < 4 ? (
-                <Button onClick={nextStep} className="ml-auto" disabled={uploading}>
-                  Next
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+            {/* --- Step 5: Review --- */}
+            {step === 5 && (
+              <div className="space-y-4">
+                <div className="bg-muted p-4 rounded text-sm space-y-2">
+                  <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
+                  <p><strong>Aadhaar:</strong> {formData.aadhaar}</p>
+                  <p><strong>Phone:</strong> {formData.phone}</p>
+                  <p><strong>Caste:</strong> {formData.caste}</p>
+                  <p><strong>Address:</strong> {formData.presentVillage}, {formData.presentDistrict}</p>
+                </div>
+                <p className="text-center text-muted-foreground">Please ensure all details are correct before submitting.</p>
+              </div>
+            )}
+
+            <div className="flex justify-between mt-8 pt-4 border-t">
+              <Button variant="outline" onClick={prevStep} disabled={step === 0 || loading}>
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back
+              </Button>
+              {step < 5 ? (
+                <Button onClick={nextStep} disabled={uploading}>Next <ArrowRight className="w-4 h-4 ml-2" /></Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={loading || uploading} className="ml-auto">
-                  {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                  Submit Registration
+                <Button onClick={handleSubmit} disabled={loading || uploading}>
+                  {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />} Submit Registration
                 </Button>
               )}
             </div>
+
           </CardContent>
         </Card>
       </div>
