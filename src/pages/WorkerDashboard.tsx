@@ -14,6 +14,7 @@ import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker'
 import { DateRange } from 'react-day-picker';
 import { EditWorkerProfileDialog } from '@/components/EditWorkerProfileDialog';
 import { format, subDays } from 'date-fns';
+import { WorkerSchemes } from '@/components/WorkerSchemes';
 
 export default function WorkerDashboard() {
   // Enable real-time updates
@@ -279,7 +280,13 @@ export default function WorkerDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Schemes Section */}
+        <div className="mt-8">
+          <h2 className="text-xl font-display font-bold mb-4">Schemes & Benefits</h2>
+          <WorkerSchemes />
+        </div>
       </main>
-    </div>
+    </div >
   );
 }
