@@ -192,9 +192,9 @@ export default function PublicWorkerProfile() {
 
                 {/* Tabs Section */}
                 <Tabs defaultValue="current" className="w-full">
-                    <TabsList className="mb-4">
-                        <TabsTrigger value="current" className="px-6">Current Month (Jan 2026)</TabsTrigger>
-                        <TabsTrigger value="history" className="px-6">Year-wise History</TabsTrigger>
+                    <TabsList className="mb-4 w-full h-auto grid grid-cols-1 sm:grid-cols-2">
+                        <TabsTrigger value="current" className="py-2">Current Month (Jan 2026)</TabsTrigger>
+                        <TabsTrigger value="history" className="py-2">Year-wise History</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="current">
