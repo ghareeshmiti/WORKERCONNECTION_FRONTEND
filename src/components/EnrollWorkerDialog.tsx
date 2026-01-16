@@ -167,9 +167,12 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDi
 
     try {
       // 1. Create worker
+      const generatedWorkerId = `WKR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+
       const { data: worker, error: workerError } = await supabase
         .from('workers')
         .insert({
+          worker_id: generatedWorkerId,
           first_name: formData.firstName,
           last_name: formData.lastName,
           aadhaar_number: formData.aadhaar,
