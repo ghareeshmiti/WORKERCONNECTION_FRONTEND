@@ -196,6 +196,31 @@ export default function Auth() {
     }
   };
 
+  const handleSmartCardLogin = async () => {
+    setLoading(true);
+    try {
+      const { authenticateUser } = await import("@/lib/api");
+      // Always use Usernameless flow (empty username) as requested.
+      // The card itself identifies the user.
+      const result = await authenticateUser("", 'login');
+
+      if (result.verified) {
+        toast({ title: "Success", description: `Welcome back ${result.username}!` });
+        window.location.reload();
+      }
+    } catch (e: any) {
+      console.error(e);
+      // Simplify error message
+      toast({
+        title: "Login Failed",
+        description: "Invalid Card or Read Error. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- Standard Reset Handlers ---
 
   const handleSendOTP = async () => {
@@ -354,6 +379,30 @@ export default function Auth() {
                         </Button>
                       </div>
                     )}
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">Or login with</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+                      onClick={handleSmartCardLogin}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <CreditCard className="w-4 h-4 mr-2" />
+                      )}
+                      Login with Smart Card
+                    </Button>
+
                   </div>
                 ) : (
                   // Standard Login Form
