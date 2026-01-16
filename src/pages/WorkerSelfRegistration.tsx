@@ -636,13 +636,70 @@ export default function WorkerSelfRegistration() {
 
                         {/* --- Step 5: Review --- */}
                         {step === 5 && (
-                            <div className="space-y-4">
-                                <div className="bg-muted p-4 rounded text-sm space-y-2">
-                                    <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
-                                    <p><strong>Aadhaar:</strong> {formData.aadhaar}</p>
-                                    <p><strong>Phone:</strong> {formData.phone}</p>
-                                    <p><strong>Caste:</strong> {formData.caste}</p>
-                                    <p><strong>Address:</strong> {formData.presentVillage}, {formData.presentDistrict}</p>
+                            <div className="space-y-6">
+                                <div className="space-y-4 text-sm">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-muted p-4 rounded space-y-2">
+                                            <h4 className="font-semibold text-primary border-b pb-1 mb-2">Personal Details</h4>
+                                            <p><strong>Name:</strong> {formData.firstName} {formData.lastName}</p>
+                                            <p><strong>Aadhaar:</strong> {formData.aadhaar}</p>
+                                            <p><strong>DOB:</strong> {formData.dateOfBirth}</p>
+                                            <p><strong>Gender:</strong> {formData.gender}</p>
+                                            <p><strong>Phone:</strong> {formData.phone}</p>
+                                            <p><strong>Marital Status:</strong> {formData.maritalStatus}</p>
+                                        </div>
+                                        <div className="bg-muted p-4 rounded space-y-2">
+                                            <h4 className="font-semibold text-primary border-b pb-1 mb-2">Family & Other</h4>
+                                            <p><strong>Father's Name:</strong> {formData.fatherName}</p>
+                                            <p><strong>Mother's Name:</strong> {formData.motherName}</p>
+                                            <p><strong>Caste:</strong> {formData.caste}</p>
+                                            <p><strong>Disability:</strong> {formData.disabilityStatus}</p>
+                                        </div>
+                                        <div className="bg-muted p-4 rounded space-y-2">
+                                            <h4 className="font-semibold text-primary border-b pb-1 mb-2">Banking & IDs</h4>
+                                            <p><strong>Bank Acc:</strong> {formData.bankAccountNumber || 'N/A'}</p>
+                                            <p><strong>IFSC:</strong> {formData.ifscCode || 'N/A'}</p>
+                                            <p><strong>E-Shram:</strong> {formData.eshramId || 'N/A'}</p>
+                                            <p><strong>BOCW:</strong> {formData.bocwId || 'N/A'}</p>
+                                            <p><strong>Union Member:</strong> {formData.tradeUnionMember}</p>
+                                        </div>
+                                        <div className="bg-muted p-4 rounded space-y-2">
+                                            <h4 className="font-semibold text-primary border-b pb-1 mb-2">Professional</h4>
+                                            <p><strong>Education:</strong> {formData.educationLevel}</p>
+                                            <p><strong>Skill Category:</strong> {formData.skillCategory}</p>
+                                            <p><strong>Experience:</strong> {formData.workHistory || 'None'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-muted p-4 rounded space-y-2">
+                                        <h4 className="font-semibold text-primary border-b pb-1 mb-2">Address</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="font-semibold text-xs uppercase text-muted-foreground">Present Address</p>
+                                                <p>{formData.presentDoorNo}, {formData.presentStreet}</p>
+                                                <p>{formData.presentVillage}, {formData.presentMandal}</p>
+                                                <p>{formData.presentDistrict} - {formData.presentPincode}</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-xs uppercase text-muted-foreground">Permanent Address</p>
+                                                {formData.sameAsPresent ? <p>(Same as Present)</p> : (
+                                                    <>
+                                                        <p>{formData.permanentDoorNo}, {formData.permanentStreet}</p>
+                                                        <p>{formData.permanentVillage}, {formData.permanentMandal}</p>
+                                                        <p>{formData.permanentDistrict} - {formData.permanentPincode}</p>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {formData.photoUrl && (
+                                        <div className="bg-muted p-4 rounded flex items-center gap-4">
+                                            <h4 className="font-semibold text-primary">Photo:</h4>
+                                            <img src={formData.photoUrl} alt="Preview" className="w-16 h-16 object-cover rounded border" />
+                                            <span className="text-xs text-green-600 font-medium">Uploaded Successfully</span>
+                                        </div>
+                                    )}
                                 </div>
                                 <p className="text-center text-muted-foreground">Please ensure all details are correct before submitting.</p>
                             </div>
