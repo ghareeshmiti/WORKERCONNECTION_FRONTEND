@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useWorkerProfile, useWorkerTodayAttendance, useWorkerAttendanceHistory, useWorkerMonthlyStats, useWorkerAttendanceTrend, useWorkerEstablishment } from '@/hooks/use-dashboard-data';
 import { useWorkerDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
-import { AttendanceChart } from '@/components/AttendanceChart';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
 import { EditWorkerProfileDialog } from '@/components/EditWorkerProfileDialog';
@@ -119,7 +118,7 @@ export default function WorkerDashboard() {
         </Card>
 
         {/* KPI Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Today's Status</CardTitle>
@@ -183,19 +182,23 @@ export default function WorkerDashboard() {
                   <p className="text-xs text-muted-foreground">Use for remote check-in</p>
                 </>
               )}
+
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Schemes Taken</CardTitle>
+              <CheckCircle className="w-4 h-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">2</div>
+              <p className="text-xs text-muted-foreground">Benefits received this month</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Attendance Trend Chart */}
-        <div className="mb-8">
-          <AttendanceChart
-            data={trendData || []}
-            isLoading={trendLoading}
-            title="Attendance Trend (Last 14 Days)"
-            type="area"
-          />
-        </div>
+
 
         {/* Attendance History with Date Filter */}
         <Card>
