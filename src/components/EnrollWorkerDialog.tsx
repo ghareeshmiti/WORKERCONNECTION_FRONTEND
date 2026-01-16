@@ -208,7 +208,7 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy, departmentId }: 
           nres_member: formData.nresMember || 'No',
           trade_union_member: formData.tradeUnionMember || 'No',
 
-          status: 'new', // Default to 'new' (Pending) until card is assigned
+          status: 'new', // Default to 'new' (Pending) status until card is assigned
         })
         .select()
         .single();

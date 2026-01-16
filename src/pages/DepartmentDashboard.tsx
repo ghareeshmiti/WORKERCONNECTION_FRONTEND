@@ -99,6 +99,7 @@ export default function DepartmentDashboard() {
 
   // --- Worker Rejection Logic ---
   const [workerToApprove, setWorkerToApprove] = useState<any | null>(null);
+  const [workerToAssignCard, setWorkerToAssignCard] = useState<any | null>(null);
   const [workerToReject, setWorkerToReject] = useState<any | null>(null);
   const [rejectReason, setRejectReason] = useState("");
 
@@ -226,6 +227,16 @@ export default function DepartmentDashboard() {
                             <X className="mr-2 h-3.5 w-3.5" /> Reject
                           </Button>
                         </>
+                      )}
+                      {!viewOnly && worker.status === 'active' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-2 lg:px-3 text-blue-700 border-blue-200 bg-blue-50 hover:bg-blue-100"
+                          onClick={() => setWorkerToAssignCard(worker)}
+                        >
+                          <CreditCard className="mr-2 h-3.5 w-3.5" /> Assign Card
+                        </Button>
                       )}
                     </div>
                   </td>
@@ -900,6 +911,59 @@ export default function DepartmentDashboard() {
               >
                 Approve without card (Not Recommended)
               </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Card Dialog (For already active workers) */}
+      <Dialog open={!!workerToAssignCard} onOpenChange={(o) => { if (!o) setWorkerToAssignCard(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Smart Card</DialogTitle>
+            <DialogDescription>
+              Assign a new Smart Card to <b>{workerToAssignCard?.first_name} {workerToAssignCard?.last_name}</b>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-6 flex flex-col items-center justify-center gap-6">
+            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center">
+              <CreditCard className="w-10 h-10 text-green-600" />
+            </div>
+
+            <div className="text-center space-y-2">
+              <p className="font-medium">Ready to Scan</p>
+              <p className="text-sm text-muted-foreground">Place the Smart Card on the reader.</p>
+            </div>
+
+            <div className="flex w-full gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setWorkerToAssignCard(null)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 gap-2"
+                onClick={async () => {
+                  if (!workerToAssignCard) return;
+                  try {
+                    const { registerUser } = await import("@/lib/api");
+                    toast.message("Setup", { description: "Follow browser prompts..." });
+                    const success = await registerUser(workerToAssignCard.worker_id);
+
+                    if (success) {
+                      toast.success("Success", { description: "Card assigned successfully!" });
+                      setWorkerToAssignCard(null);
+                    } else {
+                      toast.error("Card registration failed.");
+                    }
+                  } catch (e: any) {
+                    console.error(e);
+                    toast.error("Error", { description: e.message });
+                  }
+                }}
+              >
+                <CreditCard className="w-4 h-4" />
+                Register Card
+              </Button>
             </div>
           </div>
         </DialogContent>
