@@ -245,34 +245,41 @@ export default function WorkerSelfRegistration() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    // Mapped fields
                     firstName: formData.firstName.trim(),
                     lastName: formData.lastName.trim(),
                     phone: formData.phone,
-                    password: randomPassword, // Use generated password
-                    dateOfBirth: formData.dateOfBirth,
+                    password: randomPassword,
+                    dob: formData.dateOfBirth, // Mapped to 'dob' for backend
 
                     aadhaarNumber: formData.aadhaar,
-                    gender: formData.gender, // e.g. "Male"
+                    gender: formData.gender,
 
                     // Address
-                    state: "Andhra Pradesh", // Default or form data
+                    state: "Andhra Pradesh",
                     district: formData.presentDistrict,
                     mandal: formData.presentMandal,
                     village: formData.presentVillage,
                     pincode: formData.presentPincode,
                     addressLine: `${formData.presentDoorNo}, ${formData.presentStreet}`,
 
-                    // Other IDs
+                    // Other IDs & Details
                     eshramId: formData.eshramId,
                     bocwId: formData.bocwId,
                     nresMember: formData.nresMember,
                     tradeUnionMember: formData.tradeUnionMember,
 
+                    fatherName: formData.fatherName,
+                    motherName: formData.motherName,
+                    bankAccountNumber: formData.bankAccountNumber,
+                    ifscCode: formData.ifscCode,
+                    maritalStatus: formData.maritalStatus,
+                    caste: formData.caste,
+                    disabilityStatus: formData.disabilityStatus,
+                    photoUrl: formData.photoUrl,
+
                     educationLevel: formData.educationLevel,
                     skillCategory: formData.skillCategory,
                     workHistory: formData.workHistory,
-                    // Emergency contact fallback to Father
                     emergencyContactName: formData.fatherName,
                 }),
             });
