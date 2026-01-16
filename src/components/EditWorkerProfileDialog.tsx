@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Pencil, Loader2, Upload } from 'lucide-react';
+import { Pencil, Loader2, Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -43,7 +43,7 @@ const editWorkerSchema = z.object({
   address_line: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
-  skills: z.string().optional(), // Comma separated
+  skills: z.string().optional(),
   experience_years: z.coerce.number().min(0).optional(),
   father_name: z.string().optional(),
   mother_name: z.string().optional(),
@@ -105,6 +105,7 @@ interface EditWorkerProfileDialogProps {
 export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
 
   const form = useForm<EditWorkerFormData>({
@@ -144,7 +145,6 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
     },
   });
 
-  // Reset form with worker data when dialog opens or worker data changes
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen && worker) {
@@ -181,6 +181,35 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
         skill_category: worker.skill_category || '',
         work_history: worker.work_history || '',
       });
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${worker?.id}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    setUploading(true);
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('worker_photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('worker_photos')
+        .getPublicUrl(filePath);
+
+      form.setValue('photo_url', publicUrl);
+      toast.success('Photo uploaded successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Error uploading photo');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -287,15 +316,23 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                   name="photo_url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Photo URL</FormLabel>
+                      <FormLabel>Photo</FormLabel>
                       <FormControl>
-                        <div className="flex gap-2">
-                          <Input placeholder="https://..." {...field} />
+                        <div className="flex gap-4 items-center">
                           {field.value && (
-                            <a href={field.value} target="_blank" rel="noreferrer" className="flex items-center justify-center p-2 border rounded hover:bg-muted">
-                              <Upload className="w-4 h-4" />
-                            </a>
+                            <div className="h-16 w-16 rounded overflow-hidden border">
+                              <img src={field.value} alt="Profile" className="h-full w-full object-cover" />
+                            </div>
                           )}
+                          <div className="flex-1">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileUpload}
+                              disabled={uploading}
+                            />
+                            {uploading && <p className="text-xs text-muted-foreground mt-1">Uploading...</p>}
+                          </div>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -437,7 +474,7 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                         <SelectContent>
                           <SelectItem value="Single">Single</SelectItem>
                           <SelectItem value="Married">Married</SelectItem>
-                          <SelectItem value="Widowed">Widowed</SelectItem>
+                          <SelectItem value="Widow">Widow</SelectItem>
                           <SelectItem value="Divorced">Divorced</SelectItem>
                         </SelectContent>
                       </Select>
@@ -451,7 +488,20 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Caste</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Caste" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="OC">OC</SelectItem>
+                          <SelectItem value="BC">BC</SelectItem>
+                          <SelectItem value="SC">SC</SelectItem>
+                          <SelectItem value="ST">ST</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -792,7 +842,7 @@ export function EditWorkerProfileDialog({ worker }: EditWorkerProfileDialogProps
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || uploading}>
                 {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Save Changes
               </Button>

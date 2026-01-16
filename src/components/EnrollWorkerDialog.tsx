@@ -3,10 +3,6 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -15,299 +11,165 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Loader2, ArrowLeft, ArrowRight, Check, UserPlus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, UserPlus, Check, ArrowRight, ArrowLeft } from 'lucide-react';
 import { getDistricts, getMandalsForDistrict, getVillagesForMandal } from '@/data/india-locations';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
-// Format Aadhaar with hyphens
-const formatAadhaar = (value: string) => {
-  const digits = value.replace(/\D/g, '').slice(0, 12);
-  const parts = [];
-  for (let i = 0; i < digits.length; i += 4) {
-    parts.push(digits.slice(i, i + 4));
-  }
-  return parts.join('-');
-};
-
-// Calculate age from date of birth
-const calculateAge = (dob: string): number => {
-  if (!dob) return 0;
-  const today = new Date();
-  const birthDate = new Date(dob);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
-};
-
-// Validation schemas
 const personalSchema = z.object({
-  firstName: z.string().trim().min(2, 'First name must be at least 2 characters').max(50),
-  lastName: z.string().trim().min(2, 'Last name must be at least 2 characters').max(50),
+  aadhaar: z.string().regex(/^\d{12}$/, 'Must be valid 12-digit Aadhaar'),
+  eshramId: z.string().optional(),
+  bocwId: z.string().optional(),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   gender: z.string().min(1, 'Gender is required'),
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  phone: z.string().regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit mobile number'),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid phone number'),
   fatherName: z.string().optional(),
   motherName: z.string().optional(),
   maritalStatus: z.string().optional(),
   caste: z.string().optional(),
   disabilityStatus: z.string().optional(),
-}).refine((data) => {
-  const age = calculateAge(data.dateOfBirth);
-  return age >= 18;
-}, {
-  message: "Must be at least 18 years old",
-  path: ["dateOfBirth"],
+  photoUrl: z.string().optional(),
+});
+
+const addressSchema = z.object({
+  district: z.string().min(1, 'District is required'),
+  mandal: z.string().min(1, 'Mandal is required'),
+  village: z.string().min(1, 'Village is required'),
+  pincode: z.string().regex(/^\d{6}$/, 'Invalid pincode'),
+  addressLine: z.string().optional(),
 });
 
 const professionalSchema = z.object({
   educationLevel: z.string().optional(),
   skillCategory: z.string().optional(),
+  workHistory: z.string().optional(),
   bankAccountNumber: z.string().optional(),
   ifscCode: z.string().optional(),
-  workHistory: z.string().optional(),
   nresMember: z.string().optional(),
   tradeUnionMember: z.string().optional(),
 });
 
-const addressSchema = z.object({
-  district: z.string().min(1, 'District is required'),
-  mandal: z.string().min(1, 'Mandal/City is required'),
-  village: z.string().optional(),
-  pincode: z.string().regex(/^\d{6}$/, 'Pincode must be exactly 6 digits').optional().or(z.literal('')),
-  addressLine: z.string().max(200).optional(),
-});
-
-type FormData = {
-  aadhaar: string;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  dateOfBirth: string;
-  phone: string;
-  fatherName: string;
-  motherName: string;
-  maritalStatus: string;
-  caste: string;
-  disabilityStatus: string;
-
-  educationLevel: string;
-  skillCategory: string;
-  bankAccountNumber: string;
-  ifscCode: string;
-  workHistory: string;
-  nresMember: string;
-  tradeUnionMember: string;
-
-  district: string;
-  mandal: string;
-  village: string;
-  pincode: string;
-  addressLine: string;
-  accessCardId: string;
-  eshramId: string;
-  bocwId: string;
-  photoUrl: string;
-};
-
-const GENDERS = ['Male', 'Female', 'Other'];
-
 interface EnrollWorkerDialogProps {
-  departmentId: string;
+  establishmentId?: string;
+  mappedBy?: string;
 }
 
-export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
+export function EnrollWorkerDialog({ establishmentId, mappedBy }: EnrollWorkerDialogProps) {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(0); // 0: Personal, 1: Professional, 2: Address, 3: Card Setup
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
+  const [newWorkerId, setNewWorkerId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [formData, setFormData] = useState<FormData>({
-    aadhaar: '',
-    firstName: '',
-    lastName: '',
-    gender: '',
-    dateOfBirth: '',
-    phone: '',
-    fatherName: '',
-    motherName: '',
-    maritalStatus: '',
-    caste: '',
-    disabilityStatus: 'None',
-    educationLevel: '',
-    skillCategory: '',
-    bankAccountNumber: '',
-    ifscCode: '',
-    workHistory: '',
-    nresMember: 'No',
-    tradeUnionMember: 'No',
-    district: '',
-    mandal: '',
-    village: '',
-    pincode: '',
-    addressLine: '',
-    accessCardId: '',
-    eshramId: '',
-    bocwId: '',
+  const [formData, setFormData] = useState({
+    aadhaar: '', eshramId: '', bocwId: '',
+    firstName: '', lastName: '', gender: '', dateOfBirth: '', phone: '',
+    fatherName: '', motherName: '', maritalStatus: '', caste: '', disabilityStatus: 'None',
     photoUrl: '',
+
+    educationLevel: '', skillCategory: '', workHistory: '',
+    bankAccountNumber: '', ifscCode: '',
+    nresMember: 'No', tradeUnionMember: 'No',
+
+    district: '', mandal: '', village: '', pincode: '', addressLine: '',
   });
 
   const districts = useMemo(() => getDistricts(), []);
+  const mandals = useMemo(() => getMandalsForDistrict(formData.district), [formData.district]);
+  const villages = useMemo(() => getVillagesForMandal(formData.district, formData.mandal), [formData.district, formData.mandal]);
 
-  const mandals = useMemo(() => {
-    if (!formData.district) return [];
-    // Find district name if value is code, or use as is
-    const selectedAvg = districts.find((d: any) => d.code === formData.district || d.name === formData.district || d === formData.district);
-    const distName = selectedAvg ? (typeof selectedAvg === 'string' ? selectedAvg : selectedAvg.name) : formData.district;
-    return getMandalsForDistrict(distName);
-  }, [formData.district, districts]);
-
-  const villages = useMemo(() => {
-    if (!formData.district || !formData.mandal) return [];
-    const selectedAvg = districts.find((d: any) => d.code === formData.district || d.name === formData.district || d === formData.district);
-    const distName = selectedAvg ? (typeof selectedAvg === 'string' ? selectedAvg : selectedAvg.name) : formData.district;
-    return getVillagesForMandal(distName, formData.mandal);
-  }, [formData.district, formData.mandal, districts]);
-
-  const updateField = (field: keyof FormData, value: string | boolean) => {
-    setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-
-      // Reset dependent fields
-      if (field === 'district') {
-        newData.mandal = '';
-        newData.village = '';
-      }
-      if (field === 'mandal') {
-        newData.village = '';
-      }
-
-      return newData;
-    });
-    setErrors(prev => ({ ...prev, [field]: '' }));
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAadhaarChange = (value: string) => {
-    const formatted = formatAadhaar(value);
-    updateField('aadhaar', formatted);
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const file = e.target.files[0];
+    const fileExt = file.name.split('.').pop();
+    const fileName = `enroll-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    setUploading(true);
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('worker_photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('worker_photos')
+        .getPublicUrl(filePath);
+
+      updateField('photoUrl', publicUrl);
+      toast({ title: "Success", description: "Photo uploaded successfully" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const validateStep = () => {
-    setErrors({});
-
     try {
-      if (step === 0) {
-        personalSchema.parse(formData);
-      } else if (step === 1) {
-        professionalSchema.parse(formData);
-      } else if (step === 2) {
-        addressSchema.parse(formData);
-      }
+      if (step === 0) personalSchema.parse(formData);
+      if (step === 1) professionalSchema.parse(formData);
+      if (step === 2) addressSchema.parse(formData);
       return true;
     } catch (err) {
       if (err instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {};
-        err.errors.forEach((e) => {
-          if (e.path[0]) newErrors[e.path[0] as string] = e.message;
-        });
-        setErrors(newErrors);
+        toast({
+          title: "Validation Error",
+          description: err.errors[0].message,
+          variant: "destructive"
+        })
       }
       return false;
     }
   };
 
-  const nextStep = () => {
-    if (validateStep()) {
-      setStep(prev => Math.min(prev + 1, 3)); // 0: Personal, 1: Prof, 2: Address, 3: Review -> 4: Success
-    }
+  const handleNext = () => {
+    if (validateStep()) setStep(prev => prev + 1);
   };
-
-  const prevStep = () => {
-    setStep(prev => Math.max(prev - 1, 0));
-  };
-
-  const resetForm = () => {
-    setStep(0);
-    setFormData({
-      aadhaar: '',
-      firstName: '',
-      lastName: '',
-      gender: '',
-      dateOfBirth: '',
-      phone: '',
-      fatherName: '',
-      motherName: '',
-      maritalStatus: '',
-      caste: '',
-      disabilityStatus: 'None',
-      educationLevel: '',
-      skillCategory: '',
-      bankAccountNumber: '',
-      ifscCode: '',
-      workHistory: '',
-      nresMember: 'No',
-      tradeUnionMember: 'No',
-      district: '',
-      mandal: '',
-      village: '',
-      pincode: '',
-      addressLine: '',
-      accessCardId: '',
-      eshramId: '',
-      bocwId: '',
-      photoUrl: '',
-    });
-    setErrors({});
-  };
-
-  const [createdWorkerId, setCreatedWorkerId] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!validateStep()) return;
-
     setLoading(true);
 
     try {
-      // Generate worker_id
-      const { count: workerCount } = await supabase
-        .from('workers')
-        .select('*', { count: 'exact', head: true });
-
-      const workerId = `WKR${String((workerCount ?? 0) + 1).padStart(8, '0')}`;
-
-      // Extract last 4 digits of Aadhaar
-      const aadhaarDigits = formData.aadhaar.replace(/-/g, '');
-      const aadhaarLastFour = aadhaarDigits.length >= 4 ? aadhaarDigits.slice(-4) : null;
-
-      // Insert worker
-      const { data: workerData, error: workerError } = await supabase
+      // 1. Create worker
+      const { data: worker, error: workerError } = await supabase
         .from('workers')
         .insert({
-          worker_id: workerId,
-          first_name: formData.firstName.trim(),
-          last_name: formData.lastName.trim(),
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          aadhaar_number: formData.aadhaar,
+          date_of_birth: formData.dateOfBirth,
           gender: formData.gender,
-          date_of_birth: formData.dateOfBirth || null,
           phone: formData.phone,
-          aadhaar_last_four: aadhaarLastFour,
-          aadhaar_number: formData.aadhaar || null,
           state: 'Andhra Pradesh',
           district: formData.district,
-          mandal: formData.mandal || null,
-          village: formData.village || null,
-          pincode: formData.pincode || null,
-          address_line: formData.addressLine || null,
-
+          mandal: formData.mandal,
+          village: formData.village,
+          pincode: formData.pincode,
+          address_line: formData.addressLine,
+          // New Fields
           father_name: formData.fatherName || null,
           mother_name: formData.motherName || null,
           marital_status: formData.maritalStatus || null,
           caste: formData.caste || null,
           disability_status: formData.disabilityStatus || null,
+          eshram_id: formData.eshramId || null,
+          bocw_id: formData.bocwId || null,
+          photo_url: formData.photoUrl || null,
 
           education_level: formData.educationLevel || null,
           skill_category: formData.skillCategory || null,
@@ -316,487 +178,332 @@ export function EnrollWorkerDialog({ departmentId }: EnrollWorkerDialogProps) {
           ifsc_code: formData.ifscCode || null,
           nres_member: formData.nresMember || 'No',
           trade_union_member: formData.tradeUnionMember || 'No',
-          photo_url: formData.photoUrl || null,
 
-          access_card_id: formData.accessCardId || null,
-          department_id: departmentId,
-          eshram_id: formData.eshramId || null,
-          bocw_id: formData.bocwId || null,
-          is_active: true,
-          status: 'active',
+          status: 'APPROVED', // Direct enrollment implies approval
         })
-        .select('id, worker_id')
+        .select()
         .single();
 
-      if (workerError) {
-        throw new Error(`Worker creation failed: ${workerError.message}`);
+      if (workerError) throw workerError;
+
+      // 2. Map to establishment if provided
+      if (establishmentId && mappedBy && worker) {
+        const { error: mapError } = await supabase
+          .from('worker_establishment_mapping')
+          .insert({
+            worker_id: worker.id,
+            establishment_id: establishmentId,
+            mapped_by: mappedBy
+          });
+        if (mapError) throw mapError;
       }
 
-      setCreatedWorkerId(workerId);
+      setNewWorkerId(worker.id);
+      toast({ title: "Worker Enrolled", description: "Worker profile created successfully." });
+      queryClient.invalidateQueries({ queryKey: [establishmentId ? 'establishment-workers' : 'workers'] });
+      setStep(3); // Move to card setup
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ['department-workers'] });
-      queryClient.invalidateQueries({ queryKey: ['department-stats'] });
-
-      // Move to Card Setup step (Index 4)
-      setStep(4);
-
-    } catch (error) {
-      console.error('Enrollment error:', error);
-      toast({
-        title: 'Enrollment Failed',
-        description: error instanceof Error ? error.message : 'Failed to enroll worker',
-        variant: 'destructive',
-      });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegisterCard = async () => {
-    if (!createdWorkerId) return;
-    try {
-      const { registerUser } = await import("@/lib/api");
-      toast({ title: "Setup", description: "Follow browser prompts to register FIDO card..." });
-
-      const success = await registerUser(createdWorkerId);
-      if (success) {
-        toast({ title: "Success", description: "Card assigned successfully!" });
-        setOpen(false); // Close dialog on success
-        resetForm();
-      } else {
-        toast({ title: "Failed", description: "Card registration failed.", variant: 'destructive' });
-      }
-    } catch (e: any) {
-      console.error(e);
-      toast({ title: "Error", description: e.message, variant: 'destructive' });
-    }
-  };
-
-  const STEPS = ['Personal', 'Professional', 'Address', 'Review', 'Card'];
+  const STEPS_LABELS = ['Personal', 'Professional', 'Address', 'Card Setup'];
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      setOpen(isOpen);
-      if (!isOpen) resetForm();
+    <Dialog open={open} onOpenChange={(v) => {
+      if (!v) {
+        setStep(0);
+        setNewWorkerId(null);
+      }
+      setOpen(v);
     }}>
       <DialogTrigger asChild>
         <Button>
           <UserPlus className="w-4 h-4 mr-2" />
-          Enroll Worker
+          Enroll New Worker
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Enroll New Worker</DialogTitle>
           <DialogDescription>
-            Add a worker to your department.
+            Step {step + 1} of {STEPS_LABELS.length}: {STEPS_LABELS[step]}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-6">
-          {STEPS.map((s, i) => (
-            <div key={i} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${i < step ? 'bg-success text-success-foreground' :
-                i === step ? 'bg-primary text-primary-foreground' :
-                  'bg-muted text-muted-foreground'
-                }`}>
-                {i < step || (i === 4 && step === 4) ? <Check className="w-4 h-4" /> : i + 1}
+        {step < 3 ? (
+          <div className="space-y-6 py-4">
+            {/* Step 0: Personal */}
+            {step === 0 && (
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Aadhaar Number</Label>
+                    <Input value={formData.aadhaar} onChange={e => updateField('aadhaar', e.target.value)} maxLength={12} placeholder="12 digit number" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Photo</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input type="file" accept="image/*" onChange={handleFileUpload} disabled={uploading} className="h-8 text-xs" />
+                      {formData.photoUrl && <Check className="w-4 h-4 text-green-500" />}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>First Name</Label>
+                    <Input value={formData.firstName} onChange={e => updateField('firstName', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Name</Label>
+                    <Input value={formData.lastName} onChange={e => updateField('lastName', e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Gender</Label>
+                    <Select value={formData.gender} onValueChange={v => updateField('gender', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date of Birth</Label>
+                    <Input type="date" value={formData.dateOfBirth} onChange={e => updateField('dateOfBirth', e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Father Name</Label>
+                    <Input value={formData.fatherName} onChange={e => updateField('fatherName', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mother Name</Label>
+                    <Input value={formData.motherName} onChange={e => updateField('motherName', e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Marital Status</Label>
+                    <Select value={formData.maritalStatus} onValueChange={v => updateField('maritalStatus', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single">Single</SelectItem>
+                        <SelectItem value="Married">Married</SelectItem>
+                        <SelectItem value="Widow">Widow</SelectItem>
+                        <SelectItem value="Divorced">Divorced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Caste</Label>
+                    <Select value={formData.caste} onValueChange={v => updateField('caste', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OC">OC</SelectItem>
+                        <SelectItem value="BC">BC</SelectItem>
+                        <SelectItem value="SC">SC</SelectItem>
+                        <SelectItem value="ST">ST</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1">
+                  <div className="space-y-2">
+                    <Label>Disability Status</Label>
+                    <Select value={formData.disabilityStatus} onValueChange={v => updateField('disabilityStatus', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Physical">Physical</SelectItem>
+                        <SelectItem value="Visual">Visual</SelectItem>
+                        <SelectItem value="Hearing">Hearing</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1">
+                  <div className="space-y-2">
+                    <Label>Phone</Label>
+                    <Input value={formData.phone} onChange={e => updateField('phone', e.target.value)} placeholder="10 digits" maxLength={10} />
+                  </div>
+                </div>
               </div>
-              {i < STEPS.length - 1 && (
-                <div className={`w-8 md:w-16 h-1 mx-1 ${i < step ? 'bg-success' : 'bg-muted'}`} />
-              )}
-            </div>
-          ))}
-        </div>
+            )}
 
-        {/* Step 0: Personal Information */}
-        {step === 0 && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Aadhaar (Optional)</Label>
-                <Input
-                  placeholder="XXXX-XXXX-XXXX"
-                  value={formData.aadhaar}
-                  onChange={(e) => handleAadhaarChange(e.target.value)}
-                  maxLength={14}
-                />
+            {/* Step 1: Professional */}
+            {step === 1 && (
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Education Level</Label>
+                    <Select value={formData.educationLevel} onValueChange={v => updateField('educationLevel', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Illiterate">Illiterate</SelectItem>
+                        <SelectItem value="5th Pass">5th Pass</SelectItem>
+                        <SelectItem value="8th Pass">8th Pass</SelectItem>
+                        <SelectItem value="10th Pass">10th Pass</SelectItem>
+                        <SelectItem value="12th Pass">12th Pass</SelectItem>
+                        <SelectItem value="ITI/Diploma">ITI/Diploma</SelectItem>
+                        <SelectItem value="Graduate">Graduate</SelectItem>
+                        <SelectItem value="Post Graduate">Post Graduate</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Skill Category</Label>
+                    <Select value={formData.skillCategory} onValueChange={v => updateField('skillCategory', v)}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Unskilled">Unskilled</SelectItem>
+                        <SelectItem value="Semi-Skilled">Semi-Skilled</SelectItem>
+                        <SelectItem value="Skilled">Skilled</SelectItem>
+                        <SelectItem value="Highly Skilled">Highly Skilled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Work History</Label>
+                  <Textarea value={formData.workHistory} onChange={e => updateField('workHistory', e.target.value)} placeholder="Past experience..." />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Account Number</Label>
+                    <Input value={formData.bankAccountNumber} onChange={e => updateField('bankAccountNumber', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>IFSC Code</Label>
+                    <Input value={formData.ifscCode} onChange={e => updateField('ifscCode', e.target.value.toUpperCase())} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>eShram ID</Label>
+                    <Input value={formData.eshramId} onChange={e => updateField('eshramId', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>BoCW ID</Label>
+                    <Input value={formData.bocwId} onChange={e => updateField('bocwId', e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>NRES Member</Label>
+                    <Select value={formData.nresMember} onValueChange={v => updateField('nresMember', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Union Member</Label>
+                    <Select value={formData.tradeUnionMember} onValueChange={v => updateField('tradeUnionMember', v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Photo URL</Label>
-                <Input value={formData.photoUrl} onChange={e => updateField('photoUrl', e.target.value)} placeholder="https://..." />
-              </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>First Name *</Label>
-                <Input
-                  value={formData.firstName}
-                  onChange={(e) => updateField('firstName', e.target.value)}
-                />
-                {errors.firstName && <p className="text-sm text-destructive">{errors.firstName}</p>}
+            {/* Step 2: Address */}
+            {step === 2 && (
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label>District</Label>
+                  <Select value={formData.district} onValueChange={(v) => {
+                    updateField('district', v);
+                    updateField('mandal', '');
+                    updateField('village', '');
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {districts.map(d => <SelectItem key={d.code} value={d.name}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Mandal</Label>
+                    <Select value={formData.mandal} onValueChange={(v) => {
+                      updateField('mandal', v);
+                      updateField('village', '');
+                    }} disabled={!formData.district}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {mandals.map(m => <SelectItem key={m.code} value={m.name}>{m.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Village</Label>
+                    <Select value={formData.village} onValueChange={(v) => updateField('village', v)} disabled={!formData.mandal}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        {villages.map(v => <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Pincode</Label>
+                  <Input value={formData.pincode} onChange={e => updateField('pincode', e.target.value)} maxLength={6} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Address Line</Label>
+                  <Input value={formData.addressLine} onChange={e => updateField('addressLine', e.target.value)} placeholder="H.No, Street..." />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Last Name *</Label>
-                <Input
-                  value={formData.lastName}
-                  onChange={(e) => updateField('lastName', e.target.value)}
-                />
-                {errors.lastName && <p className="text-sm text-destructive">{errors.lastName}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Gender *</Label>
-                <Select value={formData.gender} onValueChange={(v) => updateField('gender', v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GENDERS.map((g) => (
-                      <SelectItem key={g} value={g}>{g}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.gender && <p className="text-sm text-destructive">{errors.gender}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                <Input
-                  id="dateOfBirth"
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => updateField('dateOfBirth', e.target.value)}
-                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                />
-                {errors.dateOfBirth && <p className="text-sm text-destructive">{errors.dateOfBirth}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Father Name</Label>
-                <Input value={formData.fatherName} onChange={e => updateField('fatherName', e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Mother Name</Label>
-                <Input value={formData.motherName} onChange={e => updateField('motherName', e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Marital Status</Label>
-                <Select value={formData.maritalStatus} onValueChange={v => updateField('maritalStatus', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Single">Single</SelectItem>
-                    <SelectItem value="Married">Married</SelectItem>
-                    <SelectItem value="Widowed">Widowed</SelectItem>
-                    <SelectItem value="Divorced">Divorced</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Caste</Label>
-                <Input value={formData.caste} onChange={e => updateField('caste', e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Disability Status</Label>
-              <Select value={formData.disabilityStatus} onValueChange={v => updateField('disabilityStatus', v)}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="None">None</SelectItem>
-                  <SelectItem value="Physical">Physical</SelectItem>
-                  <SelectItem value="Visual">Visual</SelectItem>
-                  <SelectItem value="Hearing">Hearing</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Mobile Number *</Label>
-              <Input
-                placeholder="10-digit mobile number"
-                value={formData.phone}
-                onChange={(e) => updateField('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-                maxLength={10}
-              />
-              {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-            </div>
+            )}
           </div>
-        )}
-
-        {/* Step 1: Professional & Banking */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Education Level</Label>
-                <Select value={formData.educationLevel} onValueChange={v => updateField('educationLevel', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Illiterate">Illiterate</SelectItem>
-                    <SelectItem value="5th Pass">5th Pass</SelectItem>
-                    <SelectItem value="8th Pass">8th Pass</SelectItem>
-                    <SelectItem value="10th Pass">10th Pass</SelectItem>
-                    <SelectItem value="12th Pass">12th Pass</SelectItem>
-                    <SelectItem value="ITI/Diploma">ITI/Diploma</SelectItem>
-                    <SelectItem value="Graduate">Graduate</SelectItem>
-                    <SelectItem value="Post Graduate">Post Graduate</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Skill Category</Label>
-                <Select value={formData.skillCategory} onValueChange={v => updateField('skillCategory', v)}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Unskilled">Unskilled</SelectItem>
-                    <SelectItem value="Semi-Skilled">Semi-Skilled</SelectItem>
-                    <SelectItem value="Skilled">Skilled</SelectItem>
-                    <SelectItem value="Highly Skilled">Highly Skilled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Work History</Label>
-              <Textarea
-                value={formData.workHistory}
-                onChange={e => updateField('workHistory', e.target.value)}
-                placeholder="Describe past work experience..."
-              />
-            </div>
-
-            <h4 className="font-medium text-sm pt-2 border-t">Banking Details</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Account Number</Label>
-                <Input value={formData.bankAccountNumber} onChange={e => updateField('bankAccountNumber', e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>IFSC Code</Label>
-                <Input value={formData.ifscCode} onChange={e => updateField('ifscCode', e.target.value.toUpperCase())} />
-              </div>
-            </div>
-
-            <h4 className="font-medium text-sm pt-2 border-t">Other IDs</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>eShram ID</Label>
-                <Input
-                  value={formData.eshramId}
-                  onChange={(e) => updateField('eshramId', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>BOCW ID</Label>
-                <Input
-                  value={formData.bocwId}
-                  onChange={(e) => updateField('bocwId', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>NRES Member</Label>
-                <Select value={formData.nresMember} onValueChange={v => updateField('nresMember', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Trade Union Member</Label>
-                <Select value={formData.tradeUnionMember} onValueChange={v => updateField('tradeUnionMember', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Address */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>District *</Label>
-                <Select value={formData.district} onValueChange={(v) => updateField('district', v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((d: any) => (
-                      <SelectItem key={typeof d === 'string' ? d : d.code} value={typeof d === 'string' ? d : d.code}>
-                        {typeof d === 'string' ? d : d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.district && <p className="text-sm text-destructive">{errors.district}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Mandal/City *</Label>
-                <Select
-                  value={formData.mandal}
-                  onValueChange={(v) => updateField('mandal', v)}
-                  disabled={!formData.district}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mandals.map((m: any) => (
-                      <SelectItem key={typeof m === 'string' ? m : m.code} value={typeof m === 'string' ? m : m.name}>
-                        {typeof m === 'string' ? m : m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.mandal && <p className="text-sm text-destructive">{errors.mandal}</p>}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Village (Optional)</Label>
-              <Select
-                value={formData.village}
-                onValueChange={(v) => updateField('village', v)}
-                disabled={!formData.mandal}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {villages.map((v: any) => (
-                    <SelectItem key={v.code} value={v.name}>{v.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-
-            <div className="space-y-2">
-              <Label>Pincode</Label>
-              <Input
-                placeholder="6-digit pincode"
-                value={formData.pincode}
-                onChange={(e) => updateField('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-              />
-              {errors.pincode && <p className="text-sm text-destructive">{errors.pincode}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Address Line</Label>
-              <Input
-                placeholder="Street, Door No., etc."
-                value={formData.addressLine}
-                onChange={(e) => updateField('addressLine', e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Review */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-              <h4 className="font-medium">Personal Information</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-muted-foreground">Name:</span>
-                <span>{formData.firstName} {formData.lastName}</span>
-                <span className="text-muted-foreground">Gender:</span>
-                <span>{formData.gender}</span>
-                <span className="text-muted-foreground">Phone:</span>
-                <span>{formData.phone}</span>
-                <span className="text-muted-foreground">Father Name:</span>
-                <span>{formData.fatherName || '-'}</span>
-              </div>
-            </div>
-
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-              <h4 className="font-medium">Professional & Banking</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-muted-foreground">Education:</span>
-                <span>{formData.educationLevel || '-'}</span>
-                <span className="text-muted-foreground">Skill Category:</span>
-                <span>{formData.skillCategory || '-'}</span>
-                <span className="text-muted-foreground">Bank Account:</span>
-                <span>{formData.bankAccountNumber ? 'Provided' : '-'}</span>
-              </div>
-            </div>
-
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-              <h4 className="font-medium">Address</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-muted-foreground">District:</span>
-                <span>{formData.district}</span>
-                <span className="text-muted-foreground">Mandal:</span>
-                <span>{formData.mandal}</span>
-                <span className="text-muted-foreground">Village:</span>
-                <span>{formData.village || '-'}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Card Setup */}
-        {step === 4 && (
-          <div className="space-y-6 py-6 text-center">
-            <div className="mx-auto w-16 h-16 bg-success/20 rounded-full flex items-center justify-center">
-              <Check className="w-8 h-8 text-success" />
+        ) : (
+          // Card Setup Step
+          <div className="py-6 text-center space-y-4">
+            <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+              <Check className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Worker Created Successfully!</h3>
-              <p className="text-muted-foreground">ID: {createdWorkerId}</p>
+              <h3 className="text-lg font-bold">Worker Enrolled Successfully!</h3>
+              <p className="text-muted-foreground">The worker profile has been created.</p>
             </div>
-
-            <div className="border border-dashed p-6 rounded-xl bg-card">
-              <p className="mb-4 text-sm">Tap below to assign a FIDO Smart Card now.</p>
-              <Button onClick={handleRegisterCard} size="lg" className="gap-2 w-full">
-                Register FIDO Card
-              </Button>
+            {/* Placeholder for Card Setup - separate flow or integrated later */}
+            <div className="p-4 border rounded bg-muted/20">
+              <p className="text-sm">Smart Card Setup can be done from the Worker List for this worker.</p>
             </div>
-
-            <Button variant="ghost" onClick={() => { setOpen(false); resetForm(); }}>
-              Skip / Finish Later
-            </Button>
           </div>
         )}
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-6">
-          {step > 0 && step < 4 ? (
-            <Button variant="outline" onClick={prevStep} disabled={loading}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
-            </Button>
-          ) : (
-            <div />
+        <div className="flex justify-between mt-4">
+          {step < 3 && (
+            <>
+              <Button variant="outline" onClick={() => setStep(prev => prev - 1)} disabled={step === 0}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <Button onClick={step === 2 ? handleSubmit : handleNext} disabled={loading || uploading}>
+                {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {step === 2 ? 'Submit Enrollment' : 'Next'}
+                {step !== 2 && <ArrowRight className="w-4 h-4 ml-2" />}
+              </Button>
+            </>
           )}
-
-          {step < 3 ? (
-            <Button onClick={nextStep}>
-              Next
-              <ArrowRight className="w-4 h-4 ml-2" />
+          {step === 3 && (
+            <Button onClick={() => setOpen(false)} className="w-full">
+              Done
             </Button>
-          ) : step === 3 ? (
-            <Button onClick={handleSubmit} disabled={loading}>
-              {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              Create & Proceed to Card
-            </Button>
-          ) : null}
+          )}
         </div>
+
       </DialogContent>
     </Dialog>
   );

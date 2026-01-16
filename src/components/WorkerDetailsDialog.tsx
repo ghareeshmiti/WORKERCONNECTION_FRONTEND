@@ -8,9 +8,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  User, Phone, Mail, MapPin, Calendar, Clock, 
-  AlertCircle, CheckCircle, XCircle, Loader2, Building2 
+import {
+  User, Phone, Mail, MapPin, Calendar, Clock,
+  AlertCircle, CheckCircle, XCircle, Loader2, Building2,
+  Briefcase, IndianRupee, CreditCard, Users
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,7 +70,7 @@ export function WorkerDetailsDialog({ workerId, onClose, establishmentName }: Wo
     queryKey: ['worker-stats-details', workerId, startDate, endDate],
     queryFn: async () => {
       if (!attendance) return { present: 0, partial: 0, absent: 0, totalHours: 0 };
-      
+
       let present = 0, partial = 0, absent = 0, totalHours = 0;
       attendance.forEach(a => {
         if (a.status === 'PRESENT') present++;
@@ -77,7 +78,7 @@ export function WorkerDetailsDialog({ workerId, onClose, establishmentName }: Wo
         else absent++;
         if (a.total_hours) totalHours += a.total_hours;
       });
-      
+
       return { present, partial, absent, totalHours };
     },
     enabled: !!attendance,
@@ -85,8 +86,8 @@ export function WorkerDetailsDialog({ workerId, onClose, establishmentName }: Wo
 
   const formatTime = (timestamp: string | null) => {
     if (!timestamp) return '--:--';
-    return new Date(timestamp).toLocaleTimeString('en-IN', { 
-      hour: '2-digit', 
+    return new Date(timestamp).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
       minute: '2-digit',
       timeZone: 'Asia/Kolkata'
     });
@@ -114,11 +115,11 @@ export function WorkerDetailsDialog({ workerId, onClose, establishmentName }: Wo
 
   return (
     <Dialog open={!!workerId} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            Worker Details
+            Worker Profile: {(worker?.first_name || '')} {worker?.last_name || ''}
           </DialogTitle>
         </DialogHeader>
 
@@ -129,150 +130,130 @@ export function WorkerDetailsDialog({ workerId, onClose, establishmentName }: Wo
         ) : worker ? (
           <Tabs defaultValue="profile" className="flex-1 overflow-hidden flex flex-col">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="attendance">Attendance History</TabsTrigger>
+              <TabsTrigger value="profile">Full Profile</TabsTrigger>
+              <TabsTrigger value="attendance">Attendance & Logs</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="profile" className="flex-1 overflow-y-auto mt-4 space-y-4">
-              {/* Basic Info */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Basic Information</CardTitle>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Full Name</p>
-                      <p className="font-medium">{worker.first_name} {worker.last_name}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="font-mono">{worker.worker_id}</Badge>
-                    {worker.employee_id && (
-                      <Badge variant="secondary">Emp: {worker.employee_id}</Badge>
+            <TabsContent value="profile" className="flex-1 overflow-y-auto mt-4 space-y-4 pr-2">
+
+              {/* Header Card with Photo */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="md:w-1/4">
+                  <div className="aspect-[3/4] rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
+                    {worker.photo_url ? (
+                      <img src={worker.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-20 h-20 text-muted-foreground/50" />
                     )}
                   </div>
-                  {worker.phone && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Phone</p>
-                        <p className="font-medium">{worker.phone}</p>
-                      </div>
-                    </div>
-                  )}
-                  {worker.email && (
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Email</p>
-                        <p className="font-medium">{worker.email}</p>
-                      </div>
-                    </div>
-                  )}
-                  {worker.date_of_birth && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Date of Birth</p>
-                        <p className="font-medium">{formatDate(worker.date_of_birth)}</p>
-                      </div>
-                    </div>
-                  )}
-                  {worker.gender && (
-                    <div className="flex items-center gap-3">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Gender</p>
-                        <p className="font-medium capitalize">{worker.gender}</p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                </div>
+                <div className="md:w-3/4 space-y-4">
+                  {/* Identity & Status */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Identity & Status</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div><p className="text-xs text-muted-foreground">Worker ID</p><p className="font-mono font-medium">{worker.worker_id}</p></div>
+                      <div><p className="text-xs text-muted-foreground">Aadhaar</p><p className="font-mono font-medium">{worker.aadhaar_number || '-'}</p></div>
+                      <div><p className="text-xs text-muted-foreground">eShram ID</p><p className="font-mono font-medium">{worker.eshram_id || '-'}</p></div>
+                      <div><p className="text-xs text-muted-foreground">BOCW ID</p><p className="font-mono font-medium">{worker.bocw_id || '-'}</p></div>
+                    </CardContent>
+                  </Card>
 
-              {/* Location */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Location</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 text-muted-foreground mt-1" />
-                    <div>
-                      {worker.address_line && <p>{worker.address_line}</p>}
-                      <p>
-                        {[worker.mandal, worker.district, worker.state, worker.pincode]
-                          .filter(Boolean)
-                          .join(', ')}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">Bank Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-4">
+                      <div><p className="text-xs text-muted-foreground">Account Number</p><p className="font-mono font-medium">{worker.bank_account_number || '-'}</p></div>
+                      <div><p className="text-xs text-muted-foreground">IFSC Code</p><p className="font-mono font-medium uppercase">{worker.ifsc_code || '-'}</p></div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
 
-              {/* Work Info */}
-              {(worker.skills?.length || worker.experience_years || establishmentName) && (
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Personal Information */}
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Work Information</CardTitle>
+                  <CardHeader className="pb-2 flex flex-row items-center gap-2">
+                    <User className="w-4 h-4 text-primary" />
+                    <CardTitle className="text-base">Personal Information</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {establishmentName && (
-                      <div className="flex items-center gap-3">
-                        <Building2 className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Current Establishment</p>
-                          <p className="font-medium">{establishmentName}</p>
-                        </div>
-                      </div>
-                    )}
-                    {worker.experience_years !== null && (
-                      <div className="flex items-center gap-3">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Experience</p>
-                          <p className="font-medium">{worker.experience_years} years</p>
-                        </div>
-                      </div>
-                    )}
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-muted-foreground">First Name:</span><span className="font-medium">{worker.first_name}</span>
+                      <span className="text-muted-foreground">Last Name:</span><span className="font-medium">{worker.last_name}</span>
+                      <span className="text-muted-foreground">Gender:</span><span className="font-medium">{worker.gender}</span>
+                      <span className="text-muted-foreground">DOB:</span><span className="font-medium">{worker.date_of_birth}</span>
+                      <span className="text-muted-foreground">Father:</span><span className="font-medium">{worker.father_name || '-'}</span>
+                      <span className="text-muted-foreground">Mother:</span><span className="font-medium">{worker.mother_name || '-'}</span>
+                      <span className="text-muted-foreground">Marital Status:</span><span className="font-medium">{worker.marital_status || '-'}</span>
+                      <span className="text-muted-foreground">Caste:</span><span className="font-medium">{worker.caste || '-'}</span>
+                      <span className="text-muted-foreground">Disability:</span><span className="font-medium">{worker.disability_status || 'None'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Professional Information */}
+                <Card>
+                  <CardHeader className="pb-2 flex flex-row items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-primary" />
+                    <CardTitle className="text-base">Professional Info</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <span className="text-muted-foreground">Education:</span><span className="font-medium">{worker.education_level || '-'}</span>
+                      <span className="text-muted-foreground">Skill Category:</span><span className="font-medium">{worker.skill_category || '-'}</span>
+                      <span className="text-muted-foreground">Overall Exp:</span><span className="font-medium">{worker.experience_years ? `${worker.experience_years} years` : '-'}</span>
+                      <span className="text-muted-foreground">NRES Member:</span><span className="font-medium">{worker.nres_member || 'No'}</span>
+                      <span className="text-muted-foreground">Union Member:</span><span className="font-medium">{worker.trade_union_member || 'No'}</span>
+                    </div>
                     {worker.skills && worker.skills.length > 0 && (
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-2">Skills</p>
-                        <div className="flex flex-wrap gap-2">
-                          {worker.skills.map((skill: string, idx: number) => (
-                            <Badge key={idx} variant="secondary">{skill}</Badge>
-                          ))}
+                      <div className="pt-2">
+                        <p className="text-xs text-muted-foreground mb-1">Skills:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {worker.skills.map((s: string, i: number) => <Badge key={i} variant="outline" className="text-xs">{s}</Badge>)}
                         </div>
                       </div>
                     )}
+                    {worker.work_history && (
+                      <div className="pt-2">
+                        <p className="text-xs text-muted-foreground mb-1">Work History:</p>
+                        <p className="text-sm border p-2 rounded bg-muted/20 whitespace-pre-wrap">{worker.work_history}</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              )}
 
-              {/* Emergency Contact */}
-              {(worker.emergency_contact_name || worker.emergency_contact_phone) && (
+                {/* Contact & Address */}
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Emergency Contact</CardTitle>
+                  <CardHeader className="pb-2 flex flex-row items-center gap-2">
+                    <MapPin className="w-4 h-4 text-primary" />
+                    <CardTitle className="text-base">Address & Contact</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid md:grid-cols-2 gap-4">
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span>{worker.phone || '-'}</span>
+                    </div>
+                    <div className="text-sm">
+                      <p className="text-muted-foreground text-xs mb-1">Current Address</p>
+                      <p>{worker.address_line}</p>
+                      <p>{worker.village}, {worker.mandal}</p>
+                      <p>{worker.district}, {worker.state} - {worker.pincode}</p>
+                    </div>
                     {worker.emergency_contact_name && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Name</p>
-                        <p className="font-medium">{worker.emergency_contact_name}</p>
-                      </div>
-                    )}
-                    {worker.emergency_contact_phone && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Phone</p>
-                        <p className="font-medium">{worker.emergency_contact_phone}</p>
+                      <div className="pt-2 border-t mt-2">
+                        <p className="text-xs text-muted-foreground mb-1">Emergency Contact</p>
+                        <p className="text-sm font-medium">{worker.emergency_contact_name}</p>
+                        <p className="text-sm">{worker.emergency_contact_phone}</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-              )}
+              </div>
+
             </TabsContent>
 
             <TabsContent value="attendance" className="flex-1 overflow-hidden flex flex-col mt-4">
