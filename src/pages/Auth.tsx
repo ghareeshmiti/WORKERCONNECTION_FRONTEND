@@ -35,6 +35,7 @@ export default function Auth() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [smartCardLoading, setSmartCardLoading] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -197,7 +198,7 @@ export default function Auth() {
   };
 
   const handleSmartCardLogin = async () => {
-    setLoading(true);
+    setSmartCardLoading(true);
     try {
       const { authenticateUser } = await import("@/lib/api");
       // Always use Usernameless flow (empty username) as requested.
@@ -206,6 +207,14 @@ export default function Auth() {
 
       if (result.verified) {
         toast({ title: "Success", description: `Welcome back ${result.username}!` });
+
+        // If server returned a session, set it!
+        if (result.session) {
+          const { error } = await supabase.auth.setSession(result.session);
+          if (error) console.error("Failed to set session", error);
+        }
+
+        // Force redirect logic
         window.location.reload();
       }
     } catch (e: any) {
@@ -217,7 +226,7 @@ export default function Auth() {
         variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setSmartCardLoading(false);
     }
   };
 
@@ -393,9 +402,9 @@ export default function Auth() {
                       variant="outline"
                       className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
                       onClick={handleSmartCardLogin}
-                      disabled={loading}
+                      disabled={smartCardLoading || loading}
                     >
-                      {loading ? (
+                      {smartCardLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       ) : (
                         <CreditCard className="w-4 h-4 mr-2" />
