@@ -113,7 +113,7 @@ export default function WorkerDashboard() {
                     />
                   </div>
                   <p className="text-sm text-center text-muted-foreground break-all">
-                    Scan me for my public profile
+                    Scan the QR code to access public profile
                   </p>
                 </div>
               </DialogContent>
