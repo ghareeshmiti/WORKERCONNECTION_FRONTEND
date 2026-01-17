@@ -110,6 +110,7 @@ export default function DepartmentDashboard() {
   // Sorting state
   const [estSort, setEstSort] = useState<SortConfig>({ key: "", direction: null });
   const [workerSort, setWorkerSort] = useState<SortConfig>({ key: "", direction: null });
+  const [activeTab, setActiveTab] = useState("mapped");
 
   const startDate = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
   const endDate = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
@@ -745,17 +746,50 @@ export default function DepartmentDashboard() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      if (workers && workers.length > 0) {
+                      let dataToExport: any[] = [];
+                      let filename = "";
+
+                      if (activeTab === "mapped") {
+                        dataToExport = mappedWorkersFiltered;
+                        filename = `mapped-workers-${format(new Date(), 'yyyy-MM-dd')}`;
+                      } else if (activeTab === "unmapped") {
+                        dataToExport = activeUnmappedWorkersFiltered;
+                        filename = `unmapped-workers-${format(new Date(), 'yyyy-MM-dd')}`;
+                      } else if (activeTab === "pending") {
+                        dataToExport = pendingWorkersFiltered;
+                        filename = `pending-workers-${format(new Date(), 'yyyy-MM-dd')}`;
+                      }
+
+                      if (dataToExport && dataToExport.length > 0) {
                         // Transform data to match the expected structure for csv-export (nested workers object)
-                        const exportData = workers.map(w => ({
-                          workers: w,
-                          establishments: {
-                            name: w.establishment_name,
-                            code: w.establishment_code || ''
-                          }
-                        }));
-                        generateCSV(exportData, workerWithEstablishmentColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
+                        const exportData = dataToExport.map(w => {
+                          // Handle data that might already be nested (from mappedWorkersFiltered) or flat (from others)
+                          // mappedWorkers has keys like 'establishment_name' on the root
+                          // unwrapped/pending might depend on how they were fetched
+
+                          // Check if 'workers' property exists, if so use `w.workers`, else use `w`
+                          // BUT mappedWorkers was explicitly mapped to have properties at root in useMemo above (line 132)
+                          // Wait, line 132 maps to: { ...m.workers, establishment_name: ..., status: 'active' }
+                          // So it mimics a flat worker object but with extra fields.
+
+                          // HOWEVER, csv-export expects { workers: { ... }, establishments: { ... } }
+
+                          // Let's normalize it back to what generateCSV expects
+                          // If `w` is the "worker" object itself (which it seems to be from the mapping)
+
+                          return {
+                            workers: w,
+                            establishments: {
+                              name: w.establishment_name || '',
+                              code: w.establishment_code || ''
+                            }
+                          };
+                        });
+
+                        generateCSV(exportData, workerWithEstablishmentColumns, filename);
                         toast.success("Export Complete");
+                      } else {
+                        toast.info("No data to export in the current view");
                       }
                     }}
                     className="hidden sm:flex"
@@ -769,7 +803,7 @@ export default function DepartmentDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="mapped" className="w-full">
+                <Tabs defaultValue="mapped" className="w-full" value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="mb-4">
                     <TabsTrigger value="mapped">
                       <Building2 className="w-4 h-4 mr-2" />
