@@ -333,6 +333,29 @@ export default function Auth() {
                 {isWorker ? (
                   // Worker Aadhaar Login Form
                   <div className="space-y-4">
+                    <Button
+                      variant="outline"
+                      className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+                      onClick={handleSmartCardLogin}
+                      disabled={smartCardLoading || loading}
+                    >
+                      {smartCardLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <CreditCard className="w-4 h-4 mr-2" />
+                      )}
+                      Login with Smart Card
+                    </Button>
+
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">Or login with</span>
+                      </div>
+                    </div>
+
                     {!otpSent ? (
                       <div className="space-y-2">
                         <Label htmlFor="aadhaar">Aadhaar Number</Label>
@@ -388,29 +411,6 @@ export default function Auth() {
                         </Button>
                       </div>
                     )}
-
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or login with</span>
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      className="w-full border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
-                      onClick={handleSmartCardLogin}
-                      disabled={smartCardLoading || loading}
-                    >
-                      {smartCardLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      ) : (
-                        <CreditCard className="w-4 h-4 mr-2" />
-                      )}
-                      Login with Smart Card
-                    </Button>
 
                   </div>
                 ) : (
