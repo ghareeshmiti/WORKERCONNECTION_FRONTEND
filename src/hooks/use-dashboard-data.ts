@@ -213,14 +213,7 @@ export function useEstablishmentWorkers(establishmentId: string | undefined) {
           mapped_at,
           is_active,
           workers (
-            id,
-            worker_id,
-            first_name,
-            last_name,
-            phone,
-            state,
-            district,
-            is_active
+            *
           )
         `)
         .eq('establishment_id', establishmentId)
@@ -416,7 +409,7 @@ export function useDepartmentWorkers(departmentId: string | undefined) {
           id,
           establishment_id,
           establishments!inner(name, code),
-          workers!inner(id, worker_id, first_name, last_name, phone, state, district, is_active)
+          workers!inner(*)
         `)
         .in('establishment_id', estIds)
         .eq('is_active', true);
@@ -444,7 +437,7 @@ export function useUnmappedWorkers(departmentDistrict?: string) {
 
       let query = supabase
         .from('workers')
-        .select('id, worker_id, first_name, last_name, phone, state, district, mandal, village, address_line, status, is_active')
+        .select('*')
         .order('created_at', { ascending: false });
 
       // If we have a district filter, use it - DISABLED for now to ensure all new registrations are seen
