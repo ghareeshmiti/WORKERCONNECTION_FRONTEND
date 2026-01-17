@@ -33,6 +33,7 @@ interface WorkerProfile {
   state: string;
   district: string;
   is_active: boolean;
+  aadhaar_number?: string;
 }
 
 export interface TrendDataPoint {
