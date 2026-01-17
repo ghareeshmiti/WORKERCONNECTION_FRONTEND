@@ -12,6 +12,14 @@ import { useWorkerDashboardRealtime } from '@/hooks/use-realtime-subscriptions';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { DateRange } from 'react-day-picker';
 import { EditWorkerProfileDialog } from '@/components/EditWorkerProfileDialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import QRCode from "react-qr-code";
 import { format, subDays } from 'date-fns';
 import { WorkerSchemes } from '@/components/WorkerSchemes';
 
@@ -86,7 +94,32 @@ export default function WorkerDashboard() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-display font-bold">Worker Dashboard</h1>
-          <EditWorkerProfileDialog worker={profile} />
+          <div className="flex gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <div className="mr-2 h-4 w-4 i-lucide-qr-code" /> Show QR Code
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Worker Profile QR Code</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col items-center justify-center p-6 space-y-4">
+                  <div className="bg-white p-4 rounded-lg shadow-sm border">
+                    <QRCode
+                      value={`https://workerconnect.miti.us/public/worker?workerid=${profile?.aadhaar_number || ''}`}
+                      size={200}
+                    />
+                  </div>
+                  <p className="text-sm text-center text-muted-foreground break-all">
+                    https://workerconnect.miti.us/public/worker?workerid={profile?.aadhaar_number}
+                  </p>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <EditWorkerProfileDialog worker={profile} />
+          </div>
         </div>
 
         {/* Establishment Info Banner */}
