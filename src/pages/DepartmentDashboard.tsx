@@ -132,6 +132,7 @@ export default function DepartmentDashboard() {
     return mappedWorkersData?.map((m: any) => ({
       ...m.workers,
       establishment_name: m.establishments?.name,
+      establishment_code: m.establishments?.code,
       establishment_id: m.establishment_id,
       status: 'active'
     })) || [];
@@ -745,7 +746,15 @@ export default function DepartmentDashboard() {
                     size="sm"
                     onClick={() => {
                       if (workers && workers.length > 0) {
-                        generateCSV(workers, workerWithEstablishmentColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
+                        // Transform data to match the expected structure for csv-export (nested workers object)
+                        const exportData = workers.map(w => ({
+                          workers: w,
+                          establishments: {
+                            name: w.establishment_name,
+                            code: w.establishment_code || ''
+                          }
+                        }));
+                        generateCSV(exportData, workerWithEstablishmentColumns, `workers-${format(new Date(), 'yyyy-MM-dd')}`);
                         toast.success("Export Complete");
                       }
                     }}
