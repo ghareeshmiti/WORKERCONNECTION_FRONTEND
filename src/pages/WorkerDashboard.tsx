@@ -113,7 +113,7 @@ export default function WorkerDashboard() {
                     />
                   </div>
                   <p className="text-sm text-center text-muted-foreground break-all">
-                    https://workerconnect.miti.us/public/worker?workerid={profile?.aadhaar_number}
+                    Scan me for my public profile
                   </p>
                 </div>
               </DialogContent>
