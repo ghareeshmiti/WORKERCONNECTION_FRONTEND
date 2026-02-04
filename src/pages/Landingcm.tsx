@@ -40,9 +40,9 @@ export default function Landing() {
           {/* Center: Logo & Text */}
           <div className="flex items-center gap-4 z-20">
             <img
-              src=" src=" /opoc/ap-logo.png"
-            alt="AP Government Logo"
-            className="h-20 md:h-28 w-auto object-contain"
+              src="/opoc/ap-logo.png"
+              alt="AP Government Logo"
+              className="h-20 md:h-28 w-auto object-contain"
             />
 
             <div className="flex flex-col items-start justify-center">
