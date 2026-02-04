@@ -897,7 +897,7 @@ export default function WorkerDashboard() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-800 font-mono truncate">{DUMMY_DATA.profile.worker_id}</h3>
+                    <h3 className="text-sm font-bold text-slate-800 font-mono truncate">{displayProfile.worker_id}</h3>
                     <div className="text-xs text-slate-500 mt-1">Use for remote check-in</div>
                   </div>
                 </CardContent>
@@ -973,8 +973,8 @@ export default function WorkerDashboard() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <Badge className={`font-normal px-3 py-0.5 rounded-full ${row.status === 'PRESENT' ? 'bg-green-600 hover:bg-green-700 text-white' :
-                                row.status === 'PARTIAL' ? 'bg-orange-500 hover:bg-orange-600 text-white' :
-                                  'bg-red-500 hover:bg-red-600 text-white'
+                              row.status === 'PARTIAL' ? 'bg-orange-500 hover:bg-orange-600 text-white' :
+                                'bg-red-500 hover:bg-red-600 text-white'
                               }`}>
                               {row.status ? (row.status.charAt(0) + row.status.slice(1).toLowerCase()) : 'Unknown'}
                             </Badge>
