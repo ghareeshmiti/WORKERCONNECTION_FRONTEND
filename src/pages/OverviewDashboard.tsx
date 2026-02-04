@@ -74,7 +74,7 @@ export default function OverviewDashboard() {
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <Activity className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-display font-bold">Worker Connect</span>
+            <span className="text-xl font-display font-bold">One Person One Card</span>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">{userContext?.fullName}</span>
