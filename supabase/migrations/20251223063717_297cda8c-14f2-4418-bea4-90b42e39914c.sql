@@ -1,5 +1,5 @@
 -- =============================================
--- WORKER CONNECT POC - COMPLETE DATABASE SCHEMA
+-- One Person One Card POC - COMPLETE DATABASE SCHEMA
 -- =============================================
 
 -- 1. Create role enum
