@@ -1,8 +1,8 @@
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Landmark, Building2, Users, UserCheck, UserX, AlertCircle, 
+import {
+  Landmark, Building2, Users, UserCheck, UserX, AlertCircle,
   TrendingUp, Clock, LogOut, Loader2, Activity, ArrowRight
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -16,7 +16,7 @@ export default function OverviewDashboard() {
   useOverviewDashboardRealtime();
   const { userContext, signOut } = useAuth();
   const navigate = useNavigate();
-  
+
   const { data: stats, isLoading: statsLoading } = useOverviewStats();
   const { data: activities, isLoading: activitiesLoading } = useRecentActivity();
   const { data: trendData, isLoading: trendLoading } = useAttendanceTrendOverview(14);
@@ -68,17 +68,23 @@ export default function OverviewDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Activity className="w-6 h-6 text-primary-foreground" />
+      <header className="bg-white border-b sticky top-0 z-20">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/src/assets/ap_seal_new.png" alt="Seal" className="w-10 h-10 object-contain" />
+            <div className="flex flex-col">
+              <span className="text-lg md:text-xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
+                One State - One Card
+              </span>
+              <span className="text-xs text-slate-500 font-medium tracking-wide">Government of Andhra Pradesh</span>
             </div>
-            <span className="text-xl font-display font-bold">One Person One Card</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{userContext?.fullName}</span>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
+            <div className="hidden md:flex flex-col items-end mr-2">
+              <span className="text-sm font-medium text-slate-700">{userContext?.fullName}</span>
+              <span className="text-xs text-slate-500">System Overview</span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-500 hover:text-red-500 hover:bg-red-50">
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
@@ -100,7 +106,7 @@ export default function OverviewDashboard() {
             </Button>
           )}
         </div>
-        
+
         {/* Organization Stats */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
@@ -252,35 +258,35 @@ export default function OverviewDashboard() {
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis 
-                        dataKey="date" 
+                      <XAxis
+                        dataKey="date"
                         tickFormatter={formatDate}
                         className="text-xs"
                       />
                       <YAxis className="text-xs" />
-                      <Tooltip 
+                      <Tooltip
                         labelFormatter={formatDate}
-                        contentStyle={{ 
+                        contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px'
                         }}
                       />
                       <Legend />
-                      <Area 
-                        type="monotone" 
-                        dataKey="present" 
+                      <Area
+                        type="monotone"
+                        dataKey="present"
                         stackId="1"
-                        stroke="hsl(var(--success))" 
+                        stroke="hsl(var(--success))"
                         fill="hsl(var(--success))"
                         fillOpacity={0.6}
                         name="Present"
                       />
-                      <Area 
-                        type="monotone" 
-                        dataKey="partial" 
+                      <Area
+                        type="monotone"
+                        dataKey="partial"
                         stackId="1"
-                        stroke="hsl(var(--warning))" 
+                        stroke="hsl(var(--warning))"
                         fill="hsl(var(--warning))"
                         fillOpacity={0.6}
                         name="Partial"

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
+import { formatWorkerId } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -180,7 +181,7 @@ export default function DepartmentDashboard() {
           <tbody>
             {workers.map((worker) => (
               <tr key={worker.id || worker.worker_id} className="border-b transition-colors hover:bg-muted/50">
-                <td className="p-4 align-middle font-medium text-sm">{worker.worker_id}</td>
+                <td className="p-4 align-middle font-medium text-sm font-mono">{formatWorkerId(worker.worker_id)}</td>
                 <td className="p-4 align-middle font-medium text-gray-900">{worker.first_name} {worker.last_name}</td>
                 <td className="p-4 align-middle text-sm text-gray-500">{worker.phone}</td>
                 <td className="p-4 align-middle text-sm text-gray-500">
@@ -368,17 +369,23 @@ export default function DepartmentDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-success flex items-center justify-center">
-              <Landmark className="w-6 h-6 text-success-foreground" />
+      <header className="bg-white border-b sticky top-0 z-20">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/src/assets/ap_seal_new.png" alt="Seal" className="w-10 h-10 object-contain" />
+            <div className="flex flex-col">
+              <span className="text-lg md:text-xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
+                One State - One Card
+              </span>
+              <span className="text-xs text-slate-500 font-medium tracking-wide">Government of Andhra Pradesh</span>
             </div>
-            <span className="text-xl font-display font-bold">One Person One Card</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{userContext?.fullName}</span>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
+            <div className="hidden md:flex flex-col items-end mr-2">
+              <span className="text-sm font-medium text-slate-700">{userContext?.fullName}</span>
+              <span className="text-xs text-slate-500">Admin Dashboard</span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-500 hover:text-red-500 hover:bg-red-50">
               <LogOut className="w-5 h-5" />
             </Button>
           </div>

@@ -30,6 +30,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { generateCSV, workerColumns } from "@/lib/csv-export";
+import { formatWorkerId } from "@/lib/format";
 import { toast } from "sonner";
 import { useNavigate, Link } from "react-router-dom";
 import { useEstablishmentWorkers } from "@/hooks/use-dashboard-data";
@@ -116,17 +117,23 @@ export default function EstablishmentWorkers() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-accent-foreground" />
+      <header className="bg-white border-b sticky top-0 z-20">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/src/assets/ap_seal_new.png" alt="Seal" className="w-10 h-10 object-contain" />
+            <div className="flex flex-col">
+              <span className="text-lg md:text-xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
+                One State - One Card
+              </span>
+              <span className="text-xs text-slate-500 font-medium tracking-wide">Government of Andhra Pradesh</span>
             </div>
-            <span className="text-xl font-display font-bold">One Person One Card</span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{userContext?.fullName}</span>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
+            <div className="hidden md:flex flex-col items-end mr-2">
+              <span className="text-sm font-medium text-slate-700">{userContext?.fullName}</span>
+              <span className="text-xs text-slate-500">Manage Workers</span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-500 hover:text-red-500 hover:bg-red-50">
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
@@ -177,7 +184,7 @@ export default function EstablishmentWorkers() {
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
+                  className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
                   size="sm"
                   onClick={() => {
                     if (filteredWorkers && filteredWorkers.length > 0) {
@@ -237,7 +244,7 @@ export default function EstablishmentWorkers() {
                         className="border-b border-muted hover:bg-muted/30 transition-colors cursor-pointer"
                         onClick={() => setSelectedWorkerId(mapping.workers?.id)}
                       >
-                        <td className="py-3 font-mono text-xs">{mapping.workers?.worker_id}</td>
+                        <td className="py-3 font-mono text-xs">{formatWorkerId(mapping.workers?.worker_id)}</td>
                         <td className="py-3">
                           {mapping.workers?.first_name} {mapping.workers?.last_name}
                         </td>

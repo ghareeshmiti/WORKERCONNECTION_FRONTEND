@@ -453,7 +453,7 @@ export default function EstablishmentAttendance() {
 
             {/* Header */}
             <div className="space-y-2">
-              <h1 className="text-3xl font-display font-bold text-slate-800 tracking-tight">One Person One Card</h1>
+              <h1 className="text-3xl font-display font-bold text-slate-800 tracking-tight bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">One State - One Card</h1>
               <h2 className="text-lg font-medium text-slate-500 uppercase tracking-widest">Access System</h2>
             </div>
 
@@ -468,7 +468,7 @@ export default function EstablishmentAttendance() {
             <div className="w-full space-y-4">
               <Button
                 size="lg"
-                className="w-full h-20 text-xl font-bold rounded-2xl shadow-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-20 text-xl font-bold rounded-2xl shadow-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                 onClick={handleDirectTap}
                 disabled={!isActive || loading}
               >

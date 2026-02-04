@@ -205,7 +205,7 @@ export function EditDepartmentProfileDialog({ departmentId }: EditDepartmentProf
                 <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting || isLoading}>
+                <Button type="submit" disabled={isSubmitting || isLoading} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
                   {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Save Changes
                 </Button>

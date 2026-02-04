@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, X } from 'lucide-react';
+import { formatWorkerId } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 
 interface Worker {
@@ -26,7 +27,7 @@ export function WorkerSearch({ workers, onFilter, placeholder = "Search by ID, n
 
   const handleSearch = (value: string) => {
     setSearch(value);
-    
+
     if (!value.trim()) {
       onFilter(workers);
       return;
@@ -40,7 +41,7 @@ export function WorkerSearch({ workers, onFilter, placeholder = "Search by ID, n
       `${w.first_name} ${w.last_name}`.toLowerCase().includes(searchLower) ||
       (w.phone && w.phone.includes(value))
     );
-    
+
     onFilter(filtered);
   };
 
@@ -86,7 +87,7 @@ export function WorkerSearchResult({ worker, action }: WorkerSearchResultProps) 
             {worker.first_name} {worker.last_name}
           </span>
           <Badge variant="outline" className="font-mono text-xs">
-            {worker.worker_id}
+            {formatWorkerId(worker.worker_id)}
           </Badge>
           {worker.is_active !== undefined && (
             <Badge variant={worker.is_active ? 'default' : 'secondary'}>

@@ -13,7 +13,7 @@
 //             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
 //               <Clock className="w-6 h-6 text-primary-foreground" />
 //             </div>
-//             <span className="text-xl font-display font-bold">One Person One Card</span>
+//             <span className="text-xl font-display font-bold">One State - One Card</span>
 //           </div>
 //         </div>
 //       </header>
@@ -99,7 +99,7 @@
 //       {/* Footer */}
 //       <footer className="py-8 px-4 border-t">
 //         <div className="container mx-auto text-center text-sm text-muted-foreground">
-//           <p>One Person One Card © 2026.</p>
+//           <p>One State - One Card © 2026.</p>
 //         </div>
 //       </footer>
 //     </div>
@@ -127,8 +127,8 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       {/* Header Blue Band */}
       <header className="bg-[#ffcb05] text-[hsl(222 47% 11%)]">
-      {/* <header className="text-primary-foreground bg-[linear-gradient(90deg,#FF7700_0%,#FF7700_50%,#ffcb05_50%,#ffcb05_100%)]"> */}
-      {/* <header className="text-primary-foreground bg-[linear-gradient(to_right,#FF7700_0%,rgba(255,119,0,0)_50%),linear-gradient(to_left,#ffcb05_0%,rgba(255,203,5,0)_50%)]"> */}
+        {/* <header className="text-primary-foreground bg-[linear-gradient(90deg,#FF7700_0%,#FF7700_50%,#ffcb05_50%,#ffcb05_100%)]"> */}
+        {/* <header className="text-primary-foreground bg-[linear-gradient(to_right,#FF7700_0%,rgba(255,119,0,0)_50%),linear-gradient(to_left,#ffcb05_0%,rgba(255,203,5,0)_50%)]"> */}
         {/* <header
           className="text-primary-foreground"
           style={{
@@ -179,6 +179,7 @@ export default function Landing() {
               </div>
             </div>
           </div>
+
         </div>
       </header>
 
@@ -383,7 +384,7 @@ export default function Landing() {
 
       {/* Footer */}
       <footer id="contact" className="bg-[#ffcb05] text-[hsl(222 47% 11%)]">
-      {/* <footer
+        {/* <footer
         id="contact"
         className="text-primary-foreground"
         style={{
@@ -415,7 +416,7 @@ export default function Landing() {
                 Accessibility Statement
               </span>
             </div>
-{/* 
+            {/* 
             <div className="text-[11px] sm:text-xs opacity-95 md:text-right">
               Last Updated: 15-OCT-2025
             </div> */}

@@ -783,7 +783,7 @@ export default function EstablishmentRegister() {
                 Previous
               </Button>
               {step < STEPS.length - 1 ? (
-                <Button onClick={nextStep} className="bg-accent hover:bg-accent/90">
+                <Button onClick={nextStep} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
