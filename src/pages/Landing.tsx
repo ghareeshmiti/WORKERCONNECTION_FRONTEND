@@ -1,433 +1,428 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// import { Link } from "react-router-dom";
+// import { Button } from "@/components/ui/button";
+// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Users, Building2, Landmark, Clock, ArrowRight } from "lucide-react";
+
+// export default function Landing() {
+//   return (
+//     <div className="min-h-screen bg-background">
+//       {/* Header */}
+//       <header className="border-b bg-card">
+//         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+//           <div className="flex items-center gap-2">
+//             <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+//               <Clock className="w-6 h-6 text-primary-foreground" />
+//             </div>
+//             <span className="text-xl font-display font-bold">One State - One Card</span>
+//           </div>
+//         </div>
+//       </header>
+
+//       {/* Hero */}
+//       <section className="p-4">
+//         <div className="container mx-auto text-center max-w-3xl">
+//           <h1 className="text-4xl md:text-5xl font-display font-bold mb-6">Real-time Attendance Management</h1>
+//           <p className="text-lg text-muted-foreground mb-0">
+//             Streamline attendance tracking across departments and establishments with our secure, efficient platform.
+//           </p>
+//         </div>
+//       </section>
+
+//       {/* Role Cards */}
+//       <section className="p-4 bg-muted/50">
+//         <div className="container mx-auto">
+//           <h2 className="text-2xl font-display font-bold text-center mb-4">Choose Your Role</h2>
+//           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+//             {/* Worker - Login only */}
+//             <Card className="hover:shadow-lg transition-shadow">
+//               <CardHeader>
+//                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+//                   <Users className="w-6 h-6 text-primary" />
+//                 </div>
+//                 <CardTitle>Worker</CardTitle>
+//                 <CardDescription>Track your attendance, view history, and manage your profile</CardDescription>
+//               </CardHeader>
+//               <CardContent className="space-y-3">
+//                 <Link to="/register/worker" className="block">
+//                   <Button className="w-full" variant="default">Register</Button>
+//                 </Link>
+//                 <Link to="/auth?role=worker" className="block">
+//                   <Button variant="outline"
+//                     className="w-full border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600"
+//                   >
+//                     Login
+//                   </Button>
+//                 </Link>
+//               </CardContent>
+//             </Card>
+
+//             {/* Establishment */}
+//             <Card className="hover:shadow-lg transition-shadow">
+//               <CardHeader>
+//                 <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
+//                   <Building2 className="w-6 h-6 text-accent" />
+//                 </div>
+//                 <CardTitle>Establishment</CardTitle>
+//                 <CardDescription>Manage workers, view attendance reports, and oversee operations</CardDescription>
+//               </CardHeader>
+//               <CardContent className="space-y-3">
+//                 <Link to="/register/establishment" className="block">
+//                   <Button className="w-full bg-accent hover:bg-accent/90">Register</Button>
+//                 </Link>
+//                 <Link to="/auth?role=establishment" className="block">
+//                   <Button className="w-full" variant="outline">
+//                     Login
+//                   </Button>
+//                 </Link>
+//               </CardContent>
+//             </Card>
+
+//             {/* Department */}
+//             <Card className="hover:shadow-lg transition-shadow">
+//               <CardHeader>
+//                 <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center mb-4">
+//                   <Landmark className="w-6 h-6 text-success" />
+//                 </div>
+//                 <CardTitle>Department</CardTitle>
+//                 <CardDescription>Oversee all establishments, analytics, and workforce management</CardDescription>
+//               </CardHeader>
+//               <CardContent className="space-y-3">
+//                 <Link to="/auth?role=department" className="block">
+//                   <Button className="w-full bg-success hover:bg-success/90">Login</Button>
+//                 </Link>
+//               </CardContent>
+//             </Card>
+//           </div>
+//         </div>
+//       </section>
+
+//       {/* Footer */}
+//       <footer className="py-8 px-4 border-t">
+//         <div className="container mx-auto text-center text-sm text-muted-foreground">
+//           <p>One State - One Card © 2026.</p>
+//         </div>
+//       </footer>
+//     </div>
+//   );
+// }
+
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Building2, Landmark, Clock, ArrowRight, Eye, EyeOff, Loader2, CreditCard } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/lib/auth-context";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { getDashboardPath } from "@/components/ProtectedRoute";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Users,
+  Building2,
+  Landmark,
+  ShieldCheck,
+  BadgeCheck,
+  IdCard,
+  FileText,
+} from "lucide-react";
 
 export default function Landing() {
+  const [logoOk, setLogoOk] = useState(true);
+  const [cmOk, setCmOk] = useState(true);
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Banner Header */}
-      {/* Top Banner Header - Reconstructed */}
-      <header className="w-full border-b relative z-30">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/src/assets/header_bg.png"
-            alt="Header Background"
-            className="w-full h-full object-cover"
-          />
-        </div>
+    <div className="min-h-screen bg-background">
+      {/* Header Blue Band */}
+      <header className="bg-[#ffcb05] text-[hsl(222 47% 11%)]">
+        {/* <header className="text-primary-foreground bg-[linear-gradient(90deg,#FF7700_0%,#FF7700_50%,#ffcb05_50%,#ffcb05_100%)]"> */}
+        {/* <header className="text-primary-foreground bg-[linear-gradient(to_right,#FF7700_0%,rgba(255,119,0,0)_50%),linear-gradient(to_left,#ffcb05_0%,rgba(255,203,5,0)_50%)]"> */}
+        {/* <header
+          className="text-primary-foreground"
+          style={{
+            backgroundColor: "#ffb200",
+            backgroundImage:
+              "linear-gradient(to right,#FF7700 0%,rgba(255,119,0,0) 55%),linear-gradient(to left,#ffcb05 0%,rgba(255,203,5,0) 55%)",
+          }}
+        > */}
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* Left: Logo + Titles */}
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white border border-primary-foreground/25 overflow-hidden shrink-0 flex items-center justify-center">
+                {logoOk ? (
+                  <img
+                    src="/opoc/ap-logo.png"
+                    alt="Government of Andhra Pradesh emblem"
+                    className="h-full w-full object-contain p-0.5"
+                    onError={() => setLogoOk(false)}
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-primary">
+                    AP
+                  </div>
+                )}
+              </div>
 
-        <div className="container mx-auto px-4 flex items-center justify-between h-32 md:h-40 relative z-10">
-
-          {/* Left: CM Image */}
-          <div className="h-full flex items-end relative z-10">
-            <img
-              src="/src/assets/cm_babu.png"
-              alt="Hon'ble Chief Minister"
-              className="h-full w-auto object-contain"
-            />
-          </div>
-
-          {/* Center: Logo & Text */}
-          <div className="flex items-center gap-4 z-20">
-            <img
-              src="/src/assets/ap_logo.png"
-              alt="AP Government Logo"
-              className="h-20 md:h-28 w-auto object-contain"
-            />
-
-            <div className="flex flex-col items-start justify-center">
-              <h1 className="text-2xl md:text-3xl font-display font-bold text-blue-900 leading-tight">
-                One Person - One Card
-              </h1>
-              <div className="w-full h-px bg-slate-300 my-1"></div>
-              <p className="text-sm md:text-lg text-slate-600 font-medium">
-                Government of Andhra Pradesh
-              </p>
+              <div className="leading-tight">
+                <div className="text-xs sm:text-sm opacity-90">
+                  Government of Andhra Pradesh
+                </div>
+                <div className="text-xl sm:text-2xl font-display font-bold">
+                  One State - One Card
+                </div>
+                <div className="text-xs sm:text-sm opacity-90">
+                  Official Identity &amp; Access Portal
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Right: Map */}
-          <div className="h-full flex items-center justify-end relative z-10">
-            <img
-              src="/src/assets/ap_map.png"
-              alt="Andhra Pradesh Map"
-              className="h-full w-auto object-contain opacity-90"
-            />
+            {/* Right: Helpdesk */}
+            <div className="text-xs sm:text-sm sm:text-right opacity-95 space-y-1">
+              <div className="whitespace-nowrap">
+                Helpdesk Phone: 1800-XXXX-XXXX
+              </div>
+              <div className="whitespace-nowrap">
+                Helpdesk Email: support-opoc@ap.gov.in
+              </div>
+            </div>
           </div>
 
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-4 bg-muted/30">
-        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden grid md:grid-cols-2 min-h-[500px]">
+      <main id="main">
+        {/* Hero */}
+        <section className="py-8 sm:py-10 bg-muted/10">
+          <div className="container mx-auto px-4">
+            <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
+              {/* Left hero content */}
+              <div className="lg:col-span-6">
+                <h1 className="text-3xl sm:text-5xl font-display font-bold text-foreground leading-tight">
+                  One State, One Official Card for Identity and Access
+                </h1>
 
-          {/* Left Side: Branding */}
-          <div className="p-8 flex flex-col items-center justify-center border-r bg-white/50 space-y-6">
-            <img
-              src="/src/assets/ap_logo.png"
-              alt="Andhra Pradesh Government Seal"
-              className="w-48 h-48 object-contain"
-            />
-            <div className="text-center space-y-2">
-              <p className="text-xl text-slate-600 font-medium">Welcome to</p>
-              <h1 className="text-4xl font-extrabold text-blue-900">One Person - One Card</h1>
+                <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl">
+                  A unified government system to issue and manage a single
+                  official identity card for each individual, enabling secure
+                  verification and access across establishments and departments.
+                </p>
+              </div>
+
+              {/* Right: CM Card - larger image + necessary content only */}
+              <div className="lg:col-span-6">
+                <Card className="border-2 border-primary/35 shadow-sm overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="border-b bg-muted/30 px-5 py-3">
+                      <div className="text-sm font-semibold text-foreground">
+                        Hon&apos;ble Chief Minister, Andhra Pradesh
+                      </div>
+                    </div>
+
+                    <div className="p-5">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+                        {/* Bigger portrait box (noticeably larger) */}
+                        <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-white flex items-center justify-center shrink-0">
+                          {cmOk ? (
+                            <img
+                              src="/opoc/cm.jpg"
+                              alt="Nara Chandrababu Naidu"
+                              className="h-full w-full object-cover"
+                              onError={() => setCmOk(false)}
+                            />
+                          ) : (
+                            <div className="text-xs text-muted-foreground px-2 text-center">
+                              CM photo missing
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="text-center sm:text-left">
+                          <div className="text-lg sm:text-xl font-semibold text-foreground">
+                            Nara Chandrababu Naidu
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Chief Minister, Government of Andhra Pradesh
+                          </div>
+
+                          <div className="mt-3 text-sm text-foreground leading-relaxed">
+                            Strengthening transparency, security, and efficient
+                            governance through a unified identity system for
+                            every individual.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Right Side: Login Form */}
-          <div className="p-8 bg-slate-50 flex flex-col justify-center">
-            <LoginSection />
+        {/* Role Access Section (single source of truth for actions) */}
+        <section id="helpdesk" className="py-10 bg-muted/20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-sm text-muted-foreground">
+                Role Access Section
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-display font-bold">
+                Select Your Role for Access
+              </h2>
+
+              <div className="mt-6 grid gap-5 md:grid-cols-3">
+                {/* Worker Access */}
+                <Card className="border-2 border-primary/45 shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="rounded-md bg-muted/40 px-3 py-2 text-center font-semibold">
+                      Worker Access
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <Users className="h-5 w-5 text-primary" />
+                      <span className="text-sm text-muted-foreground">
+                        Login / Register
+                      </span>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      <Link to="/auth?role=worker" className="block">
+                        <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                          Login
+                        </Button>
+                      </Link>
+                      <Link to="/register/worker" className="block">
+                        <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                          Register
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Establishment Access */}
+                <Card className="border-2 border-primary/45 shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="rounded-md bg-muted/40 px-3 py-2 text-center font-semibold">
+                      Establishment Access
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <span className="text-sm text-muted-foreground">
+                        Login / Register
+                      </span>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      <Link to="/auth?role=establishment" className="block">
+                        <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                          Login
+                        </Button>
+                      </Link>
+                      <Link to="/register/establishment" className="block">
+                        <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                          Register
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Department Access */}
+                <Card className="border-2 border-primary/45 shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="rounded-md bg-muted/40 px-3 py-2 text-center font-semibold">
+                      Department Access
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-center gap-3">
+                      <Landmark className="h-5 w-5 text-primary" />
+                      <span className="text-sm text-muted-foreground">
+                        Login
+                      </span>
+                    </div>
+
+                    <div className="mt-5">
+                      <Link to="/auth?role=department" className="block">
+                        <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                          Login
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
+        </section>
 
-        </div>
+        {/* Trust & Information Section (revised for OPOC) */}
+        <section id="policies" className="py-10">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-sm text-muted-foreground">
+                Trust &amp; Information
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-display font-bold">
+                System Information &amp; Security
+              </h3>
+
+              <ul className="mt-5 list-disc pl-5 text-sm sm:text-base text-foreground/90 space-y-2">
+                <li>
+                  Single official identity record per individual (One State - One Card)
+                </li>
+                <li>
+                  Authorized establishment access for verification and record
+                  handling
+                </li>
+                <li>
+                  Department-level governance visibility and role-controlled
+                  operations
+                </li>
+                <li>
+                  Audit-friendly records to support integrity and accountability
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="py-6 border-t bg-card text-card-foreground">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>© 2026 Government of Andhra Pradesh. All rights reserved.</p>
+      <footer id="contact" className="bg-[#ffcb05] text-[hsl(222 47% 11%)]">
+        {/* <footer
+        id="contact"
+        className="text-primary-foreground"
+        style={{
+          backgroundColor: "#ffb200",
+          backgroundImage:
+            "linear-gradient(to right,#FF7700 0%,rgba(255,119,0,0) 55%),linear-gradient(to left,#ffcb05 0%,rgba(255,203,5,0) 55%)",
+        }}
+      > */}
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm opacity-95">
+              © Government of Andhra Pradesh
+            </div>
+
+            <div className="text-[11px] sm:text-sm opacity-95 flex flex-wrap gap-x-2 gap-y-1 justify-start md:justify-center">
+              <span className="underline underline-offset-2 cursor-default">
+                Privacy Policy
+              </span>
+              <span className="opacity-80">|</span>
+              <span className="underline underline-offset-2 cursor-default">
+                Terms &amp; Conditions
+              </span>
+              <span className="opacity-80">|</span>
+              <span className="underline underline-offset-2 cursor-default">
+                Disclaimer
+              </span>
+              <span className="opacity-80">|</span>
+              <span className="underline underline-offset-2 cursor-default">
+                Accessibility Statement
+              </span>
+            </div>
+            {/* 
+            <div className="text-[11px] sm:text-xs opacity-95 md:text-right">
+              Last Updated: 15-OCT-2025
+            </div> */}
+          </div>
         </div>
       </footer>
     </div>
-  );
-}
-
-function LoginSection() {
-  const navigate = useNavigate();
-  const { signIn } = useAuth();
-  const { toast } = useToast();
-
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  // State for form fields
-  const [username, setUsername] = useState(""); // identifier
-  const [password, setPassword] = useState("");
-
-  // Worker/Citizen Auth State
-  const [aadhaar, setAadhaar] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-
-  // Admin/Department & Establishment Login
-  const handleLogin = async (role: string) => {
-    if (!username || !password) {
-      toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // For Establishment, role is 'establishment'. For Admin, it's 'department' or 'admin'
-      // The signIn function handles the auth, but we might need to verify the role if necessary
-      const { error } = await signIn(username, password);
-
-      if (error) {
-        toast({ title: "Login Failed", description: error.message, variant: "destructive" });
-        setLoading(false);
-      } else {
-        toast({ title: "Success", description: "Login successful!" });
-
-        let targetPath = '/';
-        if (role === 'department') targetPath = '/department/dashboard';
-        else if (role === 'establishment') targetPath = '/establishment/dashboard';
-        else targetPath = '/worker/dashboard';
-
-        navigate(targetPath);
-      }
-    } catch (err) {
-      toast({ title: "Error", description: "An unexpected error occurred", variant: "destructive" });
-      setLoading(false);
-    }
-  };
-
-  // Worker OTP Logic
-  const handleWorkerSendOTP = async () => {
-    const OTP_API_URL = (import.meta.env.VITE_API_URL || 'https://localhost:3000').replace(/\/$/, '');
-
-    if (!/^\d{12}$/.test(aadhaar)) {
-      toast({ title: "Error", description: "Please enter a valid 12-digit Aadhaar number", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch(`${OTP_API_URL}/api/auth/worker-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ aadhaar }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed to send OTP");
-
-      setOtpSent(true);
-      toast({ title: "OTP Sent", description: data.message || "Verification code sent." });
-    } catch (error: any) {
-      console.error(error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleWorkerVerifyLogin = async () => {
-    const OTP_API_URL = (import.meta.env.VITE_API_URL || 'https://localhost:3000').replace(/\/$/, '');
-
-    if (otp.length !== 6) {
-      toast({ title: "Error", description: "Enter 6-digit OTP", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const response = await fetch(`${OTP_API_URL}/api/auth/worker-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ aadhaar, otp }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Login failed");
-
-      if (data.session) {
-        const { error } = await supabase.auth.setSession(data.session);
-        if (error) throw error;
-      }
-
-      toast({ title: "Success", description: "Login successful!" });
-      navigate('/worker/dashboard');
-    } catch (error: any) {
-      console.error(error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSmartCardLogin = async () => {
-    // If Aadhaar is entered, use it. Otherwise, try resident key (empty username).
-    // The user requested "using the smart card and aadhaar number", so we prefer the value.
-    const loginIdentifier = aadhaar || "";
-
-    setLoading(true);
-    try {
-      const { authenticateUser } = await import("@/lib/api");
-      const result = await authenticateUser(loginIdentifier, 'login');
-
-      if (result.verified) {
-        toast({ title: "Success", description: `Welcome back ${result.username}!` });
-
-        // External Worker Login Call (As requested)
-        try {
-          const response = await fetch("https://workerconnection-backend.vercel.app/api/auth/worker-login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ aadhaar: result.username }),
-          });
-          const data = await response.json();
-          if (data?.session) {
-            await supabase.auth.setSession(data.session);
-          }
-        } catch (error) {
-          console.error("External login error", error);
-        }
-
-        if (result.session) {
-          const { error } = await supabase.auth.setSession(result.session);
-          if (error) console.error("Failed to set session", error);
-        }
-        navigate('/worker/dashboard');
-      }
-    } catch (e: any) {
-      console.error(e);
-      toast({
-        title: "Login Failed",
-        description: e.message || "Invalid Card or Read Error. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Tabs defaultValue="admin" className="w-full">
-      <TabsList className="grid w-full grid-cols-3 mb-8 h-12 bg-transparent gap-4">
-        <TabsTrigger value="admin" className="rounded-full border border-slate-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white data-[state=active]:border-none h-10 transition-all">Admin</TabsTrigger>
-        <TabsTrigger value="establishment" className="rounded-full border border-slate-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white data-[state=active]:border-none h-10 transition-all">Establishment</TabsTrigger>
-        <TabsTrigger value="citizen" className="rounded-full border border-slate-200 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white data-[state=active]:border-none h-10 transition-all">Citizen</TabsTrigger>
-      </TabsList>
-
-      {/* Admin Login */}
-      <TabsContent value="admin" className="space-y-4">
-        <div className="space-y-2">
-          <Label>Username</Label>
-          <Input placeholder="Enter username" value={username} onChange={e => setUsername(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>Password</Label>
-          <div className="relative">
-            <Input type={showPassword ? "text" : "password"} placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} />
-            <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button variant="link" className="px-0 text-orange-500">Forgot password</Button>
-        </div>
-        <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white h-11 transition-all" onClick={() => handleLogin('department')} disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "SIGN IN"}
-        </Button>
-      </TabsContent>
-
-      {/* Establishment Login */}
-      <TabsContent value="establishment" className="space-y-4">
-        <div className="space-y-2">
-          <Label>Username</Label>
-          <Input placeholder="Enter username" value={username} onChange={e => setUsername(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label>Password</Label>
-          <div className="relative">
-            <Input type="password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} />
-          </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <Button variant="link" className="px-0 text-orange-500">Forgot password</Button>
-        </div>
-
-        <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white h-11 transition-all" onClick={() => handleLogin('establishment')} disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "SIGN IN"}
-        </Button>
-
-        <div className="relative w-full py-2">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-slate-200"></span>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-slate-50 px-2 text-slate-500 font-medium">OR</span>
-          </div>
-        </div>
-
-        <div className="w-full space-y-2">
-          <Button variant="outline" className="w-full h-11 border-orange-500 text-orange-600 hover:bg-orange-50 font-bold" onClick={() => navigate('/register/establishment')}>
-            REGISTER AS ESTABLISHMENT
-          </Button>
-          <p className="text-center text-xs text-slate-500">New to the platform?</p>
-        </div>
-      </TabsContent>
-
-      {/* Citizen Login - Enhanced by User Request */}
-      <TabsContent value="citizen" className="space-y-6">
-        <div className="text-center space-y-1 mb-4">
-          <h3 className="font-semibold text-lg">Citizen Login</h3>
-          <p className="text-sm text-slate-500">Enter your Aadhaar to access your dashboard</p>
-        </div>
-
-        {/* Smart Card Login Button (Primary) */}
-        <Button
-          variant="outline"
-          className="w-full h-12 text-base font-normal border-slate-300 hover:bg-slate-50 relative"
-          onClick={handleSmartCardLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <Loader2 className="w-5 h-5 absolute left-4 animate-spin text-slate-600" />
-          ) : (
-            <div className="absolute left-4">
-              <CreditCard className="w-5 h-5 text-slate-600" />
-            </div>
-          )}
-          Login with Smart Card
-        </Button>
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-slate-200"></span>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-slate-50 px-2 text-slate-500 font-medium">Or login with</span>
-          </div>
-        </div>
-
-        {!otpSent ? (
-          <div className="space-y-2">
-            <Label className="text-base font-medium">Aadhaar Number</Label>
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <Input
-                placeholder="XXXX XXXX XXXX"
-                value={aadhaar}
-                onChange={e => setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12))}
-                className="pl-10 h-11 text-lg tracking-widest bg-slate-50 border-slate-200"
-                maxLength={12}
-                disabled={loading}
-              />
-            </div>
-            {aadhaar.length > 0 && (
-              <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white h-11 font-medium text-base transition-all mt-2" onClick={handleWorkerSendOTP} disabled={loading || aadhaar.length !== 12}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Send OTP"}
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-primary/10 p-3 rounded-md text-sm text-center border border-primary/20">
-              <p className="text-primary font-medium">OTP sent to registered mobile.</p>
-              <p className="text-xs text-muted-foreground mt-1">(Use any 6 digit number for Demo)</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-base font-medium">Enter OTP</Label>
-              <Input
-                className="text-center tracking-[1em] text-lg h-12 bg-slate-50 border-slate-200"
-                placeholder="------"
-                value={otp}
-                onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                maxLength={6}
-                disabled={loading}
-              />
-            </div>
-
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white h-11 font-medium text-base transition-all shadow-md" onClick={handleWorkerVerifyLogin} disabled={loading || otp.length !== 6}>
-              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Verify & Login"}
-            </Button>
-
-            <div className="text-center">
-              <Button variant="link" className="w-full text-xs text-blue-600 hover:text-blue-800 underline-offset-4" onClick={() => setOtpSent(false)}>
-                Change Aadhaar Number
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="relative w-full py-2">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-slate-200"></span>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-slate-50 px-2 text-slate-500 font-medium">OR</span>
-          </div>
-        </div>
-
-        <div className="w-full space-y-2">
-          <Button variant="outline" className="w-full h-11 border-orange-500 text-orange-600 hover:bg-orange-50 font-bold" onClick={() => navigate('/register/worker')}>
-            REGISTER AS CITIZEN
-          </Button>
-          <p className="text-center text-xs text-slate-500">New to the platform?</p>
-        </div>
-      </TabsContent>
-
-    </Tabs>
   );
 }

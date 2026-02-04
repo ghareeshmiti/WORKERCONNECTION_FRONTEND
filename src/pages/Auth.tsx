@@ -301,7 +301,7 @@ export default function Auth() {
               <Clock className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-2xl font-display font-bold">Worker Connect</h1>
+          <h1 className="text-2xl font-display font-bold">One State - One Card</h1>
           <p className="text-muted-foreground">
             {mode === "login" && "Sign in to continue"}
             {mode === "forgot" && "Reset your password"}
