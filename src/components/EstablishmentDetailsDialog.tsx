@@ -6,10 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Building2, Users, UserCheck, AlertCircle, UserX, MapPin, Phone, Mail, 
-  Loader2, Search, X, Download, Calendar
-} from 'lucide-react';
+import { Loader2, X, MapPin, Phone, Mail, Building2, Users, Calendar, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Download, Search, UserCheck, UserX } from 'lucide-react';
+import { formatWorkerId } from '@/lib/format';
 import { generateCSV } from '@/lib/csv-export';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -34,7 +32,7 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
     queryKey: ['establishment-detail-workers', establishment?.id],
     queryFn: async () => {
       if (!establishment?.id) return [];
-      
+
       const { data, error } = await supabase
         .from('worker_mappings')
         .select(`
@@ -53,7 +51,7 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
         `)
         .eq('establishment_id', establishment.id)
         .eq('is_active', true);
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -65,15 +63,15 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
     queryKey: ['establishment-detail-attendance', establishment?.id, today],
     queryFn: async () => {
       if (!establishment?.id) return {};
-      
+
       const { data, error } = await supabase
         .from('attendance_daily_rollups')
         .select('worker_id, status, first_checkin_at, last_checkout_at, total_hours')
         .eq('establishment_id', establishment.id)
         .eq('attendance_date', today);
-      
+
       if (error) throw error;
-      
+
       // Create a map of worker_id to attendance
       const attendanceMap: Record<string, any> = {};
       data?.forEach(record => {
@@ -97,7 +95,7 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
   const filteredWorkers = useMemo(() => {
     if (!workersWithAttendance) return [];
     if (!workerSearch.trim()) return workersWithAttendance;
-    
+
     const searchLower = workerSearch.toLowerCase();
     return workersWithAttendance.filter((mapping: any) => {
       const w = mapping.workers;
@@ -122,8 +120,8 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
 
   const formatTime = (timestamp: string | null) => {
     if (!timestamp) return '--:--';
-    return new Date(timestamp).toLocaleTimeString('en-IN', { 
-      hour: '2-digit', 
+    return new Date(timestamp).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
       minute: '2-digit',
       timeZone: 'Asia/Kolkata'
     });
@@ -142,7 +140,7 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
 
   const handleExport = () => {
     if (!filteredWorkers.length) return;
-    
+
     const exportData = filteredWorkers.map((mapping: any) => ({
       worker_id: mapping.workers?.worker_id,
       name: `${mapping.workers?.first_name} ${mapping.workers?.last_name}`,
@@ -152,7 +150,7 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
       check_out: mapping.attendance?.last_checkout_at ? formatTime(mapping.attendance.last_checkout_at) : '',
       hours: mapping.attendance?.total_hours?.toFixed(1) || '',
     }));
-    
+
     const columns = [
       { key: 'worker_id', header: 'Worker ID' },
       { key: 'name', header: 'Name' },
@@ -162,7 +160,7 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
       { key: 'check_out', header: 'Check Out' },
       { key: 'hours', header: 'Hours' },
     ];
-    
+
     generateCSV(exportData, columns, `${establishment?.code}-attendance-${format(new Date(), 'yyyy-MM-dd')}`);
     toast.success('Export Complete', { description: 'Attendance data exported to CSV' });
   };
@@ -257,11 +255,11 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
 
         <div className="text-xs text-muted-foreground flex items-center gap-1 pb-2">
           <Calendar className="w-3 h-3" />
-          Today's attendance: {new Date().toLocaleDateString('en-IN', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'short', 
-            year: 'numeric' 
+          Today's attendance: {new Date().toLocaleDateString('en-IN', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
           })}
         </div>
 
@@ -287,7 +285,7 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
               <tbody>
                 {filteredWorkers.map((mapping: any) => (
                   <tr key={mapping.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
-                    <td className="py-2 font-mono text-xs">{mapping.workers?.worker_id}</td>
+                    <td className="py-2 font-mono text-xs">{formatWorkerId(mapping.workers?.worker_id)}</td>
                     <td className="py-2">
                       {mapping.workers?.first_name} {mapping.workers?.last_name}
                     </td>
@@ -302,8 +300,8 @@ export function EstablishmentDetailsDialog({ establishment, onClose }: Establish
                       {formatTime(mapping.attendance?.last_checkout_at)}
                     </td>
                     <td className="py-2 text-center">
-                      {mapping.attendance?.total_hours 
-                        ? `${mapping.attendance.total_hours.toFixed(1)}h` 
+                      {mapping.attendance?.total_hours
+                        ? `${mapping.attendance.total_hours.toFixed(1)}h`
                         : '--'}
                     </td>
                   </tr>

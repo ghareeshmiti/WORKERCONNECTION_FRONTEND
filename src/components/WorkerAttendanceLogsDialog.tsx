@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -13,6 +13,7 @@ import { Loader2, Clock, LogIn, LogOut, Calendar, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
+import { formatWorkerId } from '@/lib/format';
 
 interface WorkerInfo {
   id: string;
@@ -38,7 +39,7 @@ export function WorkerAttendanceLogsDialog({ worker, onClose }: WorkerAttendance
     queryKey: ['worker-attendance-events', worker?.id, dateRange],
     queryFn: async () => {
       if (!worker?.id) return [];
-      
+
       const { data, error } = await supabase
         .from('attendance_events')
         .select(`
@@ -104,7 +105,7 @@ export function WorkerAttendanceLogsDialog({ worker, onClose }: WorkerAttendance
             <User className="w-4 h-4" />
             {worker?.first_name} {worker?.last_name}
             <Badge variant="outline" className="font-mono text-xs ml-2">
-              {worker?.worker_id}
+              {formatWorkerId(worker?.worker_id)}
             </Badge>
           </DialogDescription>
         </DialogHeader>
@@ -145,11 +146,10 @@ export function WorkerAttendanceLogsDialog({ worker, onClose }: WorkerAttendance
                         className="flex items-center justify-between p-3 rounded-lg border bg-card"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            event.event_type === 'CHECK_IN' 
-                              ? 'bg-success/10 text-success' 
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${event.event_type === 'CHECK_IN'
+                              ? 'bg-success/10 text-success'
                               : 'bg-warning/10 text-warning'
-                          }`}>
+                            }`}>
                             {event.event_type === 'CHECK_IN' ? (
                               <LogIn className="w-4 h-4" />
                             ) : (

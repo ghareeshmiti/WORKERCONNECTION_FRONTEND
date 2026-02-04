@@ -286,7 +286,7 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy, departmentId }: 
       setOpen(v);
     }}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
           <UserPlus className="w-4 h-4 mr-2" />
           Enroll New Worker
         </Button>
@@ -575,7 +575,7 @@ export function EnrollWorkerDialog({ establishmentId, mappedBy, departmentId }: 
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
-              <Button onClick={step === 2 ? handleSubmit : handleNext} disabled={loading || uploading}>
+              <Button onClick={step === 2 ? handleSubmit : handleNext} disabled={loading || uploading} className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
                 {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {step === 2 ? 'Submit Enrollment' : 'Next'}
                 {step !== 2 && <ArrowRight className="w-4 h-4 ml-2" />}

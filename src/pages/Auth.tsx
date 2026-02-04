@@ -301,7 +301,7 @@ export default function Auth() {
               <Clock className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-2xl font-display font-bold">One State - One Card</h1>
+          <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">One State - One Card</h1>
           <p className="text-muted-foreground">
             {mode === "login" && "Sign in to continue"}
             {mode === "forgot" && "Reset your password"}
@@ -379,7 +379,7 @@ export default function Auth() {
                           />
                         </div>
                         {errors.aadhaar && <p className="text-sm text-destructive">{errors.aadhaar}</p>}
-                        <Button onClick={handleWorkerSendOTP} className="w-full" disabled={loading || aadhaar.length !== 12}>
+                        <Button onClick={handleWorkerSendOTP} className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white" disabled={loading || aadhaar.length !== 12}>
                           {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                           Send OTP
                         </Button>
@@ -402,7 +402,7 @@ export default function Auth() {
                           />
                           {errors.otp && <p className="text-sm text-destructive">{errors.otp}</p>}
                         </div>
-                        <Button onClick={handleWorkerVerifyLogin} className="w-full" disabled={loading || otp.length !== 6}>
+                        <Button onClick={handleWorkerVerifyLogin} className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white" disabled={loading || otp.length !== 6}>
                           {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                           Verify & Login
                         </Button>
@@ -464,7 +464,7 @@ export default function Auth() {
                       </Button>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white" disabled={loading}>
                       {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                       Sign In
                     </Button>
@@ -500,7 +500,7 @@ export default function Auth() {
                 </div>
 
                 {!otpSent ? (
-                  <Button onClick={handleSendOTP} disabled={loading || !identifier} className="w-full">
+                  <Button onClick={handleSendOTP} disabled={loading || !identifier} className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
                     {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                     Send OTP
                   </Button>
@@ -604,7 +604,7 @@ export default function Auth() {
                   {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
                 </div>
 
-                <Button onClick={handleResetPassword} className="w-full" disabled={loading}>
+                <Button onClick={handleResetPassword} className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white" disabled={loading}>
                   {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                   Reset Password
                 </Button>

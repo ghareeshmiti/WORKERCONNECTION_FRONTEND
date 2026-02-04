@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useUnmappedWorkers } from '@/hooks/use-dashboard-data';
 import { useMapWorker, useBulkMapWorkers } from '@/hooks/use-worker-mapping';
 import { UserPlus, Search, Loader2, MapPin, Users, CheckSquare } from 'lucide-react';
+import { formatWorkerId } from '@/lib/format';
 
 interface MapWorkerDialogProps {
   establishmentId: string;
@@ -24,7 +25,7 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
   const bulkMapWorkers = useBulkMapWorkers();
 
   const filteredWorkers = workers?.filter(w =>
-    (w.is_active === true && w.status !== 'new') && // Only active workers can be mapped
+    (w.is_active === true) && // Only active workers can be mapped
     (w.worker_id.toLowerCase().includes(search.toLowerCase()) ||
       w.first_name.toLowerCase().includes(search.toLowerCase()) ||
       w.last_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -86,7 +87,7 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white">
           <UserPlus className="w-4 h-4" />
           Map Worker
         </Button>
@@ -141,7 +142,7 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
                 size="sm"
                 onClick={handleBulkMap}
                 disabled={bulkMapWorkers.isPending}
-                className="gap-2"
+                className="gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
               >
                 {bulkMapWorkers.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -182,7 +183,7 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
                         {worker.first_name} {worker.last_name}
                       </span>
                       <Badge variant="outline" className="font-mono text-xs">
-                        {worker.worker_id}
+                        {formatWorkerId(worker.worker_id)}
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
@@ -198,6 +199,7 @@ export function MapWorkerDialog({ establishmentId, mappedBy }: MapWorkerDialogPr
                       size="sm"
                       onClick={() => handleMap(worker.id)}
                       disabled={mapWorker.isPending}
+                      className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
                     >
                       {mapWorker.isPending ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

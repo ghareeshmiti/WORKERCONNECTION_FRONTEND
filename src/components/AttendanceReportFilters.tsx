@@ -1,7 +1,8 @@
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Download, X } from 'lucide-react';
+import { Calendar, Download, Building2, Users, X } from 'lucide-react';
+import { formatWorkerId } from '@/lib/format';
 import { DateRange } from 'react-day-picker';
 
 interface Worker {
@@ -96,7 +97,7 @@ export function AttendanceReportFilters({
               <SelectItem value="all">All Workers</SelectItem>
               {workers.map((w) => (
                 <SelectItem key={w.id} value={w.id}>
-                  {w.first_name} {w.last_name} ({w.worker_id})
+                  {w.first_name} {w.last_name} ({formatWorkerId(w.worker_id)})
                 </SelectItem>
               ))}
             </SelectContent>

@@ -524,10 +524,6 @@ export default function WorkerDashboard() {
               </span>
               <span className="text-xs text-slate-500 font-medium tracking-wide">Government of Andhra Pradesh</span>
             </div>
-<<<<<<< Updated upstream
-            <span className="text-xl font-display font-bold">One State - One Card</span>
-=======
->>>>>>> Stashed changes
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden md:flex flex-col items-end mr-2">

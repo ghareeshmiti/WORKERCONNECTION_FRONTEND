@@ -2,6 +2,7 @@ import { AttendanceReportRow } from '@/hooks/use-attendance-reports';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Clock, LogIn, LogOut } from 'lucide-react';
+import { formatWorkerId } from '@/lib/format';
 
 interface AttendanceReportTableProps {
   data: AttendanceReportRow[];
@@ -9,10 +10,10 @@ interface AttendanceReportTableProps {
   showDepartment?: boolean;
 }
 
-export function AttendanceReportTable({ 
-  data, 
+export function AttendanceReportTable({
+  data,
   showEstablishment = true,
-  showDepartment = false 
+  showDepartment = false
 }: AttendanceReportTableProps) {
   const formatTime = (timestamp: string | null) => {
     if (!timestamp) return '--';
@@ -81,7 +82,7 @@ export function AttendanceReportTable({
           {data.map((row) => (
             <tr key={row.id} className="border-b border-muted hover:bg-muted/30 transition-colors">
               <td className="py-3">{format(new Date(row.date), 'dd MMM yyyy')}</td>
-              <td className="py-3 font-mono text-xs">{row.workerId}</td>
+              <td className="py-3 font-mono text-xs">{formatWorkerId(row.workerId)}</td>
               <td className="py-3">{row.workerName}</td>
               {showEstablishment && (
                 <td className="py-3">{row.establishmentName}</td>

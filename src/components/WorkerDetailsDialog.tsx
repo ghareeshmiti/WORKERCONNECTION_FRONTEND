@@ -8,11 +8,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  User, Phone, Mail, MapPin, Calendar, Clock,
-  AlertCircle, CheckCircle, XCircle, Loader2, Building2,
-  Briefcase, IndianRupee, CreditCard, Users
-} from 'lucide-react';
+import { Loader2, X, MapPin, Phone, Mail, Calendar, Briefcase, CreditCard, Shield, Building2, User, FileText, CheckCircle, AlertCircle, XCircle, Clock } from 'lucide-react';
+import { formatWorkerId } from '@/lib/format';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DateRangePicker, DateRangePresets } from '@/components/DateRangePicker';
@@ -154,7 +151,7 @@ export function WorkerDetailsDialog({ workerId, onClose, establishmentName }: Wo
                       <CardTitle className="text-sm font-medium text-muted-foreground">Identity & Status</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div><p className="text-xs text-muted-foreground">Worker ID</p><p className="font-mono font-medium">{worker.worker_id}</p></div>
+                      <div><p className="text-xs text-muted-foreground">Worker ID</p><p className="font-mono font-medium">{formatWorkerId(worker.worker_id)}</p></div>
                       <div><p className="text-xs text-muted-foreground">Aadhaar</p><p className="font-mono font-medium">{worker.aadhaar_number || '-'}</p></div>
                       <div><p className="text-xs text-muted-foreground">eShram ID</p><p className="font-mono font-medium">{worker.eshram_id || '-'}</p></div>
                       <div><p className="text-xs text-muted-foreground">BOCW ID</p><p className="font-mono font-medium">{worker.bocw_id || '-'}</p></div>
