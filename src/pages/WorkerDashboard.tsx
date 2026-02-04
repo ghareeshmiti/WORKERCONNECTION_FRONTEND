@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import QRCode from "react-qr-code";
 import { format } from 'date-fns';
+import { AttendanceReportRow } from '@/hooks/use-attendance-reports';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -319,7 +320,13 @@ const DUMMY_DATA = {
       desc: "My medical leave request for August was not approved in time.",
       created_at: "01 Sep 2025", sla: "05 Sep 2025"
     }
-  ]
+  ],
+  attendance_list: [
+    { id: '1', date: "2026-02-04", establishmentName: "Sarika's Construction", departmentName: "Construction", checkIn: "2026-02-04T12:30:00", checkOut: "2026-02-04T21:49:00", hoursWorked: 9.3, status: "PRESENT", workerId: 'dummy-1', workerName: 'Ramesh Kumar' },
+    { id: '2', date: "2026-02-03", establishmentName: "City Civic Center", departmentName: "Maintenance", checkIn: "2026-02-03T10:22:00", checkOut: null, hoursWorked: null, status: "PRESENT", workerId: 'dummy-1', workerName: 'Ramesh Kumar' },
+    { id: '3', date: "2026-01-17", establishmentName: "Green Valley Project", departmentName: "Gardening", checkIn: "2026-01-17T18:55:00", checkOut: "2026-01-17T19:03:00", hoursWorked: 0.1, status: "PRESENT", workerId: 'dummy-1', workerName: 'Ramesh Kumar' },
+    { id: '4', date: "2026-01-16", establishmentName: "Sarika's Construction", departmentName: "Construction", checkIn: "2026-01-16T15:35:00", checkOut: "2026-01-16T20:23:00", hoursWorked: 4.8, status: "PRESENT", workerId: 'dummy-1', workerName: 'Ramesh Kumar' }
+  ] as AttendanceReportRow[]
 };
 
 // --- DUMMY CHART DATA ---
@@ -349,12 +356,82 @@ export default function WorkerDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [attendanceData, setAttendanceData] = useState<AttendanceReportRow[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   useEffect(() => {
     if (userContext?.workerId) {
       fetchWorkerProfile();
+      fetchAttendance();
     }
   }, [userContext?.workerId]);
+
+  const fetchAttendance = async () => {
+    setLoadingAttendance(true);
+    try {
+      // Get worker's internal ID (UUID) first if we only have the public ID
+      let internalId = workerProfile?.id;
+      if (!internalId && userContext?.workerId) {
+        const { data: workerComp } = await supabase
+          .from('workers')
+          .select('id')
+          .eq('id', userContext.workerId) // userContext.workerId is usually the UUID
+          .single();
+        internalId = workerComp?.id;
+      }
+
+      if (!internalId) {
+        setAttendanceData(DUMMY_DATA.attendance_list);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('attendance_daily_rollups')
+        .select(`
+          id,
+          attendance_date,
+          first_checkin_at,
+          last_checkout_at,
+          total_hours,
+          status,
+          establishment_id,
+          establishments (
+             name,
+             departments ( name )
+          )
+        `)
+        .eq('worker_id', internalId)
+        .order('attendance_date', { ascending: false })
+        .limit(30);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setAttendanceData(DUMMY_DATA.attendance_list);
+      } else {
+        const mappedData: AttendanceReportRow[] = data.map((row: any) => ({
+          id: row.id,
+          date: row.attendance_date,
+          workerId: DUMMY_DATA.profile.worker_id, // Display ID
+          workerName: `${DUMMY_DATA.profile.first_name} ${DUMMY_DATA.profile.last_name}`,
+          establishmentName: row.establishments?.name || 'Unknown',
+          departmentName: row.establishments?.departments?.name || 'Unknown',
+          checkIn: row.first_checkin_at,
+          checkOut: row.last_checkout_at,
+          hoursWorked: row.total_hours,
+          status: row.status as any
+        }));
+        setAttendanceData(mappedData);
+      }
+
+    } catch (err) {
+      console.error('Error fetching attendance:', err);
+      // Fallback to dummy data on error
+      setAttendanceData(DUMMY_DATA.attendance_list);
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
 
   const fetchWorkerProfile = async () => {
     try {
@@ -878,22 +955,28 @@ export default function WorkerDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {[
-                        { date: "04 Feb 2026", est: "Sarika's Construction", dept: "Construction", in: "12:30", out: "21:49", hrs: "9.3h", status: "Present" },
-                        { date: "03 Feb 2026", est: "City Civic Center", dept: "Maintenance", in: "10:22", out: "--", hrs: "--", status: "Present" },
-                        { date: "17 Jan 2026", est: "Green Valley Project", dept: "Gardening", in: "18:55", out: "19:03", hrs: "0.1h", status: "Present" },
-                        { date: "16 Jan 2026", est: "Sarika's Construction", dept: "Construction", in: "15:35", out: "20:23", hrs: "4.8h", status: "Present" }
-                      ].map((row, i) => (
+                      {attendanceData.map((row, i) => (
                         <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">{row.date}</td>
-                          <td className="px-6 py-4 text-slate-600 font-medium">{row.est}</td>
-                          <td className="px-6 py-4 text-slate-500">{row.dept}</td>
-                          <td className="px-6 py-4 font-mono text-slate-500">{row.in}</td>
-                          <td className="px-6 py-4 font-mono text-slate-500">{row.out}</td>
-                          <td className="px-6 py-4 font-mono text-slate-500">{row.hrs}</td>
+                          <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
+                            {format(new Date(row.date), 'dd MMM yyyy')}
+                          </td>
+                          <td className="px-6 py-4 text-slate-600 font-medium">{row.establishmentName}</td>
+                          <td className="px-6 py-4 text-slate-500">{row.departmentName}</td>
+                          <td className="px-6 py-4 font-mono text-slate-500">
+                            {row.checkIn ? format(new Date(row.checkIn), 'HH:mm') : '--'}
+                          </td>
+                          <td className="px-6 py-4 font-mono text-slate-500">
+                            {row.checkOut ? format(new Date(row.checkOut), 'HH:mm') : '--'}
+                          </td>
+                          <td className="px-6 py-4 font-mono text-slate-500">
+                            {row.hoursWorked ? `${row.hoursWorked.toFixed(1)}h` : '--'}
+                          </td>
                           <td className="px-6 py-4 text-right">
-                            <Badge className="bg-green-600 hover:bg-green-700 text-white font-normal px-3 py-0.5 rounded-full">
-                              {row.status}
+                            <Badge className={`font-normal px-3 py-0.5 rounded-full ${row.status === 'PRESENT' ? 'bg-green-600 hover:bg-green-700 text-white' :
+                                row.status === 'PARTIAL' ? 'bg-orange-500 hover:bg-orange-600 text-white' :
+                                  'bg-red-500 hover:bg-red-600 text-white'
+                              }`}>
+                              {row.status ? (row.status.charAt(0) + row.status.slice(1).toLowerCase()) : 'Unknown'}
                             </Badge>
                           </td>
                         </tr>
