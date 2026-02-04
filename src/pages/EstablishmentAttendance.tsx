@@ -453,7 +453,7 @@ export default function EstablishmentAttendance() {
 
             {/* Header */}
             <div className="space-y-2">
-              <h1 className="text-3xl font-display font-bold text-slate-800 tracking-tight">Worker Connect</h1>
+              <h1 className="text-3xl font-display font-bold text-slate-800 tracking-tight">One Person One Card</h1>
               <h2 className="text-lg font-medium text-slate-500 uppercase tracking-widest">Access System</h2>
             </div>
 
