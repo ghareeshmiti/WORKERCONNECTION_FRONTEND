@@ -189,7 +189,7 @@ export default function EstablishmentDashboard() {
       <header className="bg-white border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/src/assets/ap_seal_new.png" alt="Seal" className="w-10 h-10 object-contain" />
+            <img src="/opoc/ap-logo.png" alt="Seal" className="w-10 h-10 object-contain" />
             <div className="flex flex-col">
               <span className="text-lg md:text-xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
                 One State - One Card
