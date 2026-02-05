@@ -187,7 +187,10 @@ export default function Landing() {
         {/* Hero */}
         <section className="py-8 sm:py-10 bg-muted/10">
           <div className="container mx-auto px-4">
-            <div className="grid gap-8 lg:grid-cols-12 lg:items-start" style={{justifyContent:"center",alignItems:"center"}}>
+            <div
+              className="grid gap-8 lg:grid-cols-12 lg:items-start"
+              style={{ justifyContent: "center", alignItems: "center" }}
+            >
               {/* Left hero content */}
               <div className="lg:col-span-6">
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-foreground leading-tight">
@@ -354,7 +357,10 @@ export default function Landing() {
         <section id="helpdesk" className="py-10 bg-muted/20">
           <div className="container mx-auto px-4">
             {/* Remove max-w-5xl + mx-auto because you want a left block + right image */}
-            <div className="grid gap-8 lg:grid-cols-12 lg:items-start"  style={{justifyContent:"center",alignItems:"center"}}>
+            <div
+              className="grid gap-8 lg:grid-cols-12 lg:items-start"
+              style={{ justifyContent: "center", alignItems: "center" }}
+            >
               {/* LEFT SIDE */}
               <div className="lg:col-span-7">
                 <div className="text-sm text-muted-foreground text-left">
@@ -493,7 +499,8 @@ export default function Landing() {
 
               <ul className="mt-5 list-disc pl-5 text-sm sm:text-base text-foreground/90 space-y-2">
                 <li>
-                  Single official identity record per individual (One State - One Card)
+                  Single official identity record per individual (One State -
+                  One Card)
                 </li>
                 <li>
                   Authorized establishment access for verification and record
@@ -508,6 +515,53 @@ export default function Landing() {
                 </li>
               </ul>
             </div>
+          </div>
+        </section>
+        {/* OPOC Information Visuals */}
+        <section className="py-10 bg-muted/10">
+          <div className="container mx-auto px-4 space-y-8">
+            {/* Feature Matrix */}
+            {/* Registration Flow */}
+            <Card className="border-2 border-primary/35 shadow-sm overflow-hidden">
+              <CardContent className="p-0">
+                <div className="border-b bg-muted/30 px-5 py-3">
+                  <div className="text-sm font-semibold text-foreground">
+                    Person Registration with Smart Card & Mobile Phone
+                  </div>
+                </div>
+
+                <div className="p-5 flex justify-center">
+                  <div className="w-full max-w-2xl">
+                    <img
+                      src="/opoc/slide1.jpeg"
+                      alt="Person registration with smart card and mobile phone"
+                      className="w-full h-auto rounded-lg border bg-white"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-2 border-primary/35 shadow-sm overflow-hidden">
+              <CardContent className="p-0">
+                <div className="border-b bg-muted/30 px-5 py-3">
+                  <div className="text-sm font-semibold text-foreground">
+                    AP PASS – OPOC Feature Matrix
+                  </div>
+                </div>
+
+                <div className="p-5 flex justify-center">
+                  <div className="w-full max-w-5xl">
+                    <img
+                      src="/opoc/slide2.png"
+                      alt="AP PASS OPOC feature matrix"
+                      className="w-full h-auto rounded-lg bg-white"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </section>
       </main>
