@@ -186,7 +186,7 @@ export default function Landing() {
         {/* Hero */}
         <section className="py-8 sm:py-10 bg-muted/10">
           <div className="container mx-auto px-4">
-            <div className="grid gap-8 lg:grid-cols-12 lg:items-start">
+            <div className="grid gap-8 lg:grid-cols-12 lg:items-start" style={{justifyContent:"center",alignItems:"center"}}>
               {/* Left hero content */}
               <div className="lg:col-span-6">
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-foreground leading-tight">
@@ -252,7 +252,7 @@ export default function Landing() {
         </section>
 
         {/* Role Access Section (single source of truth for actions) */}
-        <section id="helpdesk" className="py-10 bg-muted/20">
+        {/* <section id="helpdesk" className="py-10 bg-muted/20">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
               <div className="text-sm text-muted-foreground">
@@ -263,7 +263,7 @@ export default function Landing() {
               </h2>
 
               <div className="mt-6 grid gap-5 md:grid-cols-3">
-                {/* Worker Access */}
+              
                 <Card className="border-2 border-primary/45 shadow-sm">
                   <CardContent className="p-5">
                     <div className="rounded-md bg-muted/40 px-3 py-2 text-center font-semibold">
@@ -292,7 +292,7 @@ export default function Landing() {
                   </CardContent>
                 </Card>
 
-                {/* Establishment Access */}
+    
                 <Card className="border-2 border-primary/45 shadow-sm">
                   <CardContent className="p-5">
                     <div className="rounded-md bg-muted/40 px-3 py-2 text-center font-semibold">
@@ -321,7 +321,7 @@ export default function Landing() {
                   </CardContent>
                 </Card>
 
-                {/* Department Access */}
+    
                 <Card className="border-2 border-primary/45 shadow-sm">
                   <CardContent className="p-5">
                     <div className="rounded-md bg-muted/40 px-3 py-2 text-center font-semibold">
@@ -347,12 +347,142 @@ export default function Landing() {
               </div>
             </div>
           </div>
+        </section> */}
+
+        {/* Role Access Section (single source of truth for actions) */}
+        <section id="helpdesk" className="py-10 bg-muted/20">
+          <div className="container mx-auto px-4">
+            {/* Remove max-w-5xl + mx-auto because you want a left block + right image */}
+            <div className="grid gap-8 lg:grid-cols-12 lg:items-start"  style={{justifyContent:"center",alignItems:"center"}}>
+              {/* LEFT SIDE */}
+              <div className="lg:col-span-7">
+                <div className="text-sm text-muted-foreground text-left">
+                  Role Access Section
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-display font-bold text-left">
+                  Select Your Role for Access
+                </h2>
+
+                <div className="mt-6 grid gap-5 md:grid-cols-3">
+                  {/* Worker Access */}
+                  <Card className="border-2 border-primary/45 shadow-sm">
+                    <CardContent className="p-5">
+                      {/* Left align heading */}
+                      <div className="rounded-md bg-muted/40 px-3 py-2 text-left font-semibold">
+                        Worker Access
+                      </div>
+
+                      {/* Left align icon row */}
+                      <div className="mt-4 flex items-center justify-start gap-3">
+                        <Users className="h-5 w-5 text-primary" />
+                        <span className="text-sm text-muted-foreground">
+                          Login / Register
+                        </span>
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <Link to="/auth?role=worker" className="block">
+                          <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                            Login
+                          </Button>
+                        </Link>
+                        <Link to="/register/worker" className="block">
+                          <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                            Register
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Establishment Access */}
+                  <Card className="border-2 border-primary/45 shadow-sm">
+                    <CardContent className="p-5">
+                      <div className="rounded-md bg-muted/40 px-3 py-2 text-left font-semibold">
+                        Establishment Access
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-start gap-3">
+                        <Building2 className="h-5 w-5 text-primary" />
+                        <span className="text-sm text-muted-foreground">
+                          Login / Register
+                        </span>
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <Link to="/auth?role=establishment" className="block">
+                          <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                            Login
+                          </Button>
+                        </Link>
+                        <Link to="/register/establishment" className="block">
+                          <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                            Register
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Department Access */}
+                  <Card className="border-2 border-primary/45 shadow-sm">
+                    <CardContent className="p-5">
+                      <div className="rounded-md bg-muted/40 px-3 py-2 text-left font-semibold">
+                        Department Access
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-start gap-3">
+                        <Landmark className="h-5 w-5 text-primary" />
+                        <span className="text-sm text-muted-foreground">
+                          Login
+                        </span>
+                      </div>
+
+                      <div className="mt-5">
+                        <Link to="/auth?role=department" className="block">
+                          <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
+                            Login
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* RIGHT SIDE IMAGE */}
+              <div className="lg:col-span-5">
+                <Card className="border-2 border-primary/35 shadow-sm overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="border-b bg-muted/30 px-5 py-3">
+                      <div className="text-sm font-semibold text-foreground">
+                        Universal Benefit Card
+                      </div>
+                    </div>
+
+                    {/* Responsive image box */}
+                    <div className="p-5">
+                      <div className="w-full overflow-hidden rounded-lg border bg-white">
+                        <img
+                          src="/opoc/ubc-benefits.jpeg"
+                          alt="Universal Benefit Card benefits overview"
+                          className="w-full h-auto object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Trust & Information Section (revised for OPOC) */}
         <section id="policies" className="py-10">
           <div className="container mx-auto px-4">
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-6xl mx-auto">
               <div className="text-sm text-muted-foreground">
                 Trust &amp; Information
               </div>
