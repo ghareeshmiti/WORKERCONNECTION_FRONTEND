@@ -190,7 +190,7 @@ export default function Landing() {
               {/* Left hero content */}
               <div className="lg:col-span-6">
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-foreground leading-tight">
-                  One State, One Official Card for Identity and Access
+                  One State - One Card for Identity and Access
                 </h1>
 
                 <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-2xl">
