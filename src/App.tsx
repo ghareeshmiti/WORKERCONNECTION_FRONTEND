@@ -20,9 +20,11 @@ const WorkerSelfRegistration = lazy(() => import("@/pages/WorkerSelfRegistration
 const OverviewDashboard = lazy(() => import("@/pages/OverviewDashboard"));
 const WorkerDashboard = lazy(() => import("@/pages/WorkerDashboard"));
 const EstablishmentDashboard = lazy(() => import("@/pages/EstablishmentDashboard"));
+const EstablishmentDashboardRouter = lazy(() => import("@/pages/EstablishmentDashboardRouter"));
 const EstablishmentWorkers = lazy(() => import("@/pages/EstablishmentWorkers"));
 const DepartmentDashboard = lazy(() => import("@/pages/DepartmentDashboard"));
 const EstablishmentAttendance = lazy(() => import("@/pages/EstablishmentAttendance"));
+const EstablishmentAttendanceRouter = lazy(() => import("@/pages/EstablishmentAttendanceRouter"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const PublicWorkerProfile = lazy(() => import("@/pages/PublicWorkerProfile"));
 
@@ -76,9 +78,15 @@ const App = () => (
               } />
 
               {/* Protected Establishment routes */}
-              <Route path="/establishment/dashboard" element={
+              {/*<Route path="/establishment/dashboard" element={
                 <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
                   <EstablishmentDashboard />
+                </ProtectedRoute>
+              } /> */}
+
+              <Route path="/establishment/dashboard" element={
+                <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
+                  <EstablishmentDashboardRouter />
                 </ProtectedRoute>
               } />
 
@@ -88,6 +96,15 @@ const App = () => (
                   <EstablishmentAttendance />
                 </ProtectedRoute>
               } />
+              
+              {/* <Route
+                path="/establishment/attendance"
+                element={
+                  <ProtectedRoute allowedRoles={["ESTABLISHMENT_ADMIN"]}>
+                    <EstablishmentAttendanceRouter />
+                  </ProtectedRoute>
+                }
+              /> */}
 
               {/* Establishment Manage Workers Page */}
               <Route path="/establishment/workers" element={

@@ -24,41 +24,107 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUserContext = async (user: User): Promise<UserContext | null> => {
     try {
       const userId = user.id;
+      let roleFromDb: AppRole | undefined;
+      let profileRow: { department_id?: string | null; establishment_id?: string | null; worker_id?: string | null } | null = null;
+
+      try {
+        const { data: roleRow, error: roleErr } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (!roleErr && roleRow?.role) roleFromDb = roleRow.role as AppRole;
+
+        const { data: pRow, error: pErr } = await supabase
+          .from("profiles")
+          .select("department_id, establishment_id, worker_id")
+          .eq("auth_user_id", userId)
+          .maybeSingle();
+
+        if (!pErr && pRow) profileRow = pRow as any;
+      } catch (e) {
+        console.warn("DB role/profile lookup failed, will fallback to metadata", e);
+      }
       // 1. Get Role from Metadata
-      let rawRole = (user.user_metadata?.role || user.app_metadata?.role) as string;
-      let role: AppRole | undefined;
+      // let rawRole = (user.user_metadata?.role || user.app_metadata?.role) as string;
+      // let role: AppRole | undefined;
 
-      // Normalize Role
-      if (rawRole === 'department') role = 'DEPARTMENT_ADMIN';
-      else if (rawRole === 'establishment') role = 'ESTABLISHMENT_ADMIN';
-      else if (rawRole === 'worker') role = 'WORKER';
-      else if (rawRole === 'DEPARTMENT_ADMIN' || rawRole === 'ESTABLISHMENT_ADMIN' || rawRole === 'WORKER') role = rawRole as AppRole;
+      // // Normalize Role
+      // if (rawRole === 'department') role = 'DEPARTMENT_ADMIN';
+      // else if (rawRole === 'establishment') role = 'ESTABLISHMENT_ADMIN';
+      // else if (rawRole === 'worker') role = 'WORKER';
+      // else if (rawRole === 'DEPARTMENT_ADMIN' || rawRole === 'ESTABLISHMENT_ADMIN' || rawRole === 'WORKER') role = rawRole as AppRole;
 
-      if (!role) {
-        // Fallback: Check if in departments table
-        const { data: dept } = await supabase.from('departments').select('id').eq('id', userId).maybeSingle();
-        if (dept) role = 'DEPARTMENT_ADMIN';
-      }
+      // if (!role) {
+      //   // Fallback: Check if in departments table
+      //   const { data: dept } = await supabase.from('departments').select('id').eq('id', userId).maybeSingle();
+      //   if (dept) role = 'DEPARTMENT_ADMIN';
+      // }
 
-      if (!role) {
-        console.warn('No role found for user');
-        return null;
-      }
+      // if (!role) {
+      //   console.warn('No role found for user');
+      //   return null;
+      // }
+
+      // 1. Try New System (user_roles + profiles) FIRST
+        // ✅ Resolve role (DB first, then old metadata, then department-id fallback)
+let role: AppRole | undefined = roleFromDb;
+
+if (!role) {
+  let rawRole = (user.user_metadata?.role || user.app_metadata?.role) as string;
+
+  if (rawRole === "department") role = "DEPARTMENT_ADMIN";
+  else if (rawRole === "establishment") role = "ESTABLISHMENT_ADMIN";
+  else if (rawRole === "worker") role = "WORKER";
+  else if (rawRole === "DEPARTMENT_ADMIN" || rawRole === "ESTABLISHMENT_ADMIN" || rawRole === "WORKER")
+    role = rawRole as AppRole;
+}
+
+if (!role) {
+  // Old fallback: userId equals departments.id
+  const { data: dept } = await supabase.from("departments").select("id").eq("id", userId).maybeSingle();
+  if (dept) role = "DEPARTMENT_ADMIN";
+}
+
+if (!role) {
+  console.warn("No role found for user");
+  return null;
+}
+
 
       let profileData: any = {};
 
       // 2. Fetch Profile based on Role
+      // if (role === 'DEPARTMENT_ADMIN') {
+      //   const { data: deptData, error: deptError } = await supabase
+      //     .from('departments')
+      //     .select('*')
+      //     .eq('id', userId)
+      //     .maybeSingle();
+
+      //   if (deptError) {
+      //     console.error('Error fetching department profile:', deptError);
+      //     // Don't return null, maybe just missing profile data
+      //   }
+      //   if (deptData) {
+      //     profileData = {
+      //       department_id: deptData.id,
+      //       full_name: deptData.name,
+      //       district: deptData.district,
+      //     };
+      //   }
+      // } 
       if (role === 'DEPARTMENT_ADMIN') {
-        const { data: deptData, error: deptError } = await supabase
+        // Prefer profiles mapping
+        let departmentId = profileRow?.department_id || userId;
+
+        const { data: deptData } = await supabase
           .from('departments')
           .select('*')
-          .eq('id', userId)
+          .eq('id', departmentId)
           .maybeSingle();
 
-        if (deptError) {
-          console.error('Error fetching department profile:', deptError);
-          // Don't return null, maybe just missing profile data
-        }
         if (deptData) {
           profileData = {
             department_id: deptData.id,
@@ -66,31 +132,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             district: deptData.district,
           };
         }
-      } else if (role === 'ESTABLISHMENT_ADMIN') {
-        const { data: estData, error: estError } = await supabase
-          .from('establishments')
-          .select('id, name')
-          .eq('id', userId)
-          .maybeSingle();
+      } else if (role === "ESTABLISHMENT_ADMIN") {
+      const establishmentId = profileRow?.establishment_id || userId;
 
-        if (estError) {
-          console.error('Error fetching establishment profile:', estError);
-        }
-        if (estData) {
-          profileData = {
-            establishment_id: estData.id,
-            full_name: estData.name,
-            district: undefined
-          };
-        } else {
-          // Fallback if record missing but role exists? 
-          // Usually implies sync issue, but for now allow ID to populate
-          profileData = {
-            establishment_id: userId,
-            full_name: user.email // Fallback name
-          };
-        }
-      } else if (role === 'WORKER') {
+      const { data: estData, error: estError } = await supabase
+        .from("establishments")
+        .select("id, name, department_id")
+        .eq("id", establishmentId)
+        .maybeSingle();
+
+      if (estError) console.error("Error fetching establishment profile:", estError);
+
+      if (estData) {
+        profileData = {
+          establishment_id: estData.id,
+          department_id: estData.department_id, // ✅ critical for RTC routing
+          full_name: estData.name,
+          district: undefined,
+        };
+      } else {
+        profileData = {
+          establishment_id: establishmentId,
+          full_name: user.email,
+        };
+      }
+    } else if (role === 'WORKER') {
         const meta = user.user_metadata || {};
         profileData = {
           worker_id: meta.worker_id, // Default to string ID
