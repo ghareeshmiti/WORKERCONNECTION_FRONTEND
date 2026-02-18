@@ -5,8 +5,15 @@ const API_URL = `${BASE_URL.replace(/\/$/, '')}/api`;
 
 const handleResponse = async (res: Response) => {
     if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || data.details || 'Request failed');
+        let errorMsg = 'Request failed';
+        try {
+            const data = await res.json();
+            errorMsg = data.error || data.details || errorMsg;
+        } catch (e) {
+            // Response was not JSON (e.g. 404 HTML, 500 Text)
+            errorMsg = `Server Error (${res.status}): ${res.statusText}`;
+        }
+        throw new Error(errorMsg);
     }
     return res.json();
 };
@@ -16,7 +23,7 @@ const handleResponse = async (res: Response) => {
 export const registerUser = async (username: string) => {
     try {
         const options = await registerBegin(username);
-        const attResp = await startRegistration(options);
+        const attResp = await startRegistration({ optionsJSON: options });
         const verify = await registerFinish(username, attResp);
         return verify.verified;
     } catch (e) {
@@ -47,9 +54,11 @@ export const registerFinish = async (username: string, body: any) => {
 export const authenticateUser = async (username: string, action: string | null = null, location: string = 'Unknown') => {
     try {
         const options = await loginBegin(username);
-        const authResp = await startAuthentication(options);
+        console.log('[WebAuthn] login options from server:', JSON.stringify({ rpId: options.rpId, allowCredentials: options.allowCredentials?.length, timeout: options.timeout }));
+        const authResp = await startAuthentication({ optionsJSON: options });
         return await loginFinish(username, authResp, action, location);
     } catch (e) {
+        console.error('[WebAuthn] auth failed:', e);
         throw e;
     }
 }
@@ -137,6 +146,15 @@ export const rejectWorker = async (workerId: string, reason: string) => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason }),
+    });
+    return handleResponse(res);
+};
+
+export const saveTicket = async (ticketDetails: any) => {
+    const res = await fetch(`${API_URL}/conductor/tickets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ticketDetails),
     });
     return handleResponse(res);
 };

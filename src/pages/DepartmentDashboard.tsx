@@ -72,11 +72,21 @@ import {
   useDepartmentEstablishmentsList,
 } from "@/hooks/use-attendance-reports";
 
+
+import RTCDepartmentDashboard from "./RTCDepartmentDashboard";
+
 export default function DepartmentDashboard() {
   const queryClient = useQueryClient();
+  const { userContext, signOut } = useAuth();
+
+  // Redirect to RTC Dashboard if Department is RTC
+  if (userContext?.departmentCode === 'RTC') {
+    return <RTCDepartmentDashboard />;
+  }
+
   // Enable real-time updates
   useDepartmentDashboardRealtime();
-  const { userContext, signOut } = useAuth();
+
   const navigate = useNavigate();
 
   // Default to last 7 days for charts
@@ -402,14 +412,16 @@ export default function DepartmentDashboard() {
 
         {/* KPI Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="border-l-4 border-l-orange-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Establishments</CardTitle>
-              <Building2 className="w-4 h-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Establishments</CardTitle>
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Building2 className="w-4 h-4 text-orange-600" />
+              </div>
             </CardHeader>
             <CardContent>
               {statsLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stats?.establishments || 0}</div>
@@ -419,14 +431,28 @@ export default function DepartmentDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-blue-500 shadow-sm">
+            {/* Kept blue for contrast or change to orange? User said "this color themes". 
+                The screenshot shows "Total Workers" with a gray icon. 
+                But let's make it consistent or distinct. 
+                Let's use Orange for main, maybe Slate/Blue for others?
+                Actually, "One State - One Card" is Orange/Green/White.
+                Tricolor logic: Orange, White, Green.
+                Establishments: Orange.
+                Workers: Blue (or maybe Slate).
+                Present: Green.
+                Attendance: Orange or Red?
+                Let's stick to Orange/Slate/Green palette.
+             */}
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Workers</CardTitle>
-              <Users className="w-4 h-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Workers</CardTitle>
+              <div className="p-2 bg-slate-100 rounded-lg">
+                <Users className="w-4 h-4 text-slate-600" />
+              </div>
             </CardHeader>
             <CardContent>
               {statsLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stats?.totalWorkers || 0}</div>
@@ -436,34 +462,38 @@ export default function DepartmentDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-green-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Present Today</CardTitle>
-              <UserCheck className="w-4 h-4 text-success" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Present Today</CardTitle>
+              <div className="p-2 bg-green-100 rounded-lg">
+                <UserCheck className="w-4 h-4 text-green-600" />
+              </div>
             </CardHeader>
             <CardContent>
               {statsLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
               ) : (
                 <>
-                  <div className="text-2xl font-bold text-success">{stats?.presentToday || 0}</div>
+                  <div className="text-2xl font-bold text-green-700">{stats?.presentToday || 0}</div>
                   <p className="text-xs text-muted-foreground">Workers checked in</p>
                 </>
               )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-l-4 border-l-orange-500 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
-              <TrendingUp className="w-4 h-4 text-primary" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Attendance Rate</CardTitle>
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <TrendingUp className="w-4 h-4 text-orange-600" />
+              </div>
             </CardHeader>
             <CardContent>
               {statsLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
               ) : (
                 <>
-                  <div className="text-2xl font-bold">{stats?.attendanceRate || 0}%</div>
+                  <div className="text-2xl font-bold text-orange-700">{stats?.attendanceRate || 0}%</div>
                   <p className="text-xs text-muted-foreground">Today's rate</p>
                 </>
               )}
@@ -475,16 +505,25 @@ export default function DepartmentDashboard() {
 
         {/* Tabbed Sections */}
         <Tabs defaultValue="workers" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="workers" className="flex items-center gap-2">
+          <TabsList className="mb-4 bg-slate-100 p-1">
+            <TabsTrigger
+              value="workers"
+              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-orange-700 data-[state=active]:shadow-sm transition-all"
+            >
               <Users className="w-4 h-4" />
               Worker Admin
             </TabsTrigger>
-            <TabsTrigger value="attendance" className="flex items-center gap-2">
+            <TabsTrigger
+              value="attendance"
+              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-orange-700 data-[state=active]:shadow-sm transition-all"
+            >
               <FileText className="w-4 h-4" />
               Detailed Attendance
             </TabsTrigger>
-            <TabsTrigger value="establishments" className="flex items-center gap-2">
+            <TabsTrigger
+              value="establishments"
+              className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-orange-700 data-[state=active]:shadow-sm transition-all"
+            >
               <Building2 className="w-4 h-4" />
               Establishments Overview
             </TabsTrigger>
@@ -552,7 +591,7 @@ export default function DepartmentDashboard() {
                   />
                   {reportLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
                     </div>
                   ) : (
                     <AttendanceReportTable data={reportData || []} showEstablishment showDepartment={false} />
@@ -589,7 +628,7 @@ export default function DepartmentDashboard() {
               <CardContent>
                 {estLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
                   </div>
                 ) : sortedEstablishments && sortedEstablishments.length > 0 ? (
                   <div className="overflow-x-auto">

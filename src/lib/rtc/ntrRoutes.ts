@@ -30,9 +30,21 @@ export const NTR_ROUTES: RTCRoute[] = [
       { id: "maj", name: "Majestic" },
     ],
   },
+  {
+    code: "GNT-VJA",
+    name: "Guntur - Vijayawada Express",
+    stops: [
+      { id: "gnt", name: "Guntur" },
+      { id: "amr", name: "Amaravati" },
+      { id: "mng", name: "Mangalagiri" },
+      { id: "ten", name: "Tenali" },
+      { id: "vja", name: "Vijayawada" },
+    ],
+  }
 ];
 
 export const NTR_BUSES: RTCBus[] = [
   { busNo: "AP-31-Z-1234", routeCode: "NTR-500D" },
   { busNo: "AP-39-AA-9090", routeCode: "NTR-PL" },
+  { busNo: "AP07-1234", routeCode: "GNT-VJA" },
 ];

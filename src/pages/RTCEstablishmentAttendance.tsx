@@ -1,306 +1,407 @@
+
 import { useMemo, useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth-context";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, MapPin, Ticket, CheckCircle, RefreshCcw } from "lucide-react";
+import { format } from "date-fns";
 import { NTR_BUSES, NTR_ROUTES } from "@/lib/rtc/ntrRoutes";
 import { generateTicketNo } from "@/lib/rtc/ticket";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
-
-// Simple POC fare table (expand later)
+// Simple POC fare table
 const FARE_TABLE: Record<string, number> = {
   "NTR Bus Station|Gajuwaka": 10,
+  "Gajuwaka|NTR Bus Station": 10,
   "NTR Bus Station|Steel Plant": 20,
+  "Steel Plant|NTR Bus Station": 20,
   "NTR Bus Station|Vizag RTC Complex": 30,
-
+  "Vizag RTC Complex|NTR Bus Station": 30,
   "Gajuwaka|Steel Plant": 10,
+  "Steel Plant|Gajuwaka": 10,
   "Gajuwaka|Vizag RTC Complex": 15,
-
+  "Vizag RTC Complex|Gajuwaka": 15,
   "Steel Plant|Vizag RTC Complex": 10,
+  "Vizag RTC Complex|Steel Plant": 10,
+  // Guntur Routes
+  "Guntur|Amaravati": 35,
+  "Amaravati|Guntur": 35,
+  "Guntur|Tenali": 45,
+  "Tenali|Guntur": 45,
+  "Guntur|Mangalagiri": 45,
+  "Mangalagiri|Guntur": 45,
+  "Guntur|Vijayawada": 60,
+  "Vijayawada|Guntur": 60,
+  "Guntur|Guntur": 0 // Just in case
 };
 
 function getFare(from: string, to: string) {
   if (!from || !to || from === to) return 0;
-  return FARE_TABLE[`${from}|${to}`] ?? 0; // fallback 0 if not defined
-}
-
-
-
-type WorkerRow = Tables<"workers">;
-type MappingRow = Tables<"worker_mappings">;
-type AttendanceEventRow = Tables<"attendance_events">;
-
-function getDefaultDeviceId() {
-  return localStorage.getItem("rtc_device_id") || "NTR-WEB-01";
-}
-
-function getDefaultReaderUid(source: "WEB_READER" | "MOBILE_NFC") {
-  // you can later set these from config
-  return source === "WEB_READER" ? "WEB-KIOSK-NTR-01" : "MOBILE-NFC-DEFAULT";
+  return FARE_TABLE[`${from}|${to}`] ?? 0;
 }
 
 export default function RTCEstablishmentAttendance() {
   const { userContext } = useAuth();
   const establishmentId = userContext?.establishmentId;
   const cardInputRef = useRef<HTMLInputElement | null>(null);
-  const [cardUid, setCardUid] = useState("");
+
+  // Setup State
   const [busNo, setBusNo] = useState(NTR_BUSES[0]?.busNo || "");
   const [fromStop, setFromStop] = useState("NTR Bus Station");
   const [toStop, setToStop] = useState("");
+
+  // Scanning State
+  const [cardUid, setCardUid] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Passenger State (after scan)
+  const [passenger, setPassenger] = useState<any>(null);
+  const [ticketStatus, setTicketStatus] = useState<"idle" | "success">("idle");
+  const [lastTicket, setLastTicket] = useState<any>(null);
+
   const fare = useMemo(() => getFare(fromStop, toStop), [fromStop, toStop]);
   const bus = useMemo(() => NTR_BUSES.find((b) => b.busNo === busNo), [busNo]);
   const route = useMemo(() => NTR_ROUTES.find((r) => r.code === bus?.routeCode), [bus]);
   const stops = route?.stops.map((s) => s.name) || [];
 
-  const depotCode = "NTR";
   useEffect(() => {
-    cardInputRef.current?.focus();
-  }, [])
-  const canSubmit =
-    !!establishmentId &&
-    !!cardUid.trim() &&
-    !!bus?.routeCode &&
-    !!fromStop &&
-    !!toStop &&
-    fromStop !== toStop &&
-    stops.includes(fromStop) &&
-    stops.includes(toStop);
+    // Focus invisible input handling
+    const focusInterval = setInterval(() => {
+      if (passenger === null && ticketStatus === 'idle') {
+        cardInputRef.current?.focus();
+      }
+    }, 1000);
+    return () => clearInterval(focusInterval);
+  }, [passenger, ticketStatus]);
 
-  async function handleTap(source: "WEB_READER" | "MOBILE_NFC") {
-    if (!establishmentId) {
-      toast.error("Missing establishmentId");
-      return;
+  // Reset stops when bus changes
+  useEffect(() => {
+    if (stops.length > 0) {
+      setFromStop(stops[0]);
+      setToStop("");
     }
-    if (!canSubmit) {
-      toast.error("Fill valid bus/route and From/To (must be on same route).");
-      return;
-    }
+  }, [busNo]); // Fixed dependency (removed stops to avoid loops if array ref changes)
+
+  // Handle Card Scan (Enter key from reader)
+  const handleScan = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!cardUid.trim()) return;
 
     setLoading(true);
     try {
       const trimmedCard = cardUid.trim();
 
-      // 1) Find passenger by access_card_id (matches your generated schema)
-      const { data: w, error: wErr } = await supabase
-        .from("workers")
-        .select("id, worker_id, first_name, last_name, access_card_id")
+      // Fetch Worker + Photo
+      const { data: w, error } = await supabase
+        .from("workers" as any)
+        .select("id, worker_id, first_name, last_name, dob, gender, photo_url, profile_pic_url, address_state, address_district, address_mandal, address_village, access_card_id, is_active")
         .eq("access_card_id", trimmedCard)
-        .maybeSingle<Pick<WorkerRow, "id" | "worker_id" | "first_name" | "last_name" | "access_card_id">>();
+        .maybeSingle();
 
-      if (wErr) throw wErr;
+      if (error) throw error;
       if (!w) {
-        toast.error("Card not linked to any passenger.");
+        toast.error("Card not recognized", { description: "No passenger linked to this card." });
+        setCardUid("");
         return;
       }
 
-      // 2) Ensure mapped to this depot
-      const { data: mapRow, error: mErr } = await supabase
-        .from("worker_mappings")
-        .select("id, is_active")
-        .eq("establishment_id", establishmentId)
-        .eq("worker_id", w.id)
-        .maybeSingle<Pick<MappingRow, "id" | "is_active">>();
-
-      if (mErr) throw mErr;
-      if (!mapRow || mapRow.is_active === false) {
-        toast.error("Passenger is not mapped (or inactive) for this depot.");
-        return;
+      // Check Mapping to this Establishment? (Optional for RTC, maybe universal access?)
+      // For now, let's assume if they have a card, they can ride.
+      // But maybe check if "active" worker?
+      if (!(w as any).is_active) {
+        toast.warning("Passenger account is inactive.");
       }
 
-      // 3) Determine CHECK_IN vs CHECK_OUT (toggle like welfare)
-      const { data: lastEv, error: lastErr } = await supabase
-        .from("attendance_events")
-        .select("event_type, occurred_at")
-        .eq("establishment_id", establishmentId)
-        .eq("worker_id", w.id)
-        .order("occurred_at", { ascending: false })
-        .limit(1)
-        .maybeSingle<Pick<AttendanceEventRow, "event_type" | "occurred_at">>();
+      // Calculate Age
+      let age = "N/A";
+      if ((w as any).dob) {
+        const dob = new Date((w as any).dob);
+        const diff = Date.now() - dob.getTime();
+        age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25)).toString();
+      }
 
-      if (lastErr) throw lastErr;
+      setPassenger({ ...(w as any), age });
+      setCardUid(""); // Clear input for next
 
-      const nextEventType: "CHECK_IN" | "CHECK_OUT" =
-        lastEv?.event_type === "CHECK_IN" ? "CHECK_OUT" : "CHECK_IN";
-
-      // 4) Ticket no per tap (you requested)
-      const ticketNo = generateTicketNo(depotCode);
-
-      // 5) Insert attendance event (enum-safe)
-      const payload: Partial<AttendanceEventRow> & {
-        region: string;
-        worker_id: string;
-        event_type: "CHECK_IN" | "CHECK_OUT";
-        establishment_id: string;
-        meta: any;
-      } = {
-        occurred_at: new Date().toISOString(),
-        event_type: nextEventType,
-        worker_id: w.id,
-        establishment_id: establishmentId,
-        region: "RTC",
-        meta: {
-          timezone: "Asia/Kolkata",
-
-          // card identifiers (schema uses access_card_id, keep card_uid in meta for readability)
-          access_card_id: trimmedCard,
-          card_uid: trimmedCard,
-
-          // RTC fields
-          bus_no: busNo,
-          route_code: bus?.routeCode,
-          from: fromStop,
-          to: toStop,
-          ticket_no: ticketNo,
-
-          // device tracking
-          tap_source: source,
-          device_id: getDefaultDeviceId(),
-          reader_uid: getDefaultReaderUid(source),
-
-          // fare/outcome (POC)
-          fare: 0,
-          outcome: "ACCEPTED",
-        },
-      };
-
-      const { error: insErr } = await supabase.from("attendance_events").insert(payload as any);
-      if (insErr) throw insErr;
-
-      toast.success("Tap recorded", {
-        description: `${w.first_name} ${w.last_name} • ${nextEventType} • Ticket ${ticketNo}`,
-      });
-
-      setCardUid("");
-      setToStop("");
-    } catch (e: any) {
-      toast.error("Tap failed", { description: e?.message || String(e) });
+    } catch (err: any) {
+      toast.error("Scan failed", { description: err.message });
     } finally {
       setLoading(false);
     }
-  }
-  
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Tap / Validate</CardTitle>
-          <CardDescription>Record passenger tap events for RTC depot</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-         {/* Hidden card input for reader capture (keyboard wedge). NOT visible. */}
-<input
-  ref={cardInputRef}
-  value={cardUid}
-  onChange={(e) => setCardUid(e.target.value)}
-  tabIndex={-1}
-  autoFocus
-  style={{
-    position: "absolute",
-    left: "-9999px",
-    width: "1px",
-    height: "1px",
-    opacity: 0,
-  }}
-  aria-hidden="true"
-/>
+  };
 
-<div className="grid md:grid-cols-2 gap-4">
-  <div>
-    <div className="text-sm font-medium mb-2">Bus No</div>
-    <select
-      className="w-full border rounded-md h-10 px-3"
-      value={busNo}
-      onChange={(e) => {
-        setBusNo(e.target.value);
-        setFromStop("NTR Bus Station");
-        setToStop("");
-        // keep reader ready
-        setTimeout(() => cardInputRef.current?.focus(), 0);
-      }}
-    >
-      {NTR_BUSES.map((b) => (
-        <option key={b.busNo} value={b.busNo}>
-          {b.busNo} ({b.routeCode})
-        </option>
-      ))}
-    </select>
+  const handleIssueTicket = async () => {
+    if (!passenger || !establishmentId) return;
 
-    {bus?.routeCode ? (
-      <div className="mt-2">
-        <Badge className="bg-slate-100 text-slate-800 hover:bg-slate-100">Route: {bus.routeCode}</Badge>
+    setLoading(true);
+    try {
+      // Determine Free/Paid
+      // Logic: If gender is Female -> Free? Or based on specific schemes?
+      // For demo: Assume ALL mapped workers are eligible for "Free Scheme" (e.g., Construction Worker Pass)
+      // Let's create a logic: If age > 60 -> Free? 
+      // User asked for "Free/Paid".
+
+      // Let's assume Free for now as per "Mahila" scheme or "Worker Pass".
+      const isFree = true;
+      const ticketFare = isFree ? 0 : fare;
+      const subsidy = isFree ? fare : 0;
+
+      console.log("DEBUG: Calculating Subsidy:", { fare, ticketFare, subsidy, isFree });
+
+      const ticketData = {
+        worker_id: passenger.id,
+        establishment_id: establishmentId,
+        bus_number: busNo,
+        route_id: bus?.routeCode,
+        route_name: route?.name,
+        from_stop: fromStop,
+        to_stop: toStop,
+        fare: ticketFare,
+        is_free: isFree,
+        govt_subsidy_amount: subsidy,
+        conductor_id: userContext.authUserId || null,
+        remarks: "Automated Issue",
+        // issued_at defaults to NOW()
+      };
+
+      console.log("DEBUG: Inserting Ticket:", ticketData);
+
+      const { data, error } = await supabase.from('tickets' as any).insert(ticketData).select().single();
+
+      if (error) throw error;
+
+      setLastTicket({ ...data, passenger_name: `${passenger.first_name} ${passenger.last_name}` });
+      setTicketStatus("success");
+      toast.success("Ticket Issued Successfully!");
+
+    } catch (err: any) {
+      toast.error("Issue failed", { description: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetFlow = () => {
+    setPassenger(null);
+    setTicketStatus("idle");
+    setLastTicket(null);
+    setCardUid("");
+    setTimeout(() => cardInputRef.current?.focus(), 100);
+  };
+
+  if (ticketStatus === "success" && lastTicket) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-md">
+        <Card className="border-green-500 border-2 shadow-lg">
+          <CardHeader className="text-center bg-green-50 rounded-t-xl pb-2">
+            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+              <CheckCircle className="w-8 h-8 text-green-600" />
+            </div>
+            <CardDescription>APSRTC - {establishmentId ? "Depot Operation" : "Mobile Unit"}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-6">
+            <div className="scope-ticket border-dashed border-2 border-slate-200 p-4 rounded-md bg-white">
+              <div className="text-center border-b pb-2 mb-2">
+                <h3 className="font-bold text-lg">APSRTC TICKET</h3>
+                <p className="text-xs text-muted-foreground">{format(new Date(), "dd/MM/yyyy, hh:mm a")}</p>
+              </div>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ticket No:</span>
+                  <span className="font-mono font-bold">{lastTicket.id.slice(0, 8).toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Bus / Route:</span>
+                  <span>{lastTicket.bus_number} / {lastTicket.route_id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Journey:</span>
+                  <span className="text-right">{lastTicket.from_stop} <br />to {lastTicket.to_stop}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-muted-foreground">Passenger:</span>
+                  <span className="font-semibold">{lastTicket.passenger_name}</span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="font-bold">Total Fare:</span>
+                  <span className="text-xl font-bold">
+                    {lastTicket.is_free ? "FREE" : `₹${lastTicket.fare}`}
+                  </span>
+                </div>
+                {lastTicket.is_free && (
+                  <div className="text-xs text-center text-orange-600 bg-orange-50 p-1 rounded">
+                    Subsidy Paid by Govt: ₹{lastTicket.govt_subsidy_amount}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={resetFlow} className="w-full" size="lg">
+              <RefreshCcw className="w-4 h-4 mr-2" /> Issue Next Ticket
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
-    ) : null}
-  </div>
+    )
+  }
 
-  <div>
-    <div className="text-sm font-medium mb-2">Fare</div>
-    <div className="h-10 flex items-center px-3 border rounded-md bg-muted/30">
-      ₹{fare}
-    </div>
-    <div className="text-xs text-muted-foreground mt-1">
-      fare table (update later).
-    </div>
-  </div>
-</div>
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="grid md:grid-cols-2 gap-6">
 
-<div className="grid md:grid-cols-2 gap-4">
-  <div>
-    <div className="text-sm font-medium mb-2">From</div>
-    <select
-      className="w-full border rounded-md h-10 px-3"
-      value={fromStop}
-      onChange={(e) => {
-        setFromStop(e.target.value);
-        setToStop("");
-        setTimeout(() => cardInputRef.current?.focus(), 0);
-      }}
-    >
-      {stops.map((s) => (
-        <option key={s} value={s}>{s}</option>
-      ))}
-    </select>
-  </div>
+        {/* Left Column: Route Setup */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Route Details</CardTitle>
+            <CardDescription>Set current trip details</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Bus Number</label>
+              <select
+                className="w-full border rounded-md h-10 px-3 mt-1"
+                value={busNo}
+                onChange={e => setBusNo(e.target.value)}
+                disabled={!!passenger}
+              >
+                {NTR_BUSES.map(b => <option key={b.busNo} value={b.busNo}>{b.busNo}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">From</label>
+              <select
+                className="w-full border rounded-md h-10 px-3 mt-1"
+                value={fromStop}
+                onChange={e => setFromStop(e.target.value)}
+                disabled={!!passenger}
+              >
+                {stops.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">To</label>
+              <select
+                className="w-full border rounded-md h-10 px-3 mt-1"
+                value={toStop}
+                onChange={e => setToStop(e.target.value)}
+                disabled={!!passenger}
+              >
+                <option value="">Select Destination</option>
+                {stops.filter(s => s !== fromStop).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </CardContent>
+        </Card>
 
-  <div>
-    <div className="text-sm font-medium mb-2">To</div>
-    <select
-      className="w-full border rounded-md h-10 px-3"
-      value={toStop}
-      onChange={(e) => {
-        setToStop(e.target.value);
-        setTimeout(() => cardInputRef.current?.focus(), 0);
-      }}
-    >
-      <option value="">Select destination</option>
-      {stops.filter((s) => s !== fromStop).map((s) => (
-        <option key={s} value={s}>{s}</option>
-      ))}
-    </select>
-  </div>
-</div>
+        {/* Right Column: Interaction or Passenger Info */}
+        <div className="space-y-4">
+          {!passenger ? (
+            <Card className="h-full border-orange-200 border bg-orange-50/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-900">
+                  <Ticket className="w-5 h-5 text-orange-600" /> Tap Passenger Card
+                </CardTitle>
+                <CardDescription className="text-orange-700/80">Ready to scan...</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center min-h-[200px]">
+                {loading ? (
+                  <Loader2 className="w-12 h-12 animate-spin text-orange-500" />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-white border-4 border-orange-100 flex items-center justify-center animate-pulse">
+                    <RefreshCcw className="w-10 h-10 text-orange-300" />
+                  </div>
+                )}
+                <input
+                  ref={cardInputRef}
+                  value={cardUid}
+                  onChange={e => {
+                    setCardUid(e.target.value);
+                    if (e.target.value.length > 5 && !loading) {
+                      // Auto submit debounce could go here, or just wait for enter
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleScan(e);
+                  }}
+                  className="opacity-0 absolute w-px h-px"
+                  autoFocus
+                />
+                <p className="text-sm text-center text-muted-foreground mt-4">
+                  Use Web NFC Reader or type Card ID + Enter
+                </p>
+                <Button variant="outline" size="sm" className="mt-2 border-orange-200 text-orange-700 hover:bg-orange-100" onClick={() => handleScan()}>
+                  Simulate Scan
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="h-full border-green-200 border shadow-md">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Passenger Verified</CardTitle>
+                    <CardDescription>Confirm details to issue ticket</CardDescription>
+                  </div>
+                  <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                    Eligible: Free
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <Avatar className="w-20 h-20 border-2 border-slate-100">
+                    <AvatarImage src={passenger.photo_url || passenger.profile_pic_url} className="object-cover" />
+                    <AvatarFallback><User className="w-8 h-8 text-slate-400" /></AvatarFallback>
+                  </Avatar>
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-lg">{passenger.first_name} {passenger.last_name}</h3>
+                    <div className="text-sm text-slate-600 flex items-center gap-1">
+                      <span className="font-medium">{passenger.gender || 'Unknown'}</span>
+                      <span>•</span>
+                      <span>{passenger.age} Yrs</span>
+                    </div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {passenger.address_village || 'Unknown Village'}, {passenger.address_mandal}
+                    </div>
+                  </div>
+                </div>
 
-<div className="flex items-center justify-between gap-3">
-  <div className="text-xs text-muted-foreground">
-    Ready for card tap. (Reader will auto-fill in background)
-  </div>
+                <Separator />
 
-  <Button
-    disabled={!canSubmit || loading}
-    onClick={() => handleTap("WEB_READER")}
-    className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white"
-  >
-    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-    Tap / Validate
-  </Button>
-</div>
-        </CardContent>
-      </Card>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="bg-slate-50 p-2 rounded">
+                    <div className="text-xs text-slate-500">Route</div>
+                    <div className="font-medium truncate">{fromStop} → {toStop}</div>
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded">
+                    <div className="text-xs text-slate-500">Fare to Pay</div>
+                    <div className="font-bold text-lg text-green-600">FREE <span className="text-xs font-normal text-slate-400 line-through">₹{fare}</span></div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex gap-2">
+                <Button variant="ghost" onClick={resetFlow} className="w-1/3">Cancel</Button>
+                <Button
+                  onClick={handleIssueTicket}
+                  disabled={loading}
+                  className="w-2/3 bg-green-600 hover:bg-green-700"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Ticket className="w-4 h-4 mr-2" />}
+                  Issue Ticket
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -47,21 +47,49 @@ export function useRTCEstablishment(establishmentId?: string) {
 }
 
 export function useRTCTapEvents(establishmentId?: string, limit = 50) {
+
   return useQuery({
     queryKey: ["rtc-taps", establishmentId, limit],
     queryFn: async () => {
       if (!establishmentId) return [];
-      const { data, error } = await supabase
-        .from("attendance_events")
-        .select("id, occurred_at, event_type, worker_id, establishment_id, region, meta")
+
+      // Fetch from tickets table
+      const { data, error } = await (supabase
+        .from("tickets" as any)
+        .select("*, workers(first_name, last_name)") // Fetch valid columns
         .eq("establishment_id", establishmentId)
-        .order("occurred_at", { ascending: false })
-        .limit(limit);
+        .order("issued_at", { ascending: false })
+        .limit(limit));
+
       if (error) throw error;
-      return (data || []) as RTCTapRow[];
+
+      // Map to RTCTapRow format for compatibility
+      const tickets = (data || []) as any[];
+      return tickets.map(t => ({
+        id: String(t.id), // Ensure string for UI keys
+        occurred_at: t.issued_at,
+        event_type: "TICKET_ISSUED",
+        worker_id: t.worker_id,
+        establishment_id: t.establishment_id,
+        region: "Andhra Pradesh",
+        meta: {
+          bus_no: t.bus_number,
+          route: t.route_name || t.route_id, // Use route_name if available
+          from: t.from_stop,
+          to: t.to_stop,
+          fare: t.fare,
+          govt_subsidy: t.govt_subsidy_amount, // Added subsidy
+          remarks: t.remarks, // Added remarks
+          worker_name: t.workers ? `${t.workers.first_name || ''} ${t.workers.last_name || ''}`.trim() : "Unknown", // Construct name
+          is_free: t.is_free,
+          outcome: "Accepted", // Tickets are always successful if in DB
+          ticket_no: t.ticket_id || String(t.id), // Use ticket_id column if available
+          scheme: t.is_free ? (t.remarks || "Govt Scheme") : "Standard"
+        }
+      })) as RTCTapRow[];
     },
     enabled: !!establishmentId,
-    refetchInterval: 4000, // POC realtime-ish without changing backend
+    refetchInterval: 4000,
   });
 }
 
@@ -101,15 +129,34 @@ export function useRTCPassengerTrips(establishmentId?: string, passengerWorkerUu
     queryKey: ["rtc-passenger-trips", establishmentId, passengerWorkerUuid, limit],
     queryFn: async () => {
       if (!establishmentId || !passengerWorkerUuid) return [];
-      const { data, error } = await supabase
-        .from("attendance_events")
-        .select("id, occurred_at, event_type, worker_id, establishment_id, region, meta")
+
+      const { data, error } = await (supabase
+        .from("tickets" as any)
+        .select("*")
         .eq("establishment_id", establishmentId)
         .eq("worker_id", passengerWorkerUuid)
-        .order("occurred_at", { ascending: false })
-        .limit(limit);
+        .order("issued_at", { ascending: false })
+        .limit(limit));
+
       if (error) throw error;
-      return data || [];
+
+      return (data || []).map((t: any) => ({
+        id: t.id,
+        occurred_at: t.issued_at,
+        event_type: "TICKET_ISSUED",
+        worker_id: t.worker_id,
+        establishment_id: t.establishment_id,
+        region: "Andhra Pradesh",
+        meta: {
+          bus_no: t.bus_number,
+          route: t.route_id,
+          from: t.from_stop,
+          to: t.to_stop,
+          fare: t.fare,
+          outcome: "Accepted",
+          ticket_no: t.id.slice(0, 8).toUpperCase()
+        }
+      })) as RTCTapRow[];
     },
     enabled: !!establishmentId && !!passengerWorkerUuid,
   });

@@ -27,6 +27,7 @@ const EstablishmentAttendance = lazy(() => import("@/pages/EstablishmentAttendan
 const EstablishmentAttendanceRouter = lazy(() => import("@/pages/EstablishmentAttendanceRouter"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const PublicWorkerProfile = lazy(() => import("@/pages/PublicWorkerProfile"));
+const ConductorDashboard = lazy(() => import("@/pages/ConductorDashboard"));
 
 function PageLoader() {
   return (
@@ -44,7 +45,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <Suspense fallback={<PageLoader />}>
             <Routes>
@@ -96,7 +97,7 @@ const App = () => (
                   <EstablishmentAttendance />
                 </ProtectedRoute>
               } />
-              
+
               {/* <Route
                 path="/establishment/attendance"
                 element={
@@ -117,6 +118,13 @@ const App = () => (
               <Route path="/department/dashboard" element={
                 <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']}>
                   <DepartmentDashboard />
+                </ProtectedRoute>
+              } />
+
+              {/* Protected Conductor routes */}
+              <Route path="/conductor/dashboard" element={
+                <ProtectedRoute allowedRoles={['EMPLOYEE']}>
+                  <ConductorDashboard />
                 </ProtectedRoute>
               } />
 
