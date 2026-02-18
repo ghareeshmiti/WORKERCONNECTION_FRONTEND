@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { authenticateUser } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, LogOut, CreditCard, Plus, RefreshCw, Stethoscope, FlaskConical, Pill, Scissors, Calendar, ClipboardList } from "lucide-react";
+import { Loader2, LogOut, CreditCard, Plus, RefreshCw, Stethoscope, FlaskConical, Pill, Scissors, ScanLine, CheckCircle2, XCircle, Calendar, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const API = "https://workerconnection-backend.vercel.app/api";
@@ -81,6 +83,8 @@ export default function HospitalEntry() {
 
     const [workerIdInput, setWorkerIdInput] = useState("");
     const [loading, setLoading] = useState(false);
+    const [scanning, setScanning] = useState(false);
+    const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "success" | "failed">("idle");
     const [worker, setWorker] = useState<Worker | null>(null);
     const [records, setRecords] = useState<HealthRecord[]>([]);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -102,15 +106,16 @@ export default function HospitalEntry() {
     const establishmentName = userContext?.fullName || userContext?.email?.split("@")[0] || "Hospital";
     const staffName = userContext?.email?.split("@")[0] || "Staff";
 
-    const lookupWorker = async () => {
-        if (!workerIdInput.trim()) return;
+    const lookupWorkerById = async (workerId: string) => {
         setLoading(true);
         setWorker(null);
         try {
-            const res = await fetch(`${API}/health/worker-lookup?worker_id=${workerIdInput.trim()}`);
+            const res = await fetch(`${API}/health/worker-lookup?worker_id=${workerId.trim()}`);
             if (!res.ok) {
                 const err = await res.json();
                 toast({ title: "Not Found", description: err.error || "Worker not found", variant: "destructive" });
+                setScanStatus("failed");
+                setTimeout(() => setScanStatus("idle"), 2000);
                 return;
             }
             const data = await res.json();
@@ -118,10 +123,44 @@ export default function HospitalEntry() {
             setRecords(data.records || []);
             setAppointments(data.appointments || []);
             setCheckups(data.checkups || []);
+            setScanStatus("success");
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
+            setScanStatus("failed");
+            setTimeout(() => setScanStatus("idle"), 2000);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const lookupWorker = () => lookupWorkerById(workerIdInput);
+
+    // FIDO2 / Smart Card scan — same flow as ConductorDashboard
+    const handleScanCard = async () => {
+        setScanning(true);
+        setScanStatus("scanning");
+        try {
+            const result = await authenticateUser("", "verification");
+
+            if (result.verified && result.username) {
+                // result.username is the worker_id string
+                toast({ title: "Card Verified ✓", description: "Loading patient profile..." });
+                await lookupWorkerById(result.username);
+            } else {
+                setScanStatus("failed");
+                toast({ title: "Verification Failed", description: "Card could not be verified. Try manual entry.", variant: "destructive" });
+                setTimeout(() => setScanStatus("idle"), 2500);
+            }
+        } catch (error: any) {
+            setScanStatus("failed");
+            if (error.name === "NotAllowedError") {
+                toast({ title: "Scan Cancelled", description: "Please tap your card when prompted.", variant: "destructive" });
+            } else {
+                toast({ title: "Scan Error", description: error.message || "Failed to read card. Try manual entry.", variant: "destructive" });
+            }
+            setTimeout(() => setScanStatus("idle"), 2500);
+        } finally {
+            setScanning(false);
         }
     };
 
@@ -191,23 +230,84 @@ export default function HospitalEntry() {
             <div className="container mx-auto px-4 py-6 max-w-4xl">
                 {/* Card Scan Area */}
                 {!worker && (
-                    <Card style={{ border: "2px dashed #86efac", background: "white", boxShadow: "none", marginBottom: 24 }}>
-                        <CardContent style={{ padding: 40, textAlign: "center" }}>
-                            <CreditCard size={48} color="#86efac" style={{ margin: "0 auto 16px" }} />
-                            <div style={{ fontSize: 16, fontWeight: 600, color: "#1e293b", marginBottom: 8 }}>Insert / Tap Smart Card</div>
-                            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 24 }}>Place the patient's health smart card on the reader</div>
-                            <div style={{ display: "flex", gap: 10, justifyContent: "center", maxWidth: 400, margin: "0 auto" }}>
+                    <Card className="border-2 border-dashed border-orange-200 bg-white shadow-none mb-6">
+                        <CardContent className="p-10 flex flex-col items-center gap-6">
+
+                            {/* Animated icon based on state */}
+                            <div className={`relative flex items-center justify-center w-24 h-24 rounded-full transition-all duration-500 ${scanStatus === "scanning" ? "bg-orange-50 animate-pulse" :
+                                scanStatus === "success" ? "bg-green-50" :
+                                    scanStatus === "failed" ? "bg-red-50" :
+                                        "bg-slate-50"
+                                }`}>
+                                {scanStatus === "success" ? (
+                                    <CheckCircle2 className="w-12 h-12 text-green-500" />
+                                ) : scanStatus === "failed" ? (
+                                    <XCircle className="w-12 h-12 text-red-500" />
+                                ) : scanStatus === "scanning" ? (
+                                    <ScanLine className="w-12 h-12 text-orange-500" />
+                                ) : (
+                                    <CreditCard className="w-12 h-12 text-slate-400" />
+                                )}
+                                {scanStatus === "scanning" && (
+                                    <span className="absolute inset-0 rounded-full border-4 border-orange-400 animate-ping opacity-30" />
+                                )}
+                            </div>
+
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-slate-800 mb-1">
+                                    {scanStatus === "scanning" ? "Scanning... Please tap card" :
+                                        scanStatus === "success" ? "Card Verified!" :
+                                            scanStatus === "failed" ? "Scan Failed" :
+                                                "Patient Smart Card"}
+                                </div>
+                                <div className="text-sm text-slate-500">
+                                    {scanStatus === "scanning" ? "Hold the card near the reader" :
+                                        scanStatus === "success" ? "Loading patient details..." :
+                                            scanStatus === "failed" ? "Try again or use manual entry below" :
+                                                "Tap the button to scan the patient's health card"}
+                                </div>
+                            </div>
+
+                            {/* Primary Scan Button */}
+                            <Button
+                                size="lg"
+                                onClick={handleScanCard}
+                                disabled={scanning || loading}
+                                className="h-14 px-10 text-base font-bold bg-orange-600 hover:bg-orange-700 text-white shadow-md hover:shadow-lg transition-all gap-3"
+                            >
+                                {scanning ? (
+                                    <><Loader2 className="w-5 h-5 animate-spin" /> Scanning...</>
+                                ) : (
+                                    <><ScanLine className="w-5 h-5" /> Scan Card</>
+                                )}
+                            </Button>
+
+                            {/* Divider */}
+                            <div className="flex items-center gap-3 w-full max-w-sm">
+                                <div className="flex-1 h-px bg-slate-200" />
+                                <span className="text-xs text-slate-400 font-medium">OR ENTER MANUALLY</span>
+                                <div className="flex-1 h-px bg-slate-200" />
+                            </div>
+
+                            {/* Manual Worker ID input */}
+                            <div className="flex gap-2 w-full max-w-sm">
                                 <Input
-                                    placeholder="Or enter Worker ID (e.g. WKR2445425056)"
+                                    placeholder="Worker ID (e.g. WKR2445425056)"
                                     value={workerIdInput}
                                     onChange={e => setWorkerIdInput(e.target.value)}
                                     onKeyDown={e => e.key === "Enter" && lookupWorker()}
-                                    style={{ fontSize: 13 }}
+                                    className="h-10 text-sm"
                                 />
-                                <Button onClick={lookupWorker} disabled={loading} style={{ background: HEALTH_GREEN, color: "white", minWidth: 80 }}>
-                                    {loading ? <Loader2 size={14} className="animate-spin" /> : "Search"}
+                                <Button
+                                    onClick={lookupWorker}
+                                    disabled={loading || !workerIdInput.trim()}
+                                    variant="outline"
+                                    className="h-10 px-4 border-orange-300 text-orange-700 hover:bg-orange-50"
+                                >
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
                                 </Button>
                             </div>
+
                         </CardContent>
                     </Card>
                 )}
