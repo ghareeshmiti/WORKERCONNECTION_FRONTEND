@@ -20,11 +20,14 @@ const WorkerSelfRegistration = lazy(() => import("@/pages/WorkerSelfRegistration
 const OverviewDashboard = lazy(() => import("@/pages/OverviewDashboard"));
 const WorkerDashboard = lazy(() => import("@/pages/WorkerDashboard"));
 const EstablishmentDashboard = lazy(() => import("@/pages/EstablishmentDashboard"));
+const EstablishmentDashboardRouter = lazy(() => import("@/pages/EstablishmentDashboardRouter"));
 const EstablishmentWorkers = lazy(() => import("@/pages/EstablishmentWorkers"));
 const DepartmentDashboard = lazy(() => import("@/pages/DepartmentDashboard"));
 const EstablishmentAttendance = lazy(() => import("@/pages/EstablishmentAttendance"));
+const EstablishmentAttendanceRouter = lazy(() => import("@/pages/EstablishmentAttendanceRouter"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const PublicWorkerProfile = lazy(() => import("@/pages/PublicWorkerProfile"));
+const ConductorDashboard = lazy(() => import("@/pages/ConductorDashboard"));
 
 function PageLoader() {
   return (
@@ -42,7 +45,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <Suspense fallback={<PageLoader />}>
             <Routes>
@@ -76,9 +79,15 @@ const App = () => (
               } />
 
               {/* Protected Establishment routes */}
-              <Route path="/establishment/dashboard" element={
+              {/*<Route path="/establishment/dashboard" element={
                 <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
                   <EstablishmentDashboard />
+                </ProtectedRoute>
+              } /> */}
+
+              <Route path="/establishment/dashboard" element={
+                <ProtectedRoute allowedRoles={['ESTABLISHMENT_ADMIN']}>
+                  <EstablishmentDashboardRouter />
                 </ProtectedRoute>
               } />
 
@@ -88,6 +97,15 @@ const App = () => (
                   <EstablishmentAttendance />
                 </ProtectedRoute>
               } />
+
+              {/* <Route
+                path="/establishment/attendance"
+                element={
+                  <ProtectedRoute allowedRoles={["ESTABLISHMENT_ADMIN"]}>
+                    <EstablishmentAttendanceRouter />
+                  </ProtectedRoute>
+                }
+              /> */}
 
               {/* Establishment Manage Workers Page */}
               <Route path="/establishment/workers" element={
@@ -100,6 +118,13 @@ const App = () => (
               <Route path="/department/dashboard" element={
                 <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']}>
                   <DepartmentDashboard />
+                </ProtectedRoute>
+              } />
+
+              {/* Protected Conductor routes */}
+              <Route path="/conductor/dashboard" element={
+                <ProtectedRoute allowedRoles={['EMPLOYEE']}>
+                  <ConductorDashboard />
                 </ProtectedRoute>
               } />
 

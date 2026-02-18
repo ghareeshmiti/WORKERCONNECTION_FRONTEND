@@ -147,6 +147,9 @@ export default function Landing() {
                     src="/opoc/ap-logo.png"
                     alt="Government of Andhra Pradesh emblem"
                     className="h-full w-full object-contain p-0.5"
+                    width="80"
+                    height="80"
+                    fetchPriority="high"
                     onError={() => setLogoOk(false)}
                   />
                 ) : (
@@ -223,6 +226,9 @@ export default function Landing() {
                               src="/opoc/cm.jpg"
                               alt="Nara Chandrababu Naidu"
                               className="h-full w-full object-cover"
+                              width="192"
+                              height="240"
+                              fetchPriority="high"
                               onError={() => setCmOk(false)}
                             />
                           ) : (
@@ -372,12 +378,12 @@ export default function Landing() {
                 </h2>
 
                 <div className="mt-6 grid gap-5 md:grid-cols-3">
-                  {/* Worker Access */}
+                  {/* Citizen Access (formerly Worker) */}
                   <Card className="border-2 border-primary/45 shadow-sm">
                     <CardContent className="p-5">
                       {/* Left align heading */}
                       <div className="rounded-md bg-muted/40 px-3 py-2 text-left font-semibold">
-                        Worker Access
+                        Citizen Access
                       </div>
 
                       {/* Left align icon row */}
@@ -397,6 +403,15 @@ export default function Landing() {
                         <Link to="/register/worker" className="block">
                           <Button className="w-full bg-[#FF7700] hover:bg-[#FF7700]/90">
                             Register
+                          </Button>
+                        </Link>
+                      </div>
+
+                      {/* Employee Login Button */}
+                      <div className="mt-3">
+                        <Link to="/auth?role=employee" className="block">
+                          <Button variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/5">
+                            Employee Login
                           </Button>
                         </Link>
                       </div>

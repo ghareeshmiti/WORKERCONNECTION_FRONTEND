@@ -55,6 +55,9 @@ export function getDashboardPath(role: AppRole): string {
       return '/establishment/dashboard';
     case 'DEPARTMENT_ADMIN':
       return '/department/dashboard';
+    case 'EMPLOYEE':
+    case 'employee':
+      return '/conductor/dashboard';
     default:
       return '/';
   }

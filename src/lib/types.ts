@@ -1,4 +1,4 @@
-export type AppRole = 'DEPARTMENT_ADMIN' | 'ESTABLISHMENT_ADMIN' | 'WORKER';
+export type AppRole = 'DEPARTMENT_ADMIN' | 'ESTABLISHMENT_ADMIN' | 'WORKER' | 'EMPLOYEE' | 'employee';
 
 export type AttendanceStatus = 'PRESENT' | 'PARTIAL' | 'ABSENT';
 
@@ -10,6 +10,12 @@ export interface UserContext {
   workerId?: string;
   establishmentId?: string;
   departmentId?: string;
+  departmentCode?: string;
+  department?: {
+    code: string;
+    name: string;
+    id: string;
+  };
   fullName?: string;
   email?: string;
   district?: string;
