@@ -8,16 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, LogOut, CreditCard, Plus, RefreshCw, Stethoscope, FlaskConical, Pill, Scissors, ScanLine, CheckCircle2, XCircle, Calendar, ClipboardList } from "lucide-react";
+import { Loader2, LogOut, CreditCard, Plus, RefreshCw, Stethoscope, FlaskConical, Pill, Scissors, ScanLine, CheckCircle2, XCircle, Calendar, ClipboardList, FileText, ArrowLeft, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const API = "https://workerconnection-backend.vercel.app/api";
-const HEALTH_GREEN = "#16a34a";
 const SCHEME_COLORS: Record<string, string> = {
-    "NTR Vaidya Seva": "#16a34a",
-    "EHS": "#2563eb",
-    "PMJAY": "#9333ea",
-    "Paid": "#64748b",
+    "NTR Vaidya Seva": "#ea580c", // Orange-600
+    "EHS": "#0284c7", // Sky-600
+    "PMJAY": "#9333ea", // Purple-600
+    "Paid": "#64748b", // Slate-500
 };
 
 function money(n: number | string) {
@@ -37,6 +36,7 @@ interface Worker {
     allergies?: string;
     chronic_conditions?: string;
     scheme_name?: string;
+    photo_url?: string;
 }
 
 interface HealthRecord {
@@ -90,6 +90,7 @@ export default function HospitalEntry() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [checkups, setCheckups] = useState<Checkup[]>([]);
     const [showForm, setShowForm] = useState(false);
+    const [view, setView] = useState<"dashboard" | "prescriptions">("dashboard");
 
     // New record form
     const [form, setForm] = useState({
@@ -313,59 +314,76 @@ export default function HospitalEntry() {
                 )}
 
                 {/* Worker Profile */}
-                {worker && (
+                {worker && view === "dashboard" && (
                     <>
                         {/* Worker Header */}
-                        <Card style={{ border: "none", boxShadow: "0 2px 12px rgba(22,163,74,0.15)", marginBottom: 20, overflow: "hidden" }}>
-                            <div style={{ background: "linear-gradient(135deg, #15803d 0%, #16a34a 100%)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
-                                        {worker.gender === "Female" ? "👩" : "👨"}
+                        <Card className="border-none shadow-md mb-6 overflow-hidden">
+                            <div className="bg-gradient-to-r from-orange-600 to-orange-500 p-6 flex justify-between items-center text-white">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-4xl overflow-hidden border-4 border-white/30 shadow-sm shrink-0">
+                                        {worker.photo_url ? (
+                                            <img
+                                                src={worker.photo_url}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.parentElement!.innerHTML = `<span>${worker.gender === "Female" ? "👩" : "👨"}</span>`;
+                                                }}
+                                            />
+                                        ) : (
+                                            <span>{worker.gender === "Female" ? "👩" : "👨"}</span>
+                                        )}
                                     </div>
                                     <div>
-                                        <div style={{ color: "white", fontWeight: 700, fontSize: 16 }}>Name: {worker.first_name} {worker.last_name}</div>
-                                        <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 12 }}>Card ID: {worker.worker_id}</div>
-                                        <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 12 }}>Age/Gender: {age} / {worker.gender}</div>
+                                        <div className="font-bold text-2xl mb-1">Name: {worker.first_name} {worker.last_name}</div>
+                                        <div className="text-orange-50 text-sm font-medium bg-orange-700/30 px-3 py-1 rounded inline-block mb-1">Card ID: {worker.worker_id}</div>
+                                        <div className="text-orange-100 text-sm font-medium opacity-90">Age: {age || "N/A"} • Gender: {worker.gender}</div>
                                     </div>
                                 </div>
-                                <div style={{ textAlign: "right" }}>
-                                    <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 12 }}>District: {worker.district}</div>
-                                    <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 12 }}>Mandal/City: {worker.mandal}, {worker.district}</div>
+                                <div className="text-right hidden sm:block">
+                                    <div className="text-orange-100 text-base font-semibold">District: {worker.district}</div>
+                                    <div className="text-orange-200 text-sm">Mandal: {worker.mandal}</div>
                                 </div>
                             </div>
-                            <CardContent style={{ padding: "14px 20px" }}>
-                                <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-                                    {worker.blood_group && <span style={{ fontSize: 13 }}><b>Blood Group:</b> {worker.blood_group}</span>}
-                                    {worker.allergies && <span style={{ fontSize: 13 }}><b>Allergies:</b> {worker.allergies}</span>}
-                                    {worker.chronic_conditions && <span style={{ fontSize: 13, color: "#dc2626" }}><b>Chronic Conditions:</b> {worker.chronic_conditions}</span>}
+                            <CardContent className="p-5 bg-white">
+                                <div className="flex flex-wrap gap-3 items-center">
+                                    {worker.blood_group && <Badge variant="outline" className="border-slate-200 text-slate-700">Blood Group: <b className="ml-1 text-slate-900">{worker.blood_group}</b></Badge>}
+                                    {worker.allergies && <Badge variant="outline" className="border-slate-200 text-slate-700">Allergies: <b className="ml-1 text-slate-900">{worker.allergies}</b></Badge>}
+                                    {worker.chronic_conditions && <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">Chronic: <b className="ml-1">{worker.chronic_conditions}</b></Badge>}
                                     {worker.scheme_name && (
-                                        <Badge style={{ background: SCHEME_COLORS[worker.scheme_name] || HEALTH_GREEN, color: "white" }}>{worker.scheme_name}</Badge>
+                                        <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200 border-none">{worker.scheme_name}</Badge>
                                     )}
-                                    <Badge style={{ background: "#dcfce7", color: HEALTH_GREEN, border: "1px solid #86efac" }}>✓ Eligible for Govt Scheme Benefits</Badge>
+                                    <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200"><CheckCircle2 className="w-3 h-3 mr-1" /> Eligible for Govt Benefits</Badge>
                                 </div>
                             </CardContent>
                         </Card>
 
                         {/* Action Buttons */}
-                        <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-                            <Button onClick={() => setShowForm(!showForm)} style={{ background: HEALTH_GREEN, color: "white" }}>
-                                <Plus size={15} style={{ marginRight: 6 }} /> Record New Benefit / Service
+                        <div className="flex gap-3 mb-6">
+                            <Button onClick={() => setShowForm(!showForm)} className="bg-orange-600 hover:bg-orange-700 text-white shadow-sm gap-2">
+                                <Plus size={16} /> Record New Benefit / Service
                             </Button>
-                            <Button variant="outline" onClick={() => { setWorker(null); setWorkerIdInput(""); }}>
-                                <RefreshCw size={14} style={{ marginRight: 6 }} /> New Scan
+                            <Button variant="outline" onClick={() => setView("prescriptions")} className="border-orange-200 text-orange-700 hover:bg-orange-50 gap-2">
+                                <FileText size={16} /> E-Prescription
+                            </Button>
+                            <Button variant="outline" onClick={() => { setWorker(null); setWorkerIdInput(""); }} className="border-slate-300 text-slate-700 hover:bg-slate-50 gap-2">
+                                <RefreshCw size={14} /> New Scan
                             </Button>
                         </div>
 
                         {/* New Record Form */}
                         {showForm && (
-                            <Card style={{ border: `1px solid #86efac`, boxShadow: "0 2px 12px rgba(22,163,74,0.1)", marginBottom: 20 }}>
-                                <CardHeader style={{ borderBottom: "1px solid #f0fdf4", paddingBottom: 12 }}>
-                                    <CardTitle style={{ fontSize: 14, color: HEALTH_GREEN }}>+ Record New Benefit / Service</CardTitle>
+                            <Card className="border border-orange-200 shadow-sm mb-6 animate-in slide-in-from-top-2">
+                                <CardHeader className="bg-orange-50/50 border-b border-orange-100 py-3">
+                                    <CardTitle className="text-sm text-orange-800 flex items-center gap-2">
+                                        <Plus className="w-4 h-4" /> Record New Benefit / Service
+                                    </CardTitle>
                                 </CardHeader>
-                                <CardContent style={{ padding: 20 }}>
-                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                                        <div>
-                                            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Service Type *</label>
+                                <CardContent className="p-5">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Service Type *</label>
                                             <Select value={form.service_type} onValueChange={v => setForm(f => ({ ...f, service_type: v }))}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
@@ -373,8 +391,8 @@ export default function HospitalEntry() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Scheme *</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Scheme *</label>
                                             <Select value={form.scheme_name} onValueChange={v => setForm(f => ({ ...f, scheme_name: v }))}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
@@ -382,26 +400,26 @@ export default function HospitalEntry() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Diagnosis / Disease *</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Diagnosis / Disease *</label>
                                             <Input value={form.diagnosis} onChange={e => setForm(f => ({ ...f, diagnosis: e.target.value }))} placeholder="e.g. Diabetes, Fever..." />
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Description</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</label>
                                             <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Monthly diabetes medicines" />
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Total Cost (₹)</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Cost (₹)</label>
                                             <Input type="number" value={form.cost} onChange={e => setForm(f => ({ ...f, cost: e.target.value }))} placeholder="0" />
                                         </div>
-                                        <div>
-                                            <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 4 }}>Govt Paid (₹)</label>
+                                        <div className="space-y-1.5">
+                                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Govt Paid (₹)</label>
                                             <Input type="number" value={form.govt_paid} onChange={e => setForm(f => ({ ...f, govt_paid: e.target.value }))} placeholder="0" />
                                         </div>
                                     </div>
-                                    <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                                        <Button onClick={submitRecord} disabled={submitting} style={{ background: HEALTH_GREEN, color: "white" }}>
-                                            {submitting ? <Loader2 size={14} className="animate-spin" style={{ marginRight: 6 }} /> : null}
+                                    <div className="flex gap-3 mt-6 pt-4 border-t border-slate-100">
+                                        <Button onClick={submitRecord} disabled={submitting} className="bg-orange-600 hover:bg-orange-700 text-white">
+                                            {submitting ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
                                             Save Record
                                         </Button>
                                         <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -412,116 +430,266 @@ export default function HospitalEntry() {
 
                         {/* Appointments */}
                         {appointments.length > 0 && (
-                            <Card style={{ border: "none", boxShadow: "0 1px 8px rgba(0,0,0,0.08)", marginBottom: 20 }}>
-                                <CardHeader style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
-                                    <CardTitle style={{ fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                                        <Calendar size={15} color={HEALTH_GREEN} /> Appointments
+                            <Card className="border-none shadow-sm mb-6 overflow-hidden">
+                                <CardHeader className="bg-slate-50 border-b border-slate-100 py-3">
+                                    <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-orange-600" /> Appointments
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent style={{ padding: 0 }}>
-                                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                        <thead>
-                                            <tr style={{ background: "#f8fafc" }}>
-                                                {["Date", "Doctor", "Department", "Status", "Notes"].map(h => (
-                                                    <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 600, borderBottom: "1px solid #e2e8f0" }}>{h}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {appointments.map((a) => (
-                                                <tr key={a.id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>{new Date(a.appointment_date).toLocaleDateString("en-IN")}</td>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>{a.doctor_name}</td>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>{a.department}</td>
-                                                    <td style={{ padding: "10px 16px" }}>
-                                                        <Badge style={{ background: a.status === "Scheduled" ? "#dbeafe" : "#dcfce7", color: a.status === "Scheduled" ? "#2563eb" : HEALTH_GREEN, fontSize: 10 }}>{a.status}</Badge>
-                                                    </td>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12, color: "#64748b" }}>{a.notes}</td>
+                                <CardContent className="p-0">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-sm">
+                                            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                                <tr>
+                                                    {["Date", "Doctor", "Department", "Status", "Notes"].map(h => (
+                                                        <th key={h} className="px-4 py-3 text-xs uppercase tracking-wider">{h}</th>
+                                                    ))}
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {appointments.map((a) => (
+                                                    <tr key={a.id} className="hover:bg-slate-50/50">
+                                                        <td className="px-4 py-3 font-medium text-slate-700">{new Date(a.appointment_date).toLocaleDateString("en-IN")}</td>
+                                                        <td className="px-4 py-3 text-slate-600">{a.doctor_name}</td>
+                                                        <td className="px-4 py-3 text-slate-600">{a.department}</td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge className={a.status === "Scheduled" ? "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100" : "bg-green-50 text-green-700 border-green-100 hover:bg-green-100"}>
+                                                                {a.status}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-500 text-xs max-w-[200px] truncate">{a.notes}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </CardContent>
                             </Card>
                         )}
 
                         {/* Past Checkups */}
+                        {/* Past Checkups */}
                         {checkups.length > 0 && (
-                            <Card style={{ border: "none", boxShadow: "0 1px 8px rgba(0,0,0,0.08)", marginBottom: 20 }}>
-                                <CardHeader style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
-                                    <CardTitle style={{ fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                                        <ClipboardList size={15} color={HEALTH_GREEN} /> Past Checkups & Reports
+                            <Card className="border-none shadow-sm mb-6 overflow-hidden">
+                                <CardHeader className="bg-slate-50 border-b border-slate-100 py-3">
+                                    <CardTitle className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                        <ClipboardList className="w-4 h-4 text-orange-600" /> Past Checkups & Reports
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent style={{ padding: 16 }}>
-                                    {checkups.map((c) => (
-                                        <div key={c.id} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #f1f5f9" }}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                                                <span style={{ fontWeight: 600, fontSize: 13 }}>{c.checkup_type}</span>
-                                                <span style={{ fontSize: 12, color: "#64748b" }}>{new Date(c.checkup_date).toLocaleDateString("en-IN")}</span>
-                                            </div>
-                                            <div style={{ fontSize: 12, color: "#64748b" }}>Doctor: {c.doctor_name}</div>
-                                            <div style={{ fontSize: 12, marginTop: 4 }}>Findings: {c.findings}</div>
-                                            {c.vitals && (
-                                                <div style={{ fontSize: 12, color: "#64748b" }}>
-                                                    Vitals: BP {c.vitals.bp}, Pulse {c.vitals.pulse}, Temp {c.vitals.temp}, Weight {c.vitals.weight}
+                                <CardContent className="p-0">
+                                    <div className="divide-y divide-slate-100">
+                                        {checkups.map((c) => (
+                                            <div key={c.id} className="p-4 hover:bg-slate-50/50">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="font-semibold text-sm text-slate-800">{c.checkup_type}</span>
+                                                    <span className="text-xs text-slate-500">{new Date(c.checkup_date).toLocaleDateString("en-IN")}</span>
                                                 </div>
-                                            )}
-                                            <div style={{ fontSize: 12, color: "#64748b" }}>Prescriptions: {c.prescriptions}</div>
-                                        </div>
-                                    ))}
+                                                <div className="text-xs text-slate-500 mb-2">Doctor: {c.doctor_name}</div>
+                                                <div className="text-xs text-slate-700 font-medium">Findings: {c.findings}</div>
+                                                {c.vitals && (
+                                                    <div className="text-xs text-slate-500 mt-1 bg-slate-50 p-1.5 rounded inline-block">
+                                                        <span className="font-medium">Vitals:</span> BP {c.vitals.bp}, Pulse {c.vitals.pulse}, Temp {c.vitals.temp}, Weight {c.vitals.weight}
+                                                    </div>
+                                                )}
+                                                <div className="text-xs text-slate-500 mt-1">Prescriptions: {c.prescriptions}</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </CardContent>
                             </Card>
                         )}
 
                         {/* Recent Service Records */}
-                        <Card style={{ border: "none", boxShadow: "0 1px 8px rgba(0,0,0,0.08)" }}>
-                            <CardHeader style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: 12 }}>
-                                <CardTitle style={{ fontSize: 14 }}>Recent Service Records</CardTitle>
+                        <Card className="border-none shadow-sm mb-6 overflow-hidden">
+                            <CardHeader className="bg-slate-50 border-b border-slate-100 py-3">
+                                <CardTitle className="text-sm font-semibold text-slate-700">Recent Service Records</CardTitle>
                             </CardHeader>
-                            <CardContent style={{ padding: 0 }}>
-                                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                                    <thead>
-                                        <tr style={{ background: "#f8fafc" }}>
-                                            {["Date", "Service", "Description", "Disease", "Cost", "Scheme"].map(h => (
-                                                <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, color: "#64748b", fontWeight: 600, borderBottom: "1px solid #e2e8f0" }}>{h}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {records.map((r) => {
-                                            const isFree = r.govt_paid > 0;
-                                            return (
-                                                <tr key={r.id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString("en-IN")}</td>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>
-                                                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                                            {SERVICE_ICONS[r.service_type]} {r.service_type}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>{r.description}</td>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>{r.diagnosis}</td>
-                                                    <td style={{ padding: "10px 16px", fontSize: 12 }}>
-                                                        {isFree ? (
-                                                            <span style={{ color: HEALTH_GREEN }}>Free (Govt: {money(r.govt_paid)})</span>
-                                                        ) : (
-                                                            money(r.cost)
-                                                        )}
-                                                    </td>
-                                                    <td style={{ padding: "10px 16px" }}>
-                                                        <Badge style={{ background: SCHEME_COLORS[r.scheme_name] || "#64748b", color: "white", fontSize: 10 }}>{r.scheme_name}</Badge>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                        {records.length === 0 && (
-                                            <tr><td colSpan={6} style={{ padding: 30, textAlign: "center", color: "#94a3b8" }}>No records yet</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                            <tr>
+                                                {["Date", "Service", "Description", "Disease", "Cost", "Scheme"].map(h => (
+                                                    <th key={h} className="px-4 py-3 text-xs uppercase tracking-wider">{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {records.map((r) => {
+                                                const isFree = r.govt_paid > 0;
+                                                return (
+                                                    <tr key={r.id} className="hover:bg-slate-50/50">
+                                                        <td className="px-4 py-3 font-medium text-slate-700">{new Date(r.created_at).toLocaleDateString("en-IN")}</td>
+                                                        <td className="px-4 py-3 text-slate-600">
+                                                            <span className="flex items-center gap-2">
+                                                                <span className="text-orange-600 bg-orange-50 p-1 rounded-full">{SERVICE_ICONS[r.service_type]}</span>
+                                                                {r.service_type}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-slate-600">{r.description}</td>
+                                                        <td className="px-4 py-3 text-slate-600">{r.diagnosis}</td>
+                                                        <td className="px-4 py-3">
+                                                            {isFree ? (
+                                                                <span className="text-green-600 font-medium text-xs bg-green-50 px-2 py-0.5 rounded border border-green-100">Free (Govt: {money(r.govt_paid)})</span>
+                                                            ) : (
+                                                                <span className="font-medium text-slate-700">{money(r.cost)}</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <Badge style={{ background: SCHEME_COLORS[r.scheme_name] || "#64748b", color: "white" }} className="border-none font-normal">
+                                                                {r.scheme_name}
+                                                            </Badge>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                            {records.length === 0 && (
+                                                <tr><td colSpan={6} className="p-8 text-center text-slate-400 text-sm">No records yet</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </CardContent>
                         </Card>
                     </>
+                )}
+
+                {/* E-Prescriptions View */}
+                {worker && view === "prescriptions" && (
+                    <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <FileText className="text-orange-600" /> E-Prescriptions for {worker.first_name} {worker.last_name}
+                            </h2>
+                            <Button variant="outline" onClick={() => setView("dashboard")} className="gap-2 text-slate-600">
+                                <ArrowLeft size={16} /> Back to Details
+                            </Button>
+                        </div>
+
+                        {/* Current Prescriptions */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-teal-700 uppercase tracking-wide flex items-center gap-2">
+                                <Clock size={16} /> Current Prescriptions
+                            </h3>
+                            <Card className="border border-teal-100 shadow-sm overflow-hidden">
+                                <div className="bg-teal-50/50 p-4 border-b border-teal-100 flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 text-lg">Type 2 Diabetes Mellitus</h4>
+                                        <div className="text-sm text-slate-500">Dr. Mohan • Guntur General Hospital</div>
+                                    </div>
+                                    <Badge className="bg-teal-600 hover:bg-teal-700 text-white border-none">Current</Badge>
+                                </div>
+                                <CardContent className="p-0">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold w-1/3">Medicine</th>
+                                                <th className="px-6 py-3 font-semibold">Dosage</th>
+                                                <th className="px-6 py-3 font-semibold">Duration</th>
+                                                <th className="px-6 py-3 font-semibold">Instructions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Metformin 500mg</td>
+                                                <td className="px-6 py-4 text-slate-600">1 - 0 - 1</td>
+                                                <td className="px-6 py-4 text-slate-600">30 days</td>
+                                                <td className="px-6 py-4 text-slate-600">After food</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Glimepiride 2mg</td>
+                                                <td className="px-6 py-4 text-slate-600">1 - 0 - 0</td>
+                                                <td className="px-6 py-4 text-slate-600">30 days</td>
+                                                <td className="px-6 py-4 text-slate-600">Before breakfast</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div className="p-4 bg-slate-50/50 text-xs text-slate-500 border-t border-slate-100 italic">
+                                        Note: Review HbA1c after 3 months
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Previous Prescriptions */}
+                        <div className="space-y-4 pt-4">
+                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+                                <ClipboardList size={16} /> Previous Prescriptions
+                            </h3>
+
+                            <Card className="border border-slate-200 shadow-sm overflow-hidden opacity-90">
+                                <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-700 text-lg">Early Cataract - Left Eye</h4>
+                                        <div className="text-sm text-slate-500">Dr. Kavitha • Guntur General Hospital</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge variant="outline" className="text-slate-500 border-slate-300 mb-1">Previous</Badge>
+                                        <div className="text-xs text-slate-400">10/01/2026</div>
+                                    </div>
+                                </div>
+                                <CardContent className="p-0">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold w-1/3">Medicine</th>
+                                                <th className="px-6 py-3 font-semibold">Dosage</th>
+                                                <th className="px-6 py-3 font-semibold">Duration</th>
+                                                <th className="px-6 py-3 font-semibold">Instructions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Moxifloxacin Eye Drops</td>
+                                                <td className="px-6 py-4 text-slate-600">1 - 1 - 1 - 1</td>
+                                                <td className="px-6 py-4 text-slate-600">14 days</td>
+                                                <td className="px-6 py-4 text-slate-600">One drop in left eye</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div className="p-4 bg-slate-50 text-xs text-slate-500 border-t border-slate-200 italic">
+                                        Note: Scheduled for surgery review
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border border-slate-200 shadow-sm overflow-hidden opacity-90">
+                                <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-700 text-lg">Hypertension</h4>
+                                        <div className="text-sm text-slate-500">Dr. Mohan • Guntur General Hospital</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge variant="outline" className="text-slate-500 border-slate-300 mb-1">Previous</Badge>
+                                        <div className="text-xs text-slate-400">05/11/2025</div>
+                                    </div>
+                                </div>
+                                <CardContent className="p-0">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold w-1/3">Medicine</th>
+                                                <th className="px-6 py-3 font-semibold">Dosage</th>
+                                                <th className="px-6 py-3 font-semibold">Duration</th>
+                                                <th className="px-6 py-3 font-semibold">Instructions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Amlodipine 5mg</td>
+                                                <td className="px-6 py-4 text-slate-600">0 - 0 - 1</td>
+                                                <td className="px-6 py-4 text-slate-600">30 days</td>
+                                                <td className="px-6 py-4 text-slate-600">After dinner</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div className="p-4 bg-slate-50 text-xs text-slate-500 border-t border-slate-200 italic">
+                                        Note: BP monitoring weekly
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
