@@ -317,24 +317,32 @@ export default function HospitalEntry() {
                     <>
                         {/* Worker Header */}
                         <Card className="border-none shadow-md mb-6 overflow-hidden">
-                            <div className="bg-gradient-to-r from-orange-600 to-orange-500 p-5 flex justify-between items-center text-white">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-3xl overflow-hidden border-2 border-white/30">
+                            <div className="bg-gradient-to-r from-orange-600 to-orange-500 p-6 flex justify-between items-center text-white">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-4xl overflow-hidden border-4 border-white/30 shadow-sm shrink-0">
                                         {worker.photo_url ? (
-                                            <img src={worker.photo_url} alt="Profile" className="w-full h-full object-cover" />
+                                            <img
+                                                src={worker.photo_url}
+                                                alt="Profile"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.currentTarget.style.display = 'none';
+                                                    e.currentTarget.parentElement!.innerHTML = `<span>${worker.gender === "Female" ? "👩" : "👨"}</span>`;
+                                                }}
+                                            />
                                         ) : (
                                             <span>{worker.gender === "Female" ? "👩" : "👨"}</span>
                                         )}
                                     </div>
                                     <div>
-                                        <div className="font-bold text-lg">Name: {worker.first_name} {worker.last_name}</div>
-                                        <div className="text-orange-50 text-xs mt-1 font-medium bg-orange-700/30 px-2 py-0.5 rounded inline-block">Card ID: {worker.worker_id}</div>
-                                        <div className="text-orange-100 text-sm mt-0.5">Age/Gender: {age || "N/A"} / {worker.gender}</div>
+                                        <div className="font-bold text-2xl mb-1">Name: {worker.first_name} {worker.last_name}</div>
+                                        <div className="text-orange-50 text-sm font-medium bg-orange-700/30 px-3 py-1 rounded inline-block mb-1">Card ID: {worker.worker_id}</div>
+                                        <div className="text-orange-100 text-sm font-medium opacity-90">Age: {age || "N/A"} • Gender: {worker.gender}</div>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="text-orange-100 text-sm font-medium">District: {worker.district}</div>
-                                    <div className="text-orange-200 text-xs">Mandal/City: {worker.mandal}</div>
+                                <div className="text-right hidden sm:block">
+                                    <div className="text-orange-100 text-base font-semibold">District: {worker.district}</div>
+                                    <div className="text-orange-200 text-sm">Mandal: {worker.mandal}</div>
                                 </div>
                             </div>
                             <CardContent className="p-5 bg-white">
