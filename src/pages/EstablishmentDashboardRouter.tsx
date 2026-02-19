@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
-
 import EstablishmentDashboard from "@/pages/EstablishmentDashboard";
 import RTCEstablishmentDashboard from "@/pages/RTCEstablishmentDashboard";
+import HospitalDashboard from "@/pages/HospitalDashboard";
 
 export default function EstablishmentDashboardRouter() {
   const { userContext } = useAuth();
@@ -63,6 +63,9 @@ export default function EstablishmentDashboardRouter() {
 
   // ✅ RTC branch
   if (deptCode === "RTC") return <RTCEstablishmentDashboard />;
+
+  // ✅ AP Health branch
+  if (deptCode === "APHEALTH") return <HospitalDashboard />;
 
   // ✅ default welfare
   return <EstablishmentDashboard />;

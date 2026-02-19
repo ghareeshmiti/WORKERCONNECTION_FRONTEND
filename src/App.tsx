@@ -28,6 +28,7 @@ const EstablishmentAttendanceRouter = lazy(() => import("@/pages/EstablishmentAt
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const PublicWorkerProfile = lazy(() => import("@/pages/PublicWorkerProfile"));
 const ConductorDashboard = lazy(() => import("@/pages/ConductorDashboard"));
+const EmployeeDashboardRouter = lazy(() => import("@/pages/EmployeeDashboardRouter"));
 
 function PageLoader() {
   return (
@@ -121,10 +122,10 @@ const App = () => (
                 </ProtectedRoute>
               } />
 
-              {/* Protected Conductor routes */}
+              {/* Protected Conductor/Employee routes */}
               <Route path="/conductor/dashboard" element={
                 <ProtectedRoute allowedRoles={['EMPLOYEE']}>
-                  <ConductorDashboard />
+                  <EmployeeDashboardRouter />
                 </ProtectedRoute>
               } />
 
