@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, LogOut, CreditCard, Plus, RefreshCw, Stethoscope, FlaskConical, Pill, Scissors, ScanLine, CheckCircle2, XCircle, Calendar, ClipboardList } from "lucide-react";
+import { Loader2, LogOut, CreditCard, Plus, RefreshCw, Stethoscope, FlaskConical, Pill, Scissors, ScanLine, CheckCircle2, XCircle, Calendar, ClipboardList, FileText, ArrowLeft, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const API = "https://workerconnection-backend.vercel.app/api";
@@ -90,6 +90,7 @@ export default function HospitalEntry() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [checkups, setCheckups] = useState<Checkup[]>([]);
     const [showForm, setShowForm] = useState(false);
+    const [view, setView] = useState<"dashboard" | "prescriptions">("dashboard");
 
     // New record form
     const [form, setForm] = useState({
@@ -313,7 +314,7 @@ export default function HospitalEntry() {
                 )}
 
                 {/* Worker Profile */}
-                {worker && (
+                {worker && view === "dashboard" && (
                     <>
                         {/* Worker Header */}
                         <Card className="border-none shadow-md mb-6 overflow-hidden">
@@ -362,6 +363,9 @@ export default function HospitalEntry() {
                         <div className="flex gap-3 mb-6">
                             <Button onClick={() => setShowForm(!showForm)} className="bg-orange-600 hover:bg-orange-700 text-white shadow-sm gap-2">
                                 <Plus size={16} /> Record New Benefit / Service
+                            </Button>
+                            <Button variant="outline" onClick={() => setView("prescriptions")} className="border-orange-200 text-orange-700 hover:bg-orange-50 gap-2">
+                                <FileText size={16} /> E-Prescription
                             </Button>
                             <Button variant="outline" onClick={() => { setWorker(null); setWorkerIdInput(""); }} className="border-slate-300 text-slate-700 hover:bg-slate-50 gap-2">
                                 <RefreshCw size={14} /> New Scan
@@ -548,6 +552,144 @@ export default function HospitalEntry() {
                             </CardContent>
                         </Card>
                     </>
+                )}
+
+                {/* E-Prescriptions View */}
+                {worker && view === "prescriptions" && (
+                    <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <FileText className="text-orange-600" /> E-Prescriptions for {worker.first_name} {worker.last_name}
+                            </h2>
+                            <Button variant="outline" onClick={() => setView("dashboard")} className="gap-2 text-slate-600">
+                                <ArrowLeft size={16} /> Back to Details
+                            </Button>
+                        </div>
+
+                        {/* Current Prescriptions */}
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-teal-700 uppercase tracking-wide flex items-center gap-2">
+                                <Clock size={16} /> Current Prescriptions
+                            </h3>
+                            <Card className="border border-teal-100 shadow-sm overflow-hidden">
+                                <div className="bg-teal-50/50 p-4 border-b border-teal-100 flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 text-lg">Type 2 Diabetes Mellitus</h4>
+                                        <div className="text-sm text-slate-500">Dr. Mohan • Guntur General Hospital</div>
+                                    </div>
+                                    <Badge className="bg-teal-600 hover:bg-teal-700 text-white border-none">Current</Badge>
+                                </div>
+                                <CardContent className="p-0">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold w-1/3">Medicine</th>
+                                                <th className="px-6 py-3 font-semibold">Dosage</th>
+                                                <th className="px-6 py-3 font-semibold">Duration</th>
+                                                <th className="px-6 py-3 font-semibold">Instructions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-50">
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Metformin 500mg</td>
+                                                <td className="px-6 py-4 text-slate-600">1 - 0 - 1</td>
+                                                <td className="px-6 py-4 text-slate-600">30 days</td>
+                                                <td className="px-6 py-4 text-slate-600">After food</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Glimepiride 2mg</td>
+                                                <td className="px-6 py-4 text-slate-600">1 - 0 - 0</td>
+                                                <td className="px-6 py-4 text-slate-600">30 days</td>
+                                                <td className="px-6 py-4 text-slate-600">Before breakfast</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div className="p-4 bg-slate-50/50 text-xs text-slate-500 border-t border-slate-100 italic">
+                                        Note: Review HbA1c after 3 months
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Previous Prescriptions */}
+                        <div className="space-y-4 pt-4">
+                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide flex items-center gap-2">
+                                <ClipboardList size={16} /> Previous Prescriptions
+                            </h3>
+
+                            <Card className="border border-slate-200 shadow-sm overflow-hidden opacity-90">
+                                <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-700 text-lg">Early Cataract - Left Eye</h4>
+                                        <div className="text-sm text-slate-500">Dr. Kavitha • Guntur General Hospital</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge variant="outline" className="text-slate-500 border-slate-300 mb-1">Previous</Badge>
+                                        <div className="text-xs text-slate-400">10/01/2026</div>
+                                    </div>
+                                </div>
+                                <CardContent className="p-0">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold w-1/3">Medicine</th>
+                                                <th className="px-6 py-3 font-semibold">Dosage</th>
+                                                <th className="px-6 py-3 font-semibold">Duration</th>
+                                                <th className="px-6 py-3 font-semibold">Instructions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Moxifloxacin Eye Drops</td>
+                                                <td className="px-6 py-4 text-slate-600">1 - 1 - 1 - 1</td>
+                                                <td className="px-6 py-4 text-slate-600">14 days</td>
+                                                <td className="px-6 py-4 text-slate-600">One drop in left eye</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div className="p-4 bg-slate-50 text-xs text-slate-500 border-t border-slate-200 italic">
+                                        Note: Scheduled for surgery review
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border border-slate-200 shadow-sm overflow-hidden opacity-90">
+                                <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold text-slate-700 text-lg">Hypertension</h4>
+                                        <div className="text-sm text-slate-500">Dr. Mohan • Guntur General Hospital</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <Badge variant="outline" className="text-slate-500 border-slate-300 mb-1">Previous</Badge>
+                                        <div className="text-xs text-slate-400">05/11/2025</div>
+                                    </div>
+                                </div>
+                                <CardContent className="p-0">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-6 py-3 font-semibold w-1/3">Medicine</th>
+                                                <th className="px-6 py-3 font-semibold">Dosage</th>
+                                                <th className="px-6 py-3 font-semibold">Duration</th>
+                                                <th className="px-6 py-3 font-semibold">Instructions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            <tr>
+                                                <td className="px-6 py-4 font-medium text-slate-700">Amlodipine 5mg</td>
+                                                <td className="px-6 py-4 text-slate-600">0 - 0 - 1</td>
+                                                <td className="px-6 py-4 text-slate-600">30 days</td>
+                                                <td className="px-6 py-4 text-slate-600">After dinner</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div className="p-4 bg-slate-50 text-xs text-slate-500 border-t border-slate-200 italic">
+                                        Note: BP monitoring weekly
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
