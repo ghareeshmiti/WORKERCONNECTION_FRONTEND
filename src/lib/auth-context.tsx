@@ -181,27 +181,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let deptId = profileRow?.department_id || meta.department_id || meta.departmentId;
 
         if (estId) {
-          // Fetch Establishment Details
-          const { data: estData } = await supabase
-            .from('establishments')
-            .select('id, name, code, department_id')
-            .eq('id', estId)
-            .maybeSingle();
+          // Fetch Establishment + parent Department in parallel
+          const [estResult, deptResult] = await Promise.all([
+            supabase.from('establishments').select('id, name, code, department_id').eq('id', estId).maybeSingle(),
+            // Also fetch dept if we already know deptId from profileRow
+            deptId
+              ? supabase.from('departments').select('id, name, code, district').eq('id', deptId).maybeSingle()
+              : Promise.resolve({ data: null }),
+          ]);
+
+          const estData = estResult.data;
+          let deptData = deptResult.data;
+
+          // If dept not fetched yet, use estData.department_id
+          if (!deptData && estData?.department_id) {
+            const { data: d } = await supabase
+              .from('departments')
+              .select('id, name, code, district')
+              .eq('id', estData.department_id)
+              .maybeSingle();
+            deptData = d;
+          }
 
           if (estData) {
             profileData = {
               establishment_id: estData.id,
-              department_id: estData.department_id,
-              full_name: meta.full_name || 'Conductor',
-              code: estData.code, // Use establishment code or dept code?
-              // est_name: estData.name
+              department_id: estData.department_id || deptData?.id,
+              full_name: meta.full_name || estData.name || 'Staff',
+              // ✅ Use DEPARTMENT code (e.g. "APHEALTH") not establishment code
+              code: deptData?.code || estData.code,
+              dept_name: deptData?.name,
+              district: deptData?.district,
             };
-            // If we have estData, we might want to also get Dept data for the code? 
-            // But typically Conductor is linked to Depot.
           }
         }
 
-        // Fallback or Dept only logic
+        // Fallback: dept only (no establishment)
         if (!profileData.establishment_id && deptId) {
           const { data: deptData } = await supabase
             .from('departments')

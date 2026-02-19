@@ -74,6 +74,7 @@ import {
 
 
 import RTCDepartmentDashboard from "./RTCDepartmentDashboard";
+import HealthDeptDashboard from "./HealthDeptDashboard";
 
 export default function DepartmentDashboard() {
   const queryClient = useQueryClient();
@@ -82,6 +83,11 @@ export default function DepartmentDashboard() {
   // Redirect to RTC Dashboard if Department is RTC
   if (userContext?.departmentCode === 'RTC') {
     return <RTCDepartmentDashboard />;
+  }
+
+  // Redirect to AP Health Dashboard if Department is APHEALTH
+  if (userContext?.departmentCode === 'APHEALTH') {
+    return <HealthDeptDashboard />;
   }
 
   // Enable real-time updates
