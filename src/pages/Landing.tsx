@@ -415,6 +415,15 @@ export default function Landing() {
                           </Button>
                         </Link>
                       </div>
+
+                      {/* Doctor Login Button */}
+                      <div className="mt-2">
+                        <Link to="/auth?role=doctor" className="block">
+                          <Button variant="outline" className="w-full border-green-500/30 text-green-700 hover:bg-green-50">
+                            Doctor Login
+                          </Button>
+                        </Link>
+                      </div>
                     </CardContent>
                   </Card>
 

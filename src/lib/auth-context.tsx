@@ -71,7 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         else if (rawRole === "establishment") role = "ESTABLISHMENT_ADMIN";
         else if (rawRole === "worker") role = "WORKER";
         else if (rawRole === "employee") role = "EMPLOYEE";
-        else if (rawRole === "DEPARTMENT_ADMIN" || rawRole === "ESTABLISHMENT_ADMIN" || rawRole === "WORKER" || rawRole === "EMPLOYEE")
+        else if (rawRole === "doctor" || rawRole === "DOCTOR") role = "DOCTOR";
+        else if (rawRole === "DEPARTMENT_ADMIN" || rawRole === "ESTABLISHMENT_ADMIN" || rawRole === "WORKER" || rawRole === "EMPLOYEE" || rawRole === "DOCTOR")
           role = rawRole as AppRole;
       }
 
@@ -235,6 +236,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
           }
         }
+      } else if (role === 'DOCTOR') {
+        // Fetch doctor profile by auth_user_id
+        const { data: docData } = await supabase
+          .from('doctors')
+          .select('id, name, email, specialization, establishment_id')
+          .eq('auth_user_id', userId)
+          .maybeSingle();
+
+        if (docData) {
+          let deptId: string | undefined;
+          let deptCode: string | undefined;
+          let deptName: string | undefined;
+
+          // Get establishment's department
+          if (docData.establishment_id) {
+            const { data: estData } = await supabase
+              .from('establishments')
+              .select('department_id')
+              .eq('id', docData.establishment_id)
+              .maybeSingle();
+            if (estData?.department_id) {
+              const { data: deptData } = await supabase
+                .from('departments')
+                .select('id, name, code')
+                .eq('id', estData.department_id)
+                .maybeSingle();
+              if (deptData) {
+                deptId = deptData.id;
+                deptCode = deptData.code;
+                deptName = deptData.name;
+              }
+            }
+          }
+
+          profileData = {
+            doctor_id: docData.id,
+            specialization: docData.specialization,
+            establishment_id: docData.establishment_id,
+            department_id: deptId,
+            full_name: docData.name,
+            code: deptCode,
+            dept_name: deptName,
+          };
+        }
       }
 
 
@@ -253,6 +298,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fullName: profileData?.full_name || undefined,
         email: user.email || undefined,
         district: profileData?.district || undefined,
+        doctorId: profileData?.doctor_id || undefined,
+        specialization: profileData?.specialization || undefined,
       };
 
       return context;
