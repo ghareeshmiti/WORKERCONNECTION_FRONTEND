@@ -278,78 +278,6 @@ export default function Auth() {
     }
   };
 
-  // --- Web NFC Login (Mobile Browser Tap) ---
-  const [nfcSupported, setNfcSupported] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
-
-  useEffect(() => {
-    if ('NDEFReader' in window) {
-      setNfcSupported(true);
-    }
-  }, []);
-
-  const handleNfcScan = async () => {
-    if (!nfcSupported) return;
-
-    try {
-      // @ts-ignore - NDEFReader is not yet in standard TS lib
-      const ndef = new NDEFReader();
-      await ndef.scan();
-      setIsScanning(true);
-      toast({ title: "NFC Reader Active", description: "Tap your card to the back of your phone..." });
-
-      ndef.onreading = async (event: any) => {
-        const uid = event.serialNumber;
-        console.log("NFC Tag Detected:", uid);
-        setIsScanning(false);
-
-        // Normalize UID: remove colons/spaces, uppercase (e.g. "04:a2:b3:..." → "04A2B3...")
-        const normalizedUid = uid.replace(/[:\s-]/g, '').toUpperCase();
-
-        toast({ title: "Card Scanned!", description: "Logging you in..." });
-        setLoading(true);
-
-        try {
-          const res = await fetch(`${BASE_URL.replace(/\/$/, '')}/api/auth/nfc-login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uidHex: normalizedUid }),
-          });
-          const data = await res.json();
-
-          if (!res.ok) throw new Error(data.error || 'NFC login failed');
-
-          if (data.session) {
-            const { error } = await supabase.auth.setSession(data.session);
-            if (error) throw error;
-            toast({ title: "Success", description: "Login successful!" });
-            setRedirecting(true);
-          }
-        } catch (err: any) {
-          console.error("NFC Login Error:", err);
-          toast({ title: "Login Failed", description: err.message, variant: "destructive" });
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      ndef.onreadingerror = (error: any) => {
-        console.error("NFC Read Error:", error);
-        toast({ title: "Read Error", description: "Could not read card. Try again.", variant: "destructive" });
-        setIsScanning(false);
-      };
-
-    } catch (error) {
-      console.error("NFC Error:", error);
-      toast({
-        title: "NFC Error",
-        description: "Failed to start NFC reader. Ensure permission is granted.",
-        variant: "destructive"
-      });
-      setIsScanning(false);
-    }
-  };
-
   // --- Standard Reset Handlers ---
 
   const handleSendOTP = async () => {
@@ -466,22 +394,6 @@ export default function Auth() {
                       )}
                       Login with Smart Card
                     </Button>
-
-                    {nfcSupported && (
-                      <Button
-                        variant="outline"
-                        className="w-full border-blue-500/20 hover:bg-blue-500/5 hover:text-blue-600 transition-colors mt-2"
-                        onClick={handleNfcScan}
-                        disabled={isScanning || loading}
-                      >
-                        {isScanning ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <CreditCard className="w-4 h-4 mr-2" />
-                        )}
-                        {isScanning ? "Scanning..." : "Tap to Login (NFC)"}
-                      </Button>
-                    )}
 
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center">
