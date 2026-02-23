@@ -40,10 +40,11 @@ export default function Auth() {
   const [otpVerified, setOtpVerified] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { signIn, userContext, loading: authLoading } = useAuth();
+  const { signIn, signOut, userContext, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [redirecting, setRedirecting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   // Effect to redirect after successful login when userContext is loaded
@@ -54,16 +55,36 @@ export default function Auth() {
     }
   }, [redirecting, userContext, authLoading, navigate]);
 
-  // If already logged in, redirect
+  // If already logged in with a DIFFERENT role, sign out first so the new login form shows.
+  // If same role, redirect to their dashboard.
   useEffect(() => {
-    if (userContext && !authLoading) {
-      if (userContext.role === 'employee' && userContext.department?.code?.startsWith('RTC')) {
+    if (userContext && !authLoading && !signingOut) {
+      // Map URL role param to the AppRole format
+      const roleMap: Record<string, string> = {
+        worker: 'WORKER',
+        establishment: 'ESTABLISHMENT_ADMIN',
+        department: 'DEPARTMENT_ADMIN',
+        employee: 'EMPLOYEE',
+        doctor: 'DOCTOR',
+      };
+      const expectedRole = roleMap[role] || '';
+      const currentRole = userContext.role;
+
+      // If user is already logged in as a different role, sign out silently
+      if (expectedRole && currentRole !== expectedRole) {
+        setSigningOut(true);
+        signOut().then(() => setSigningOut(false));
+        return;
+      }
+
+      // Same role — redirect to their dashboard
+      if (currentRole === 'employee' && userContext.department?.code?.startsWith('RTC')) {
         navigate('/conductor/dashboard', { replace: true });
         return;
       }
       setRedirecting(true);
     }
-  }, [userContext, authLoading]);
+  }, [userContext, authLoading, role, signingOut]);
 
   const [departments, setDepartments] = useState<any[]>([]);
   const [selectedDept, setSelectedDept] = useState("");
@@ -94,6 +115,8 @@ export default function Auth() {
         return "Department";
       case "employee":
         return "Employee";
+      case "doctor":
+        return "Doctor";
       default:
         return "User";
     }

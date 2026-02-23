@@ -1,4 +1,4 @@
-export type AppRole = 'DEPARTMENT_ADMIN' | 'ESTABLISHMENT_ADMIN' | 'WORKER' | 'EMPLOYEE' | 'employee';
+export type AppRole = 'DEPARTMENT_ADMIN' | 'ESTABLISHMENT_ADMIN' | 'WORKER' | 'EMPLOYEE' | 'employee' | 'DOCTOR';
 
 export type AttendanceStatus = 'PRESENT' | 'PARTIAL' | 'ABSENT';
 
@@ -19,6 +19,8 @@ export interface UserContext {
   fullName?: string;
   email?: string;
   district?: string;
+  doctorId?: string;
+  specialization?: string;
 }
 
 export interface Department {

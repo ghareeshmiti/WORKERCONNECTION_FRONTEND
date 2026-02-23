@@ -29,6 +29,7 @@ const NotFound = lazy(() => import("@/pages/NotFound"));
 const PublicWorkerProfile = lazy(() => import("@/pages/PublicWorkerProfile"));
 const ConductorDashboard = lazy(() => import("@/pages/ConductorDashboard"));
 const EmployeeDashboardRouter = lazy(() => import("@/pages/EmployeeDashboardRouter"));
+const DoctorDashboard = lazy(() => import("@/pages/DoctorDashboard"));
 
 function PageLoader() {
   return (
@@ -119,6 +120,13 @@ const App = () => (
               <Route path="/department/dashboard" element={
                 <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']}>
                   <DepartmentDashboard />
+                </ProtectedRoute>
+              } />
+
+              {/* Protected Doctor routes */}
+              <Route path="/doctor/dashboard" element={
+                <ProtectedRoute allowedRoles={['DOCTOR']}>
+                  <DoctorDashboard />
                 </ProtectedRoute>
               } />
 

@@ -24,7 +24,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (!userContext) {
@@ -58,6 +58,8 @@ export function getDashboardPath(role: AppRole): string {
     case 'EMPLOYEE':
     case 'employee':
       return '/conductor/dashboard';
+    case 'DOCTOR':
+      return '/doctor/dashboard';
     default:
       return '/';
   }
