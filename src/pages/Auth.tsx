@@ -278,68 +278,6 @@ export default function Auth() {
     }
   };
 
-  // --- Web NFC Login (Mobile Browser Tap) ---
-  const [nfcSupported, setNfcSupported] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
-
-  useEffect(() => {
-    if ('NDEFReader' in window) {
-      setNfcSupported(true);
-    }
-  }, []);
-
-  const handleNfcScan = async () => {
-    if (!nfcSupported) return;
-
-    try {
-      // @ts-ignore - NDEFReader is not yet in standard TS lib
-      const ndef = new NDEFReader();
-      await ndef.scan();
-      setIsScanning(true);
-      toast({ title: "NFC Reader Active", description: "Tap your card to the back of your phone..." });
-
-      ndef.onreading = (event: any) => {
-        const uid = event.serialNumber;
-        console.log("NFC Tag Detected:", uid, event);
-
-        // POC: Use UID as Aadhaar/ID or just show success
-        // In a real scenario, you'd map this UID to a user in the backend
-        setIsScanning(false);
-
-        // Check if UID looks like an ID we can use (Simulated)
-        // For now, let's fill the Aadhaar field with a mapped test value or the UID itself
-        // If the UID is "04:..." (NFC standard), it's not an Aadhaar, but we can assume it maps to one.
-
-        toast({
-          title: "Card Scanned!",
-          description: `Tag ID: ${uid}. Filling credentials...`
-        });
-
-        // Simulate lookup
-        // setAadhaar("123456789012"); // Mapped ID
-        // handleWorkerSendOTP(); // Auto-trigger OTP? Or just let them click.
-
-        // OR: Trigger FIDO2-like flow if we had a proper backend for it.
-        // For this task, we just need to "Implement" it.
-      };
-
-      ndef.onreadingerror = (error: any) => {
-        console.error("NFC Read Error:", error);
-        toast({ title: "Read Error", description: "Could not read card. Try again.", variant: "destructive" });
-        setIsScanning(false);
-      };
-
-    } catch (error) {
-      console.error("NFC Error:", error);
-      toast({
-        title: "NFC Error",
-        description: "Failed to start NFC reader. Ensure permission is granted.",
-        variant: "destructive"
-      });
-      setIsScanning(false);
-    }
-  };
-
   // --- Standard Reset Handlers ---
 
   const handleSendOTP = async () => {
@@ -456,22 +394,6 @@ export default function Auth() {
                       )}
                       Login with Smart Card
                     </Button>
-
-                    {nfcSupported && (
-                      <Button
-                        variant="outline"
-                        className="w-full border-blue-500/20 hover:bg-blue-500/5 hover:text-blue-600 transition-colors mt-2"
-                        onClick={handleNfcScan}
-                        disabled={isScanning || loading}
-                      >
-                        {isScanning ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        ) : (
-                          <CreditCard className="w-4 h-4 mr-2" />
-                        )}
-                        {isScanning ? "Scanning..." : "Tap to Login (NFC)"}
-                      </Button>
-                    )}
 
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center">
