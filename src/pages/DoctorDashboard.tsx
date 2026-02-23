@@ -689,31 +689,51 @@ export default function DoctorDashboard() {
                                             {/* Profile Tab */}
                                             {patientTab === "profile" && (
                                                 <div className="space-y-5 text-sm">
-                                                    {/* Visit Info */}
-                                                    {patientProfile.patient.notes && (
-                                                        <div className="p-3 bg-amber-50 rounded-lg border border-amber-100">
-                                                            <div className="text-xs font-semibold text-amber-700 mb-1">Reason for Visit</div>
-                                                            <div className="text-slate-700">{patientProfile.patient.notes}</div>
-                                                        </div>
-                                                    )}
+                                                    {/* ─── OPD VISIT DETAILS ─── */}
+                                                    <div>
+                                                        <div className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-3">OPD Visit Details</div>
+                                                        <div className="p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-200">
+                                                            {/* Token & Queue Info */}
+                                                            <div className="flex items-center gap-3 mb-3">
+                                                                <div className="w-12 h-12 rounded-full bg-orange-600 text-white flex items-center justify-center font-bold text-lg">
+                                                                    #{patientProfile.patient.token_number}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs text-slate-500">Token Number</div>
+                                                                    <div className="font-semibold text-slate-800">
+                                                                        Queued at {new Date(patientProfile.patient.queued_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                                                    </div>
+                                                                </div>
+                                                                <Badge className={`ml-auto ${STATUS_STYLES[patientProfile.patient.status]}`}>
+                                                                    {patientProfile.patient.status.replace("_", " ")}
+                                                                </Badge>
+                                                            </div>
 
-                                                    {/* Intake Vitals */}
-                                                    {(patientProfile.patient as any).intake_vitals && (
-                                                        <div className="flex gap-3">
-                                                            {(patientProfile.patient as any).intake_vitals.weight && (
-                                                                <div className="flex-1 p-3 bg-blue-50 rounded-lg border border-blue-100 text-center">
+                                                            {/* Reason for Visit */}
+                                                            {patientProfile.patient.notes && (
+                                                                <div className="p-3 bg-white rounded-lg border border-amber-100 mb-3">
+                                                                    <div className="text-[10px] font-bold text-amber-600 uppercase mb-1">Purpose of Consultation</div>
+                                                                    <div className="text-slate-800 font-medium">{patientProfile.patient.notes}</div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Intake Vitals */}
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <div className="p-3 bg-white rounded-lg border border-blue-100 text-center">
                                                                     <div className="text-[10px] font-bold text-blue-500 uppercase">Weight</div>
-                                                                    <div className="text-lg font-bold text-blue-800">{(patientProfile.patient as any).intake_vitals.weight}</div>
+                                                                    <div className="text-xl font-bold text-blue-800">
+                                                                        {(patientProfile.patient as any).intake_vitals?.weight || "—"}
+                                                                    </div>
                                                                 </div>
-                                                            )}
-                                                            {(patientProfile.patient as any).intake_vitals.temperature && (
-                                                                <div className="flex-1 p-3 bg-orange-50 rounded-lg border border-orange-100 text-center">
-                                                                    <div className="text-[10px] font-bold text-orange-500 uppercase">Temperature</div>
-                                                                    <div className="text-lg font-bold text-orange-800">{(patientProfile.patient as any).intake_vitals.temperature}</div>
+                                                                <div className="p-3 bg-white rounded-lg border border-red-100 text-center">
+                                                                    <div className="text-[10px] font-bold text-red-500 uppercase">Temperature</div>
+                                                                    <div className="text-xl font-bold text-red-800">
+                                                                        {(patientProfile.patient as any).intake_vitals?.temperature || "—"}
+                                                                    </div>
                                                                 </div>
-                                                            )}
+                                                            </div>
                                                         </div>
-                                                    )}
+                                                    </div>
 
                                                     {/* Patient Details */}
                                                     <div>
