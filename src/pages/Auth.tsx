@@ -298,29 +298,39 @@ export default function Auth() {
       setIsScanning(true);
       toast({ title: "NFC Reader Active", description: "Tap your card to the back of your phone..." });
 
-      ndef.onreading = (event: any) => {
+      ndef.onreading = async (event: any) => {
         const uid = event.serialNumber;
-        console.log("NFC Tag Detected:", uid, event);
-
-        // POC: Use UID as Aadhaar/ID or just show success
-        // In a real scenario, you'd map this UID to a user in the backend
+        console.log("NFC Tag Detected:", uid);
         setIsScanning(false);
 
-        // Check if UID looks like an ID we can use (Simulated)
-        // For now, let's fill the Aadhaar field with a mapped test value or the UID itself
-        // If the UID is "04:..." (NFC standard), it's not an Aadhaar, but we can assume it maps to one.
+        // Normalize UID: remove colons/spaces, uppercase (e.g. "04:a2:b3:..." → "04A2B3...")
+        const normalizedUid = uid.replace(/[:\s-]/g, '').toUpperCase();
 
-        toast({
-          title: "Card Scanned!",
-          description: `Tag ID: ${uid}. Filling credentials...`
-        });
+        toast({ title: "Card Scanned!", description: "Logging you in..." });
+        setLoading(true);
 
-        // Simulate lookup
-        // setAadhaar("123456789012"); // Mapped ID
-        // handleWorkerSendOTP(); // Auto-trigger OTP? Or just let them click.
+        try {
+          const res = await fetch(`${BASE_URL.replace(/\/$/, '')}/api/auth/nfc-login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uidHex: normalizedUid }),
+          });
+          const data = await res.json();
 
-        // OR: Trigger FIDO2-like flow if we had a proper backend for it.
-        // For this task, we just need to "Implement" it.
+          if (!res.ok) throw new Error(data.error || 'NFC login failed');
+
+          if (data.session) {
+            const { error } = await supabase.auth.setSession(data.session);
+            if (error) throw error;
+            toast({ title: "Success", description: "Login successful!" });
+            setRedirecting(true);
+          }
+        } catch (err: any) {
+          console.error("NFC Login Error:", err);
+          toast({ title: "Login Failed", description: err.message, variant: "destructive" });
+        } finally {
+          setLoading(false);
+        }
       };
 
       ndef.onreadingerror = (error: any) => {
