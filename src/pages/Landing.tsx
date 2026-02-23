@@ -410,7 +410,7 @@ export default function Landing() {
                       {/* Employee Login Button */}
                       <div className="mt-3">
                         <Link to="/auth?role=employee" className="block">
-                          <Button variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/5">
+                          <Button variant="outline" className="w-full border-primary/30 text-primary hover:bg-primary/5 hover:text-primary">
                             Employee Login
                           </Button>
                         </Link>
@@ -419,7 +419,7 @@ export default function Landing() {
                       {/* Doctor Login Button */}
                       <div className="mt-2">
                         <Link to="/auth?role=doctor" className="block">
-                          <Button variant="outline" className="w-full border-green-500/30 text-green-700 hover:bg-green-50">
+                          <Button variant="outline" className="w-full border-green-500/30 text-green-700 hover:bg-green-50 hover:text-green-700">
                             Doctor Login
                           </Button>
                         </Link>

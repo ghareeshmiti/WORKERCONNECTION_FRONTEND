@@ -45,7 +45,7 @@ export default function HospitalDashboard() {
     const establishmentId = userContext?.establishmentId || "";
     const establishmentName = userContext?.fullName || userContext?.email?.split("@")[0] || "Hospital";
 
-    const { data: recordsData, isLoading } = useQuery({
+    const { data: recordsData, isLoading, isFetching } = useQuery({
         queryKey: ["hospital-records", establishmentId, serviceFilter, schemeFilter, diagnosisFilter],
         queryFn: () => fetchRecords(establishmentId, {
             service_type: serviceFilter !== "all" ? serviceFilter : "",
@@ -54,6 +54,7 @@ export default function HospitalDashboard() {
         }),
         enabled: !!establishmentId,
         retry: 2,
+        placeholderData: (prev: any) => prev,
     });
 
     const allRecords = recordsData?.records || [];
@@ -110,12 +111,6 @@ export default function HospitalDashboard() {
 
             <main className="container mx-auto px-4 py-6 space-y-6">
 
-                {isLoading ? (
-                    <div className="flex justify-center pt-20">
-                        <Loader2 className="animate-spin w-8 h-8 text-orange-600" />
-                    </div>
-                ) : (
-                    <>
                         {/* Stats */}
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             {[
@@ -159,7 +154,12 @@ export default function HospitalDashboard() {
                         </Card>
 
                         {/* Records Table */}
-                        <Card className="shadow-sm">
+                        <Card className="shadow-sm relative">
+                            {isFetching && (
+                                <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-lg">
+                                    <Loader2 className="animate-spin w-6 h-6 text-orange-600" />
+                                </div>
+                            )}
                             <CardContent className="p-0">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
@@ -199,7 +199,7 @@ export default function HospitalDashboard() {
                                                     </tr>
                                                 );
                                             })}
-                                            {filtered.length === 0 && (
+                                            {filtered.length === 0 && !isFetching && (
                                                 <tr><td colSpan={9} className="p-10 text-center text-slate-400">No records found</td></tr>
                                             )}
                                         </tbody>
@@ -207,8 +207,6 @@ export default function HospitalDashboard() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </>
-                )}
             </main>
         </div>
     );
