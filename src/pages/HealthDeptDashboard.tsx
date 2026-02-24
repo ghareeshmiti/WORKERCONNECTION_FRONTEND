@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Activity, Building2, Users, IndianRupee, Filter, RefreshCw, Stethoscope, HeartPulse } from "lucide-react";
+import { Loader2, Activity, Building2, IndianRupee, Filter, RefreshCw, Stethoscope, HeartPulse, AlertTriangle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
-// Always use the deployed backend — health routes are only on the server
-const API = "https://workerconnection-backend.vercel.app/api";
+// Use local backend for development, deployed for production
+const API = (import.meta.env.VITE_API_URL || "https://workerconnection-backend.vercel.app").replace(/\/$/, '') + "/api";
 
 const SCHEME_COLORS: Record<string, string> = {
     "NTR Vaidya Seva": "#16a34a",
@@ -29,6 +31,120 @@ async function fetchHealthStats() {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
 }
+
+// Approximate coordinates for AP mandals/areas (for map visualization)
+const MANDAL_COORDS: Record<string, [number, number]> = {
+    "Guntur": [16.3067, 80.4365],
+    "Guntur Urban": [16.3100, 80.4400],
+    "Tenali": [16.2380, 80.6400],
+    "Mangalagiri": [16.4307, 80.5681],
+    "Tadepalli": [16.4833, 80.6000],
+    "Narasaraopet": [16.2346, 80.0487],
+    "Ponnuru": [16.0711, 80.5510],
+    "Bapatla": [15.9046, 80.4670],
+    "Sattenapalli": [16.3940, 80.1524],
+    "Chilakaluripet": [16.0897, 80.1673],
+    "Pallamkurru": [16.5700, 81.7300],
+    "Anathavaram": [16.5800, 81.7100],
+    "Vijayawada": [16.5062, 80.6480],
+    "Visakhapatnam": [17.6868, 83.2185],
+    "Tirupati": [13.6288, 79.4192],
+    "Kurnool": [15.8281, 78.0373],
+    "Nellore": [14.4426, 79.9865],
+    "Rajahmundry": [17.0005, 81.8040],
+    "Kakinada": [16.9891, 82.2475],
+    "Eluru": [16.7107, 81.0952],
+    "Ongole": [15.5057, 80.0499],
+    "Kadapa": [14.4674, 78.8241],
+    "Anantapur": [14.6819, 77.6006],
+    "Srikakulam": [18.2949, 83.8935],
+    "Vizianagaram": [18.1067, 83.3956],
+    "Chittoor": [13.2172, 79.1003],
+    "Prakasam": [15.5057, 80.0499],
+    "Krishna": [16.5736, 80.3575],
+    "West Godavari": [16.7107, 81.0952],
+    "East Godavari": [17.0005, 81.8040],
+};
+
+// Seeded random for stable positions
+function seededRandom(seed: number) {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+}
+
+function jitter(base: [number, number], spread: number, seed: number): [number, number] {
+    return [
+        base[0] + (seededRandom(seed) - 0.5) * spread,
+        base[1] + (seededRandom(seed + 1) - 0.5) * spread,
+    ];
+}
+
+// --- Static demo alert data with realistic AP names & serious diseases ---
+const AP_NAMES_MALE = [
+    "Rajesh Kumar", "Venkata Rao", "Suresh Babu", "Ramesh Naidu", "Krishna Murthy",
+    "Srinivas Reddy", "Nagarjuna Rao", "Prasad Varma", "Mahesh Chandra", "Anil Kumar",
+    "Ravi Teja", "Ganesh Prasad", "Vijay Kumar", "Satish Reddy", "Pavan Kalyan",
+    "Harish Babu", "Sudhakar Rao", "Nagendra Babu", "Ranga Rao", "Mohan Krishna",
+    "Srikanth Reddy", "Bhaskar Rao", "Kiran Kumar", "Chandra Sekhar", "Vamsi Krishna",
+];
+const AP_NAMES_FEMALE = [
+    "Lakshmi Devi", "Padma Priya", "Saraswathi Devi", "Manga Rani", "Aruna Kumari",
+    "Vijaya Lakshmi", "Sita Mahalakshmi", "Radha Kumari", "Annapurna Devi", "Meena Joshi",
+    "Sunitha Rani", "Kavitha Devi", "Bharathi Kumari", "Durga Bhavani", "Swathi Reddy",
+    "Jyothi Kumari", "Vasantha Kumari", "Manjula Devi", "Saroja Rani", "Tulasi Devi",
+];
+// 4 areas, each with a specific disease
+const AREA_DISEASE_MAP: { area: string; disease: string; color: string }[] = [
+    { area: "Vijayawada", disease: "Dengue Fever", color: "#dc2626" },
+    { area: "Guntur", disease: "Hepatitis B", color: "#ea580c" },
+    { area: "Tenali", disease: "Malaria", color: "#dc2626" },
+    { area: "Mangalagiri", disease: "Tuberculosis (TB)", color: "#b91c1c" },
+];
+
+function generateAlertData() {
+    const records: any[] = [];
+    let id = 0;
+
+    AREA_DISEASE_MAP.forEach(({ area, disease, color }, areaIdx) => {
+        const base = MANDAL_COORDS[area] || MANDAL_COORDS["Guntur"];
+        // 12 cases per area
+        for (let i = 0; i < 12; i++) {
+            const seed = areaIdx * 100 + i;
+            const isMale = seededRandom(seed * 7) > 0.45;
+            const names = isMale ? AP_NAMES_MALE : AP_NAMES_FEMALE;
+            const fullName = names[Math.floor(seededRandom(seed * 3) * names.length)];
+            const [firstName, ...rest] = fullName.split(" ");
+            const lastName = rest.join(" ");
+            const age = 18 + Math.floor(seededRandom(seed * 13) * 55);
+            const coords = jitter(base, 0.04, seed * 17);
+
+            records.push({
+                id: id++,
+                first_name: firstName,
+                last_name: lastName,
+                gender: isMale ? "Male" : "Female",
+                age,
+                diagnosis: disease,
+                mandal: area,
+                district: "Guntur",
+                coords,
+                color,
+            });
+        }
+    });
+
+    // Build hotspots — one per area
+    const hotspots = AREA_DISEASE_MAP.map(({ area, disease }) => ({
+        diagnosis: disease,
+        mandal: area,
+        district: "Guntur",
+        case_count: records.filter(r => r.mandal === area).length,
+    }));
+
+    return { records, hotspots };
+}
+
+const DEMO_ALERTS = generateAlertData();
 
 async function fetchHealthRecords(filters: Record<string, string>) {
     const params = new URLSearchParams(
@@ -62,6 +178,20 @@ export default function HealthDeptDashboard() {
         }),
         retry: 2,
     });
+
+    // Demo alert data — static realistic AP data for govt dashboard
+    const alertMarkers = DEMO_ALERTS.records;
+    const alertHotspots = DEMO_ALERTS.hotspots;
+
+    // Map ref for programmatic zoom
+    const mapRef = useRef<any>(null);
+
+    const zoomToMandal = (mandal: string) => {
+        const coords = MANDAL_COORDS[mandal];
+        if (coords && mapRef.current) {
+            mapRef.current.setView(coords, 14, { animate: true });
+        }
+    };
 
     const hospitals: any[] = stats?.hospitals || [];
     const totals = stats?.totals || {};
@@ -224,6 +354,7 @@ export default function HealthDeptDashboard() {
                             { value: "schemes", label: "Schemes" },
                             { value: "services", label: "Services" },
                             { value: "diseases", label: "Diseases" },
+                            { value: "alerts", label: `Alerts${alertHotspots.length > 0 ? ` (${alertHotspots.length})` : ""}` },
                         ].map(t => (
                             <TabsTrigger
                                 key={t.value}
@@ -273,6 +404,90 @@ export default function HealthDeptDashboard() {
                             {filteredHospitals.length === 0 && (
                                 <div className="col-span-3 text-center p-8 text-slate-500">No hospitals match the selected filters.</div>
                             )}
+                        </div>
+                    </TabsContent>
+
+                    {/* Alerts Map Tab */}
+                    <TabsContent value="alerts">
+                        <div className="space-y-4">
+                            {/* Hotspot Summary */}
+                            {alertHotspots.length > 0 && (
+                                <Card className="border-l-4 border-l-red-500">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-base flex items-center gap-2">
+                                            <AlertTriangle className="w-5 h-5 text-red-600" />
+                                            Disease Hotspot Alerts
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex flex-wrap gap-2">
+                                            {alertHotspots.slice(0, 12).map((h: any, i: number) => (
+                                                <Badge key={i} className="text-xs py-1 px-3 cursor-pointer hover:opacity-80 transition-opacity" style={{
+                                                    background: h.case_count >= 5 ? "#dc2626" : h.case_count >= 3 ? "#ea580c" : "#f59e0b",
+                                                    color: "white",
+                                                }}
+                                                onClick={() => zoomToMandal(h.mandal || h.district)}
+                                                >
+                                                    {h.diagnosis} — {h.mandal || h.district} ({h.case_count} cases)
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Map */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-base flex items-center gap-2">
+                                        <span className="text-red-600">GOVT ALERT</span> — Disease Outbreak Map
+                                    </CardTitle>
+                                    <p className="text-xs text-slate-500">Each dot represents a reported case. Click a dot for patient details. Click a hotspot badge above to zoom into that area.</p>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div style={{ height: 550 }}>
+                                        <MapContainer
+                                            center={[16.2700, 80.5400]}
+                                            zoom={11}
+                                            style={{ height: "100%", width: "100%", borderRadius: "0 0 8px 8px" }}
+                                            scrollWheelZoom={true}
+                                            ref={mapRef}
+                                        >
+                                            <TileLayer
+                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                            />
+                                            {alertMarkers.map((m: any, i: number) => (
+                                                <CircleMarker
+                                                    key={i}
+                                                    center={m.coords}
+                                                    radius={14}
+                                                    fillColor={m.color}
+                                                    color="#fff"
+                                                    weight={2}
+                                                    opacity={0.9}
+                                                    fillOpacity={0.85}
+                                                >
+                                                    <Popup>
+                                                        <div style={{ minWidth: 170, fontFamily: "system-ui" }}>
+                                                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8, borderBottom: "1px solid #e2e8f0", paddingBottom: 4 }}>Patient Details</div>
+                                                            <table style={{ fontSize: 13, lineHeight: 1.8 }}>
+                                                                <tbody>
+                                                                    <tr><td style={{ fontWeight: 600, paddingRight: 12, color: "#475569" }}>Name</td><td>{m.first_name} {m.last_name}</td></tr>
+                                                                    <tr><td style={{ fontWeight: 600, paddingRight: 12, color: "#475569" }}>Gender</td><td>{m.gender}</td></tr>
+                                                                    <tr><td style={{ fontWeight: 600, paddingRight: 12, color: "#475569" }}>Age</td><td>{m.age} yrs</td></tr>
+                                                                    <tr><td style={{ fontWeight: 600, paddingRight: 12, color: "#dc2626" }}>Disease</td><td style={{ fontWeight: 600 }}>{m.diagnosis}</td></tr>
+                                                                    <tr><td style={{ fontWeight: 600, paddingRight: 12, color: "#475569" }}>Area</td><td>{m.mandal}, {m.district}</td></tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </Popup>
+                                                </CircleMarker>
+                                            ))}
+                                        </MapContainer>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
                     </TabsContent>
 
