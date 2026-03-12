@@ -248,12 +248,52 @@ export default function HospitalEntry() {
                 return;
             }
             const data = await res.json();
-            setWorker(data.worker);
+            const worker = data.worker;
+
+            // Try to obtain/create a family record for this worker so we have valid UUIDs.
+            // This avoids sending fake "worker-..." IDs into /api/queue/add.
+            let familyData: any = null;
+            try {
+                const familyRes = await fetch(`${API}/api/families/by-card/${encodeURIComponent(worker.worker_id)}`);
+                if (familyRes.ok) {
+                    familyData = await familyRes.json();
+                }
+            } catch {
+                // ignore failures; we'll fallback to a minimal client-side family object
+            }
+
+            setWorker(worker);
+            setWorkerInfo({ id: worker.id, worker_id: worker.worker_id, name: `${worker.first_name} ${worker.last_name || ""}`.trim() });
+
+            if (familyData?.family) {
+                setFamily(familyData.family);
+            } else {
+                setFamily({
+                    id: worker.id,
+                    family_name: `${worker.first_name} ${worker.last_name || ""}`.trim() + " Family",
+                    address: "",
+                    district: worker.district || "",
+                    phone: "",
+                    members: [
+                        {
+                            id: worker.id,
+                            name: `${worker.first_name} ${worker.last_name || ""}`.trim(),
+                            relation: "SELF",
+                            gender: worker.gender,
+                            date_of_birth: worker.dob,
+                            blood_group: worker.blood_group,
+                            allergies: worker.allergies,
+                            chronic_conditions: worker.chronic_conditions,
+                        },
+                    ],
+                });
+            }
+
             setRecords(data.records || []);
             setAppointments(data.appointments || []);
             setCheckups(data.checkups || []);
             setScanStatus("success");
-            setOpdStep("worker-detail");
+            setOpdStep("family");
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
             setScanStatus("failed");
