@@ -209,10 +209,10 @@ export default function ConductorDashboard() {
             <header className="bg-white/80 backdrop-blur-md border-b border-border/40 sticky top-0 z-50">
                 <div className="container mx-auto py-3 px-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/ap-logo.png" alt="AP Govt" className="w-10 h-10 object-contain drop-shadow-sm" />
+                        <img src="/opoc/tg-logo.jpg" alt="AP Govt" className="w-10 h-10 object-contain drop-shadow-sm" />
                         <div className="flex flex-col">
                             <h1 className="font-display font-bold text-lg tracking-tight leading-none bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">APSRTC</h1>
-                            <span className="text-[10px] text-muted-foreground tracking-wide font-medium">Government of Andhra Pradesh</span>
+                            <span className="text-[10px] text-muted-foreground tracking-wide font-medium">Government of Telangana</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs md:text-sm">
