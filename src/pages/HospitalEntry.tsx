@@ -365,6 +365,8 @@ export default function HospitalEntry() {
                     establishment_id: establishmentId,
                     added_by: userContext?.authUserId,
                     notes: visitNotes || null,
+                    member_name: selectedMember.name,
+                    family_name: family.family_name,
                     vitals: (patientWeight || patientTemp) ? {
                         ...(patientWeight ? { weight: patientWeight + " kg" } : {}),
                         ...(patientTemp ? { temperature: patientTemp + " °F" } : {}),
