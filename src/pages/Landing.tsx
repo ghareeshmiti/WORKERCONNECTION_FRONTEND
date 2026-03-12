@@ -144,8 +144,8 @@ export default function Landing() {
               <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white border border-primary-foreground/25 overflow-hidden shrink-0 flex items-center justify-center">
                 {logoOk ? (
                   <img
-                    src="/opoc/ap-logo.png"
-                    alt="Government of Andhra Pradesh emblem"
+                    src="/opoc/tg-logo.png"
+                    alt="Government of Telangana emblem"
                     className="h-full w-full object-contain p-0.5"
                     width="80"
                     height="80"
@@ -154,7 +154,7 @@ export default function Landing() {
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-primary">
-                    AP
+                    TG
                   </div>
                 )}
               </div>
@@ -178,7 +178,7 @@ export default function Landing() {
                 Helpdesk Phone: 1800-XXXX-XXXX
               </div>
               <div className="whitespace-nowrap">
-                Helpdesk Email: support-opoc@ap.gov.in
+                Helpdesk Email: support-opoc@telangana.gov.in
               </div>
             </div>
           </div>
@@ -213,7 +213,7 @@ export default function Landing() {
                   <CardContent className="p-0">
                     <div className="border-b bg-muted/30 px-5 py-3">
                       <div className="text-sm font-semibold text-foreground">
-                        Hon&apos;ble Chief Minister, Andhra Pradesh
+                        Hon&apos;ble Chief Minister, Telangana
                       </div>
                     </div>
 
@@ -223,8 +223,8 @@ export default function Landing() {
                         <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-white flex items-center justify-center shrink-0">
                           {cmOk ? (
                             <img
-                              src="/opoc/cm.jpg"
-                              alt="Nara Chandrababu Naidu"
+                              src="/opoc/tgcm.jpg"
+                              alt="Anumula Revanth Reddy"
                               className="h-full w-full object-cover"
                               width="192"
                               height="240"
@@ -240,10 +240,10 @@ export default function Landing() {
 
                         <div className="text-center sm:text-left">
                           <div className="text-lg sm:text-xl font-semibold text-foreground">
-                            Nara Chandrababu Naidu
+                            Anumula Revanth Reddy
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Chief Minister, Government of Andhra Pradesh
+                            Chief Minister, Government of Telangana
                           </div>
 
                           <div className="mt-3 text-sm text-foreground leading-relaxed">
@@ -570,7 +570,7 @@ export default function Landing() {
               <CardContent className="p-0">
                 <div className="border-b bg-muted/30 px-5 py-3">
                   <div className="text-sm font-semibold text-foreground">
-                    AP PASS – OPOC Feature Matrix
+                    TG PASS – OPOC Feature Matrix
                   </div>
                 </div>
 
@@ -604,7 +604,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="text-sm opacity-95">
-              © Government of Andhra Pradesh
+              © Government of Telangana
             </div>
 
             <div className="text-[11px] sm:text-sm opacity-95 flex flex-wrap gap-x-2 gap-y-1 justify-start md:justify-center">
