@@ -126,7 +126,8 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header Blue Band */}
-      <header className="bg-[#ffcb05] text-[hsl(222 47% 11%)]">
+      <header className="bg-[#FFFFFF] text-[hsl(222 47% 11%)]">
+
         {/* <header className="text-primary-foreground bg-[linear-gradient(90deg,#FF7700_0%,#FF7700_50%,#ffcb05_50%,#ffcb05_100%)]"> */}
         {/* <header className="text-primary-foreground bg-[linear-gradient(to_right,#FF7700_0%,rgba(255,119,0,0)_50%),linear-gradient(to_left,#ffcb05_0%,rgba(255,203,5,0)_50%)]"> */}
         {/* <header
@@ -141,23 +142,19 @@ export default function Landing() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Left: Logo + Titles */}
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-white border border-primary-foreground/25 overflow-hidden shrink-0 flex items-center justify-center">
-                {logoOk ? (
-                  <img
-                    src="/opoc/tg-logo.png"
-                    alt="Government of Telangana emblem"
-                    className="h-full w-full object-contain p-0.5"
-                    width="80"
-                    height="80"
-                    fetchPriority="high"
-                    onError={() => setLogoOk(false)}
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-primary">
-                    TG
-                  </div>
-                )}
-              </div>
+              {logoOk ? (
+                <img
+                  src="/opoc/tg-logo.jpg"
+                  alt="Government of Telangana emblem"
+                  className="h-20 w-auto object-contain shrink-0"
+                  fetchPriority="high"
+                  onError={() => setLogoOk(false)}
+                />
+              ) : (
+                <div className="h-20 w-20 flex items-center justify-center text-sm font-semibold text-primary">
+                  TG
+                </div>
+              )}
 
               <div className="leading-tight">
                 <div className="text-xs sm:text-sm opacity-90">
@@ -185,6 +182,7 @@ export default function Landing() {
 
         </div>
       </header>
+      <hr />
 
       <main id="main">
         {/* Hero */}
@@ -591,7 +589,7 @@ export default function Landing() {
       </main>
 
       {/* Footer */}
-      <footer id="contact" className="bg-[#ffcb05] text-[hsl(222 47% 11%)]">
+      <footer id="contact" className="bg-[#ffffff] text-[hsl(222 47% 11%)]">
         {/* <footer
         id="contact"
         className="text-primary-foreground"
