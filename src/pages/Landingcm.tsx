@@ -74,7 +74,7 @@ export default function Landing() {
           {/* Left Side: Branding */}
           <div className="p-8 flex flex-col items-center border-r bg-white/50 space-y-6 pt-12">
             {/* <img
-              src=" src="/opoc/ap-logo.png"
+              src=" src="/opoc/tg-logo.jpg"
               alt="Andhra Pradesh Government Seal"
               className="w-32 h-32 object-contain"
             /> */}

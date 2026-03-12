@@ -132,13 +132,13 @@ export default function RTCEstablishmentDashboard() {
             <header className="bg-white border-b sticky top-0 z-30">
                 <div className="container mx-auto px-6 py-3 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/ap-logo.png" alt="AP Govt" className="w-10 h-10 object-contain" />
+                        <img src="/opoc/tg-logo.jpg" alt="AP Govt" className="w-10 h-10 object-contain" />
                         <div className="flex flex-col">
                             <h1 className="text-xl font-bold flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
                                 {est?.name || "Guntur Depot"}
                             </h1>
                             <p className="text-slate-500 text-xs mt-0.5 font-medium tracking-wide">
-                                Government of Andhra Pradesh — AP State Road Transport Corp.
+                                Government of Telangana — AP State Road Transport Corp.
                             </p>
                         </div>
                     </div>
