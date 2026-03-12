@@ -40,7 +40,7 @@ export default function Landing() {
           {/* Center: Logo & Text */}
           <div className="flex items-center gap-4 z-20">
             <img
-              src="/opoc/tg-logo.png"
+              src="/opoc/tg-logo.jpg"
               alt="Telangana Government Logo"
               className="h-20 md:h-28 w-auto object-contain"
             />
