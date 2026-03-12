@@ -494,7 +494,7 @@ export default function Landing() {
                     <div className="p-5">
                       <div className="w-full overflow-hidden rounded-lg border bg-white">
                         <img
-                          src="/opoc/ubc-benefits.jpeg"
+                          src="/opoc/ubc-benefits.jpg"
                           alt="Universal Benefit Card benefits overview"
                           className="w-full h-auto object-contain"
                           loading="lazy"

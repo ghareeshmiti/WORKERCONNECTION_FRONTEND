@@ -14,7 +14,7 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const HEALTH_API = "https://workerconnection-backend.vercel.app/api";
 
 const SCHEME_COLORS: Record<string, string> = {
-    "NTR Vaidya Seva": "#ea580c",
+    "Aarogyasri": "#ea580c",
     "EHS": "#0284c7",
     "PMJAY": "#9333ea",
     "Paid": "#64748b",
@@ -182,7 +182,7 @@ export default function HospitalEntry() {
     // New record form
     const [form, setForm] = useState({
         service_type: "Consultation",
-        scheme_name: "NTR Vaidya Seva",
+        scheme_name: "Aarogyasri",
         diagnosis: "",
         description: "",
         cost: "",
@@ -390,7 +390,7 @@ export default function HospitalEntry() {
             const data = await res.json();
             setRecords(prev => [data.record, ...prev]);
             setShowForm(false);
-            setForm({ service_type: "Consultation", scheme_name: "NTR Vaidya Seva", diagnosis: "", description: "", cost: "", govt_paid: "" });
+            setForm({ service_type: "Consultation", scheme_name: "Aarogyasri", diagnosis: "", description: "", cost: "", govt_paid: "" });
             toast({ title: "Record Added", description: `${form.service_type} record saved successfully.` });
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -414,10 +414,10 @@ export default function HospitalEntry() {
             <header className="bg-white border-b sticky top-0 z-20 shadow-sm border-t-4 border-t-orange-600">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/tg-logo.jpg" alt="AP Govt" className="w-12 h-12 object-contain" />
+                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
                         <div className="flex flex-col">
                             <span className="text-xl font-black text-orange-700 leading-none tracking-tight">{establishmentName}</span>
-                            <span className="text-xs text-slate-500 font-bold tracking-widest mt-1">AP HEALTH DEPARTMENT — OPD PATIENT ENTRY</span>
+                            <span className="text-xs text-slate-500 font-bold tracking-widest mt-1">TG HEALTH DEPARTMENT — OPD PATIENT ENTRY</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">

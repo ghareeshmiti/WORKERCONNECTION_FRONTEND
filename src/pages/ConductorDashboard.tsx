@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 // Mock Data for Routes/Stations
-const STATIONS = ["Guntur", "Vijayawada", "Tenali", "Mangalagiri", "Amaravati"];
+const STATIONS = ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"];
 
 type TicketState = "IDLE" | "SCANNING" | "VERIFIED" | "ISSUING" | "ISSUED";
 
@@ -37,7 +37,7 @@ export default function ConductorDashboard() {
 
     const [state, setState] = useState<TicketState>("IDLE");
     const [passenger, setPassenger] = useState<PassengerDetails | null>(null);
-    const [source, setSource] = useState("Guntur");
+    const [source, setSource] = useState("Hyderabad");
     const [destination, setDestination] = useState("");
     const [fare, setFare] = useState(0);
     const [ticketId, setTicketId] = useState("");
@@ -93,7 +93,7 @@ export default function ConductorDashboard() {
                     cardId: w.worker_id,
                     // Mock eligibility logic for now (e.g. Females are free in some schemes)
                     isEligibleFree: (w.gender === 'Female' || age > 60),
-                    schemeName: (w.gender === 'Female') ? "Mahila Shakti" : (age > 60 ? "Senior Citizen" : undefined),
+                    schemeName: (w.gender === 'Female') ? "Mahalakshmi" : (age > 60 ? "Senior Citizen" : undefined),
                     photoUrl: w.photo_url
                 };
 
@@ -163,14 +163,14 @@ export default function ConductorDashboard() {
                 fare: passenger?.isEligibleFree ? 0 : fare,
                 issuedBy: userContext?.fullName || 'Conductor',
                 paymentMode: passenger?.isEligibleFree ? 'FREE' : 'CASH',
-                busNumber: 'AP07-1234',
+                busNumber: 'TG09-5678',
 
                 // New Fields
                 workerId: passenger?.id || null,
                 establishmentId: userContext?.establishmentId || null,
                 conductorId: userContext?.authUserId || null,
                 routeId: 'R-101', // Mock Route ID
-                routeName: 'Guntur - Vijayawada Express',
+                routeName: 'Hyderabad - Warangal Express',
                 fromStop: source,
                 toStop: destination,
                 isFree: passenger?.isEligibleFree || false,
@@ -209,20 +209,20 @@ export default function ConductorDashboard() {
             <header className="bg-white/80 backdrop-blur-md border-b border-border/40 sticky top-0 z-50">
                 <div className="container mx-auto py-3 px-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/tg-logo.jpg" alt="AP Govt" className="w-10 h-10 object-contain drop-shadow-sm" />
+                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
                         <div className="flex flex-col">
-                            <h1 className="font-display font-bold text-lg tracking-tight leading-none bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">APSRTC</h1>
+                            <h1 className="font-display font-bold text-lg tracking-tight leading-none bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">TGRTC</h1>
                             <span className="text-[10px] text-muted-foreground tracking-wide font-medium">Government of Telangana</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs md:text-sm">
                         <div className="hidden md:block text-right">
-                            <div className="text-muted-foreground">Conductor: <span className="text-foreground font-semibold">{userContext?.fullName || "Ravi Kumar"}</span></div>
-                            <div className="text-muted-foreground">Bus: <span className="text-orange-600 font-bold">AP07-1234</span></div>
+                            <div className="text-muted-foreground">Conductor: <span className="text-foreground font-semibold">{userContext?.fullName || "Ramesh Goud"}</span></div>
+                            <div className="text-muted-foreground">Bus: <span className="text-orange-600 font-bold">TG09-5678</span></div>
                         </div>
                         <div className="text-right">
                             <div className="text-muted-foreground">POS ID: <span className="text-foreground font-semibold">POS-001</span></div>
-                            <div className="text-muted-foreground">Route: <span className="text-foreground">Guntur → Vijayawada</span></div>
+                            <div className="text-muted-foreground">Route: <span className="text-foreground">Hyderabad → Warangal</span></div>
                         </div>
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
                             <LogOut className="w-5 h-5" />
@@ -306,7 +306,7 @@ export default function ConductorDashboard() {
                                             <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-600 font-medium">{passenger.age} yrs</span>
                                             <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-600 font-medium">{passenger.gender}</span>
                                         </div>
-                                        <p className="text-xs text-slate-400 mt-1">Vijayawada, Krishna</p>
+                                        <p className="text-xs text-slate-400 mt-1">Hyderabad, Telangana</p>
                                     </div>
                                 </div>
                             </div>
@@ -397,7 +397,7 @@ export default function ConductorDashboard() {
                             {/* Receipt */}
                             <div className="bg-white border rounded-lg p-0 overflow-hidden shadow-sm text-left">
                                 <div className="bg-slate-50 p-3 border-b text-center font-bold text-sm text-slate-700 uppercase tracking-widest">
-                                    APSRTC - Bus Ticket
+                                    TGRTC - Bus Ticket
                                 </div>
                                 <div className="p-4 space-y-4">
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -407,7 +407,7 @@ export default function ConductorDashboard() {
                                         </div>
                                         <div className="text-right">
                                             <span className="block text-xs text-slate-500 font-semibold">Bus:</span>
-                                            <span className="font-medium text-slate-900">AP07-1234</span>
+                                            <span className="font-medium text-slate-900">TG09-5678</span>
                                         </div>
                                         <div>
                                             <span className="block text-xs text-slate-500 font-semibold">Route:</span>

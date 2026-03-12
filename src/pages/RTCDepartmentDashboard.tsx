@@ -54,17 +54,18 @@ async function fetchDashboardData() {
 
     if (tErr) throw tErr;
 
-    // 2. Fetch Depots
-    const { data: establishments, error: eErr } = await supabase
+    // 2. Fetch TG Depots only (cast via unknown to avoid Supabase generic depth errors)
+    const estRes = await (supabase as any)
         .from("establishments")
         .select("id, name, code, district")
-        .eq("establishment_type", "Depot");
+        .eq("establishment_type", "Depot")
+        .eq("state_tag", "TG");
 
-    if (eErr) throw eErr;
+    if (estRes.error) throw estRes.error;
 
     return {
         tickets: tickets as unknown as TicketData[],
-        depots: establishments as EstablishmentData[]
+        depots: (estRes.data ?? []) as EstablishmentData[]
     };
 }
 
@@ -84,11 +85,17 @@ const getRandomName = (id: string) => {
 };
 
 const formatCitigenId = (ticketId: string, index: number) => {
-    // Mock format: AP-C-YYYY-XXXXXXX
-    // Using a deterministic sequence
+    // Mock format: TG-C-YYYY-XXXXXXX
     const year = "19" + (80 + (index % 20));
     const seq = String(index + 1).padStart(8, '0');
-    return `AP-C-${year}-${seq}`;
+    return `TG-C-${year}-${seq}`;
+};
+
+// Normalise scheme names from DB to display names
+const normaliseScheme = (name: string) => {
+    if (!name) return name;
+    if (name.toLowerCase().includes('mahila shakti')) return 'Mahalakshmi';
+    return name;
 };
 
 
@@ -250,16 +257,16 @@ export default function RTCDepartmentDashboard() {
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {/* Use a placeholder or reliable URL for the logo if local file missing */}
-                        <img src="/opoc/tg-logo.jpg" alt="AP Govt" className="w-12 h-12 object-contain" />
+                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
                         <div className="flex flex-col">
-                            <span className="text-2xl font-black text-orange-700 leading-none tracking-tight">APSRTC COMMAND CONTROL</span>
+                            <span className="text-2xl font-black text-orange-700 leading-none tracking-tight">TGRTC COMMAND CONTROL</span>
                             <span className="text-xs text-slate-500 font-bold tracking-widest mt-1">Government of Telangana</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-right hidden md:block">
                             <div className="text-sm font-bold text-slate-700">Administrator</div>
-                            <div className="text-xs text-slate-500">apsrtc@gmail.com</div>
+                            <div className="text-xs text-slate-500">tgrtc@telangana.gov.in</div>
                         </div>
                         <Button variant="ghost" size="sm" onClick={signOut} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                             <RefreshCw className="w-4 h-4 mr-2" /> Log Out
@@ -338,7 +345,7 @@ export default function RTCDepartmentDashboard() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Schemes</SelectItem>
-                                {availableSchemes.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                {availableSchemes.map(s => <SelectItem key={s} value={s}>{normaliseScheme(s)}</SelectItem>)}
                             </SelectContent>
                         </Select>
 
@@ -558,13 +565,13 @@ export default function RTCDepartmentDashboard() {
                                 <tbody>
                                     {selectedDepotDetails?.tickets.map((t, index) => (
                                         <tr key={t.id} className="border-b">
-                                            <td className="p-3 font-mono text-xs">{t.bus_number || 'AP39Z-001'}</td>
+                                            <td className="p-3 font-mono text-xs">{t.bus_number || 'TG39Z-001'}</td>
                                             <td className="p-3">{t.route_name}</td>
                                             <td className="p-3 font-mono text-xs">{formatCitigenId(t.establishment_id, index)}</td>
                                             <td className="p-3">{t.workers ? `${t.workers.first_name} ${t.workers.last_name}` : getRandomName(t.id)}</td>
                                             <td className="p-3">
                                                 {t.is_free ? (
-                                                    <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">{t.remarks}</span>
+                                                    <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">{normaliseScheme(t.remarks)}</span>
                                                 ) : (
                                                     <span className="bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full">Paid</span>
                                                 )}
