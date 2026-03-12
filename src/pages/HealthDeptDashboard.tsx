@@ -15,7 +15,7 @@ import "leaflet/dist/leaflet.css";
 const API = (import.meta.env.VITE_API_URL || "https://workerconnection-backend.vercel.app").replace(/\/$/, '') + "/api";
 
 const SCHEME_COLORS: Record<string, string> = {
-    "NTR Vaidya Seva": "#16a34a",
+    "Aarogyasri": "#16a34a",
     "EHS": "#2563eb",
     "PMJAY": "#9333ea",
     "Paid": "#64748b",
@@ -32,38 +32,28 @@ async function fetchHealthStats() {
     return res.json();
 }
 
-// Approximate coordinates for AP mandals/areas (for map visualization)
+// Approximate coordinates for TG mandals/areas (for map visualization)
 const MANDAL_COORDS: Record<string, [number, number]> = {
-    "Guntur": [16.3067, 80.4365],
-    "Guntur Urban": [16.3100, 80.4400],
-    "Tenali": [16.2380, 80.6400],
-    "Mangalagiri": [16.4307, 80.5681],
-    "Tadepalli": [16.4833, 80.6000],
-    "Narasaraopet": [16.2346, 80.0487],
-    "Ponnuru": [16.0711, 80.5510],
-    "Bapatla": [15.9046, 80.4670],
-    "Sattenapalli": [16.3940, 80.1524],
-    "Chilakaluripet": [16.0897, 80.1673],
-    "Pallamkurru": [16.5700, 81.7300],
-    "Anathavaram": [16.5800, 81.7100],
-    "Vijayawada": [16.5062, 80.6480],
-    "Visakhapatnam": [17.6868, 83.2185],
-    "Tirupati": [13.6288, 79.4192],
-    "Kurnool": [15.8281, 78.0373],
-    "Nellore": [14.4426, 79.9865],
-    "Rajahmundry": [17.0005, 81.8040],
-    "Kakinada": [16.9891, 82.2475],
-    "Eluru": [16.7107, 81.0952],
-    "Ongole": [15.5057, 80.0499],
-    "Kadapa": [14.4674, 78.8241],
-    "Anantapur": [14.6819, 77.6006],
-    "Srikakulam": [18.2949, 83.8935],
-    "Vizianagaram": [18.1067, 83.3956],
-    "Chittoor": [13.2172, 79.1003],
-    "Prakasam": [15.5057, 80.0499],
-    "Krishna": [16.5736, 80.3575],
-    "West Godavari": [16.7107, 81.0952],
-    "East Godavari": [17.0005, 81.8040],
+    "Hyderabad": [17.3850, 78.4867],
+    "Secunderabad": [17.4399, 78.4983],
+    "LB Nagar": [17.3436, 78.5536],
+    "Kukatpally": [17.4849, 78.4138],
+    "Uppal": [17.4057, 78.5594],
+    "Warangal": [17.9784, 79.5941],
+    "Karimnagar": [18.4386, 79.1288],
+    "Nizamabad": [18.6725, 78.0941],
+    "Khammam": [17.2473, 80.1514],
+    "Nalgonda": [17.0575, 79.2671],
+    "Mahbubnagar": [16.7374, 77.9846],
+    "Ranga Reddy": [17.3000, 78.4000],
+    "Medchal": [17.6286, 78.4802],
+    "Siddipet": [18.1018, 78.8520],
+    "Adilabad": [19.6640, 78.5320],
+    "Mancherial": [18.8707, 79.4412],
+    "Suryapet": [17.1404, 79.6223],
+    "Yadadri": [17.0830, 78.9980],
+    "Sangareddy": [17.6191, 78.0855],
+    "Bhongir": [17.5119, 78.8931],
 };
 
 // Seeded random for stable positions
@@ -79,26 +69,26 @@ function jitter(base: [number, number], spread: number, seed: number): [number, 
     ];
 }
 
-// --- Static demo alert data with realistic AP names & serious diseases ---
+// --- Static demo alert data with realistic TG names & serious diseases ---
 const AP_NAMES_MALE = [
-    "Rajesh Kumar", "Venkata Rao", "Suresh Babu", "Ramesh Naidu", "Krishna Murthy",
-    "Srinivas Reddy", "Nagarjuna Rao", "Prasad Varma", "Mahesh Chandra", "Anil Kumar",
-    "Ravi Teja", "Ganesh Prasad", "Vijay Kumar", "Satish Reddy", "Pavan Kalyan",
-    "Harish Babu", "Sudhakar Rao", "Nagendra Babu", "Ranga Rao", "Mohan Krishna",
-    "Srikanth Reddy", "Bhaskar Rao", "Kiran Kumar", "Chandra Sekhar", "Vamsi Krishna",
+    "Ravi Kumar", "Srinivas Goud", "Mahesh Reddy", "Ramesh Yadav", "Venkat Rao",
+    "Kiran Kumar", "Praveen Reddy", "Suresh Naik", "Anil Deshmukh", "Harish Goud",
+    "Vijay Kumar", "Naresh Reddy", "Sanjay Rao", "Raju Goud", "Santosh Kumar",
+    "Bhaskar Rao", "Mohan Reddy", "Karthik Reddy", "Ajay Kumar", "Sunil Rao",
+    "Srinu Goud", "Ramana Rao", "Vamshi Krishna", "Chandra Reddy", "Gopal Rao",
 ];
 const AP_NAMES_FEMALE = [
-    "Lakshmi Devi", "Padma Priya", "Saraswathi Devi", "Manga Rani", "Aruna Kumari",
-    "Vijaya Lakshmi", "Sita Mahalakshmi", "Radha Kumari", "Annapurna Devi", "Meena Joshi",
-    "Sunitha Rani", "Kavitha Devi", "Bharathi Kumari", "Durga Bhavani", "Swathi Reddy",
-    "Jyothi Kumari", "Vasantha Kumari", "Manjula Devi", "Saroja Rani", "Tulasi Devi",
+    "Lakshmi Bai", "Padmavathi Devi", "Saraswathi Rao", "Mamatha Reddy", "Aruna Goud",
+    "Vijaya Lakshmi", "Sunita Naik", "Radha Devi", "Annapurna Goud", "Meena Kumari",
+    "Kavitha Reddy", "Bharathi Rao", "Durga Devi", "Swapna Reddy", "Jyothi Goud",
+    "Vasantha Devi", "Manjula Rao", "Saroja Devi", "Tulasi Reddy", "Ratna Kumari",
 ];
-// 4 areas, each with a specific disease
+// 4 TG areas, each with a specific disease
 const AREA_DISEASE_MAP: { area: string; disease: string; color: string }[] = [
-    { area: "Vijayawada", disease: "Dengue Fever", color: "#dc2626" },
-    { area: "Guntur", disease: "Hepatitis B", color: "#ea580c" },
-    { area: "Tenali", disease: "Malaria", color: "#dc2626" },
-    { area: "Mangalagiri", disease: "Tuberculosis (TB)", color: "#b91c1c" },
+    { area: "Hyderabad", disease: "Dengue Fever", color: "#dc2626" },
+    { area: "Warangal", disease: "Hepatitis B", color: "#ea580c" },
+    { area: "Nizamabad", disease: "Malaria", color: "#dc2626" },
+    { area: "Karimnagar", disease: "Tuberculosis (TB)", color: "#b91c1c" },
 ];
 
 function generateAlertData() {
@@ -126,7 +116,7 @@ function generateAlertData() {
                 age,
                 diagnosis: disease,
                 mandal: area,
-                district: "Guntur",
+                district: "Telangana",
                 coords,
                 color,
             });
@@ -137,7 +127,7 @@ function generateAlertData() {
     const hotspots = AREA_DISEASE_MAP.map(({ area, disease }) => ({
         diagnosis: disease,
         mandal: area,
-        district: "Guntur",
+        district: "Telangana",
         case_count: records.filter(r => r.mandal === area).length,
     }));
 
@@ -225,10 +215,10 @@ export default function HealthDeptDashboard() {
             <header className="bg-white border-b sticky top-0 z-20 shadow-sm border-t-4 border-t-orange-600">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/tg-logo.jpg" alt="AP Govt" className="w-12 h-12 object-contain" />
+                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
                         <div className="flex flex-col">
                             <span className="text-2xl font-black text-orange-700 leading-none tracking-tight">
-                                AP HEALTH COMMAND CONTROL
+                                TG HEALTH COMMAND CONTROL
                             </span>
                             <span className="text-xs text-slate-500 font-bold tracking-widest mt-1">
                                 Government of Telangana
@@ -325,7 +315,7 @@ export default function HealthDeptDashboard() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Schemes</SelectItem>
-                                {["NTR Vaidya Seva", "EHS", "PMJAY", "Paid"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                {["Aarogyasri", "EHS", "PMJAY", "Paid"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
                         <Select value={serviceFilter} onValueChange={setServiceFilter}>
@@ -447,8 +437,8 @@ export default function HealthDeptDashboard() {
                                 <CardContent className="p-0">
                                     <div style={{ height: 550 }}>
                                         <MapContainer
-                                            center={[16.2700, 80.5400]}
-                                            zoom={11}
+                                            center={[17.3850, 78.4867]}
+                                            zoom={10}
                                             style={{ height: "100%", width: "100%", borderRadius: "0 0 8px 8px" }}
                                             scrollWheelZoom={true}
                                             ref={mapRef}

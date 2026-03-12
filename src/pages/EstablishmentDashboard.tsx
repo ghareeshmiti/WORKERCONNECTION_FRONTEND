@@ -189,7 +189,7 @@ export default function EstablishmentDashboard() {
       <header className="bg-white border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/opoc/tg-logo.jpg" alt="Seal" className="w-10 h-10 object-contain" />
+            <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
             <div className="flex flex-col">
               <span className="text-lg md:text-xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
                 One State - One Card

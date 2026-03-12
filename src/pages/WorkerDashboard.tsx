@@ -188,46 +188,56 @@ const DUMMY_DATA = {
       benefit_type: "Insurance", benefit_val: "", tags: ["Central"]
     },
     {
-      id: 4, name: "Chandranna Bima", type: "State", status: "Applied",
-      desc: "Life and accident insurance for workers with coverage up to ₹5 lakhs.",
-      benefit_type: "Insurance", benefit_val: "₹500,000", tags: ["State"]
-    },
-    // Super Six Initiatives
-    {
-      id: 5, name: "Talliki Vandanam", type: "State", status: "Active",
-      desc: "Financial assistance for school-going children.",
-      benefit_type: "Cash", benefit_val: "₹15,000", tags: ["State", "Education"]
-    },
-    {
-      id: 6, name: "Deepam Scheme", type: "State", status: "Active",
-      desc: "Provision of three free LPG cylinders per year to every household.",
-      benefit_type: "Subsidy", benefit_val: "3 Cylinders", tags: ["State", "Household"]
-    },
-    {
-      id: 7, name: "Free Bus Travel", type: "State", status: "Active",
-      desc: "Free travel for women across Andhra Pradesh.",
-      benefit_type: "Service", benefit_val: "Free Travel", tags: ["State", "Transport"]
-    },
-    {
-      id: 8, name: "Aadabidda Nidhi", type: "State", status: "Eligible",
-      desc: "Monthly financial assistance of ₹1,500 for women (18-59 years).",
-      benefit_type: "Cash", benefit_val: "₹1,500/mo", tags: ["State", "Women"]
-    },
-    {
-      id: 9, name: "Yuva Galam", type: "State", status: "Eligible",
-      desc: "A monthly unemployment allowance of ₹3,000 for youth.",
-      benefit_type: "Cash", benefit_val: "₹3,000/mo", tags: ["State", "Youth"]
-    },
-    {
-      id: 10, name: "Annadata Sukhibhava", type: "State", status: "Eligible",
-      desc: "Direct financial aid of ₹20,000 annually to farmers.",
-      benefit_type: "Cash", benefit_val: "₹20,000/yr", tags: ["State", "Agriculture"]
-    },
-    {
-      id: 11, name: "PM Garib Kalyan Yojana", type: "Central", status: "Pending Verification",
+      id: 4, name: "PM Garib Kalyan Yojana", type: "Central", status: "Pending Verification",
       desc: "Free food grain distribution for workers and families.",
       benefit_type: "Other", benefit_val: "", tags: ["Central"]
-    }
+    },
+    // Telangana State Schemes
+    {
+      id: 5, name: "Mahalakshmi Scheme", type: "State", status: "Active",
+      desc: "Provides free TSRTC bus travel for women, girls, and transgenders, plus ₹500 gas cylinders and monthly financial assistance.",
+      benefit_type: "Service", benefit_val: "Free Travel + ₹500", tags: ["State", "Women", "Transport"]
+    },
+    {
+      id: 6, name: "Gruha Jyothi Scheme", type: "State", status: "Active",
+      desc: "Offers up to 200 units of free electricity per month for eligible households.",
+      benefit_type: "Subsidy", benefit_val: "200 Units Free", tags: ["State", "Household"]
+    },
+    {
+      id: 7, name: "Indiramma Indlu Scheme", type: "State", status: "Eligible",
+      desc: "Provides financial assistance and 100% subsidies for eligible landless/homeless citizens to build homes.",
+      benefit_type: "Cash", benefit_val: "100% Subsidy", tags: ["State", "Housing"]
+    },
+    {
+      id: 8, name: "Cheyutha Scheme (Rajiv Arogyasri)", type: "State", status: "Active",
+      desc: "Offers up to ₹10 lakh in free corporate medical treatment for economically backward sections.",
+      benefit_type: "Insurance", benefit_val: "₹10,00,000", tags: ["State", "Health"]
+    },
+    {
+      id: 9, name: "Rajiv Yuva Vikasam (5 Lakh Scheme)", type: "State", status: "Eligible",
+      desc: "Aims to support 5 lakh youth with financial assistance and opportunities for self-employment.",
+      benefit_type: "Cash", benefit_val: "Financial Aid", tags: ["State", "Youth"]
+    },
+    {
+      id: 10, name: "Indiramma Minority Mahila Yojana", type: "State", status: "Eligible",
+      desc: "Provides financial assistance of ₹50,000 specifically for minority women.",
+      benefit_type: "Cash", benefit_val: "₹50,000", tags: ["State", "Women", "Minority"]
+    },
+    {
+      id: 11, name: "Rythu Bharosa", type: "State", status: "Eligible",
+      desc: "Continued agricultural investment support for farmers.",
+      benefit_type: "Cash", benefit_val: "Investment Support", tags: ["State", "Agriculture"]
+    },
+    {
+      id: 12, name: "Aasara Pensions", type: "State", status: "Active",
+      desc: "Continued welfare pensions for the elderly, widows, and disabled.",
+      benefit_type: "Cash", benefit_val: "Monthly Pension", tags: ["State", "Welfare"]
+    },
+    {
+      id: 13, name: "Kalyana Lakshmi / Shaadi Mubarak", type: "State", status: "Eligible",
+      desc: "Financial assistance for marriage provided to eligible families.",
+      benefit_type: "Cash", benefit_val: "Marriage Aid", tags: ["State", "Women"]
+    },
   ],
   grievances_list: [
     {
@@ -594,7 +604,7 @@ export default function WorkerDashboard() {
       <header className="bg-white border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/opoc/tg-logo.jpg" alt="Seal" className="w-10 h-10 object-contain" />
+            <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
             <div className="flex flex-col">
               <span className="text-lg md:text-xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
                 One State - One Card

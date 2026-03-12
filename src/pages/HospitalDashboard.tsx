@@ -82,7 +82,7 @@ export default function HospitalDashboard() {
             <header className="bg-white border-b sticky top-0 z-20 shadow-sm border-t-4 border-t-orange-600">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/tg-logo.jpg" alt="AP Govt" className="w-12 h-12 object-contain" />
+                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
                         <div className="flex flex-col">
                             <span className="text-xl font-black text-orange-700 leading-none tracking-tight">
                                 {establishmentName}
