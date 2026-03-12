@@ -31,8 +31,8 @@ export default function Landing() {
           {/* Left: CM Image */}
           <div className="h-full flex items-end relative z-10">
             <img
-              src="/src/assets/cm_babu.png"
-              alt="Hon'ble Chief Minister"
+              src="/opoc/tgcm.jpg"
+              alt="Hon'ble Chief Minister Anumula Revanth Reddy"
               className="h-full w-auto object-contain"
             />
           </div>
@@ -40,8 +40,8 @@ export default function Landing() {
           {/* Center: Logo & Text */}
           <div className="flex items-center gap-4 z-20">
             <img
-              src="/opoc/ap-logo.png"
-              alt="AP Government Logo"
+              src="/opoc/tg-logo.png"
+              alt="Telangana Government Logo"
               className="h-20 md:h-28 w-auto object-contain"
             />
 
@@ -51,7 +51,7 @@ export default function Landing() {
               </h1>
               <div className="w-full h-px bg-slate-300 my-1"></div>
               <p className="text-sm md:text-lg text-slate-600 font-medium">
-                Government of Andhra Pradesh
+                Government of Telangana
               </p>
             </div>
           </div>
@@ -60,7 +60,7 @@ export default function Landing() {
           <div className="h-full flex items-center justify-end relative z-10">
             <img
               src="/src/assets/ap_map_colorful.png"
-              alt="Andhra Pradesh Map"
+              alt="Telangana Map"
               className="h-full w-auto object-contain"
             />
           </div>
@@ -82,7 +82,7 @@ export default function Landing() {
               <p className="text-xl text-slate-600 font-medium">Welcome to</p>
               <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">One State - One Card</h1>
               <p className="text-sm text-slate-500 leading-relaxed px-4 text-justify">
-                They are local government facilities set up in the Indian state of Andhra Pradesh to decentralize the administration by making services and welfare services of all government departments available at one place.
+                They are local government facilities set up in the Indian state of Telangana to decentralize the administration by making services and welfare services of all government departments available at one place.
               </p>
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-6 border-t bg-card text-card-foreground">
         <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>© 2026 Government of Andhra Pradesh. All rights reserved.</p>
+          <p>© 2026 Government of Telangana. All rights reserved.</p>
         </div>
       </footer>
     </div>
