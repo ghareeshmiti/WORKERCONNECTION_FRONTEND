@@ -1659,7 +1659,7 @@ export default function WorkerDashboard() {
                       </div>
                       <div className="text-sm text-slate-600 space-y-1 pl-11">
                         <p>Toll Free: <span className="font-semibold">155214</span></p>
-                        <p>Email: <a href="mailto:support@worker.ap.gov.in" className="text-blue-600 hover:underline">support@worker.ap.gov.in</a></p>
+                        <p>Email: <a href="mailto:support@worker.tg.gov.in" className="text-blue-600 hover:underline">support@worker.tg.gov.in</a></p>
                       </div>
                     </CardContent>
                   </Card>
