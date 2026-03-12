@@ -161,7 +161,7 @@ export default function Landing() {
 
               <div className="leading-tight">
                 <div className="text-xs sm:text-sm opacity-90">
-                  Government of Andhra Pradesh
+                  Government of Telangana
                 </div>
                 <div className="text-xl sm:text-2xl font-display font-bold">
                   One State - One Card
