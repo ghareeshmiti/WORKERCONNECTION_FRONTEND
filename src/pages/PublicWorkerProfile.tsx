@@ -12,7 +12,7 @@ const MOCK_SCHEMES_ELIGIBLE = [
     { name: 'Annadata Sukhibhava', telugu: 'అన్నదాత సుఖీభవ', status: 'Eligible', bg: 'bg-green-100 text-green-800' },
     { name: 'Deepam 2.0', telugu: 'దీపం 2.0', status: 'Eligible', bg: 'bg-green-100 text-green-800' },
     { name: '100 Days Work (MGNREGA)', telugu: '100 రోజుల పని', status: 'Eligible', bg: 'bg-green-100 text-green-800' },
-    { name: 'NTR Vaidya Seva', telugu: 'ఎన్టీఆర్ వైద్య సేవ', status: 'Eligible', bg: 'bg-green-100 text-green-800' }
+    { name: 'State Health Scheme', telugu: 'ఎన్టీఆర్ వైద్య సేవ', status: 'Eligible', bg: 'bg-green-100 text-green-800' }
 ];
 
 const MOCK_SCHEMES_NOT_ELIGIBLE = [
@@ -23,7 +23,7 @@ const CURRENT_MONTH_DATA = [
     { name: 'Annadata Sukhibhava', telugu: 'అన్నదాత సుఖీభవ', status: 'Taken', date: '2026-01-15' },
     { name: 'Deepam 2.0', telugu: 'దీపం 2.0', status: 'Taken', date: '2026-01-20' },
     { name: '100 Days Work (MGNREGA)', telugu: '100 రోజుల పని', status: 'Pending', date: '-' },
-    { name: 'NTR Vaidya Seva', telugu: 'ఎన్టీఆర్ వైద్య సేవ', status: 'Pending', date: '-' }
+    { name: 'State Health Scheme', telugu: 'ఎన్టీఆర్ వైద్య సేవ', status: 'Pending', date: '-' }
 ];
 
 const HISTORY_DATA: any = {
@@ -34,7 +34,7 @@ const HISTORY_DATA: any = {
                 { name: 'Annadata Sukhibhava', status: 'Taken', date: '2024-12-08' },
                 { name: 'Deepam 2.0', status: 'Taken', date: '2024-12-25' },
                 { name: '100 Days Work (MGNREGA)', status: 'Taken', date: '2024-12-24' },
-                { name: 'NTR Vaidya Seva', status: 'Taken', date: '2024-12-13' }
+                { name: 'State Health Scheme', status: 'Taken', date: '2024-12-13' }
             ]
         },
         {
@@ -43,7 +43,7 @@ const HISTORY_DATA: any = {
                 { name: 'Annadata Sukhibhava', status: 'Taken', date: '2024-11-21' },
                 { name: 'Deepam 2.0', status: 'Taken', date: '2024-11-09' },
                 { name: '100 Days Work (MGNREGA)', status: 'Taken', date: '2024-11-26' },
-                { name: 'NTR Vaidya Seva', status: 'Taken', date: '2024-11-21' }
+                { name: 'State Health Scheme', status: 'Taken', date: '2024-11-21' }
             ]
         }
     ]

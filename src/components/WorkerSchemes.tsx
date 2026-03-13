@@ -9,7 +9,7 @@ const MOCK_SCHEMES_ELIGIBLE = [
     { name: 'Annadata Sukhibhava - ₹20,000', status: 'Eligible', bg: 'bg-green-100 text-green-800' },
     { name: 'Deepam 2.0 - 3 Cylinders', status: 'Eligible', bg: 'bg-green-100 text-green-800' },
     { name: '100 Days Work (MGNREGA) - ₹307/day', status: 'Eligible', bg: 'bg-green-100 text-green-800' },
-    { name: 'NTR Vaidya Seva - ₹25 Lakh Coverage', status: 'Eligible', bg: 'bg-green-100 text-green-800' }
+    { name: 'State Health Scheme - ₹25 Lakh Coverage', status: 'Eligible', bg: 'bg-green-100 text-green-800' }
 ];
 
 const MOCK_SCHEMES_NOT_ELIGIBLE = [
@@ -20,7 +20,7 @@ const CURRENT_MONTH_DATA = [
     { name: 'Annadata Sukhibhava', telugu: 'అన్నదాత సుఖీభవ', benefit: '₹20,000', status: 'Taken', date: '2025-01-15' },
     { name: 'Deepam 2.0', telugu: 'దీపం 2.0', benefit: '3 Cylinders', status: 'Taken', date: '2025-01-20' },
     { name: '100 Days Work (MGNREGA)', telugu: '100 రోజుల పని', benefit: '₹307/day', status: 'Pending', date: '-' },
-    { name: 'NTR Vaidya Seva', telugu: 'ఎన్టీఆర్ వైద్య సేవ', benefit: '₹25 Lakh Coverage', status: 'Pending', date: '-' }
+    { name: 'State Health Scheme', telugu: 'ఎన్టీఆర్ వైద్య సేవ', benefit: '₹25 Lakh Coverage', status: 'Pending', date: '-' }
 ];
 
 const HISTORY_DATA: any = {
@@ -31,7 +31,7 @@ const HISTORY_DATA: any = {
                 { name: 'Annadata Sukhibhava', status: 'Pending', date: '-', amount: '-' },
                 { name: 'Deepam 2.0', status: 'Taken', date: '2024-12-25', amount: '3 Cylinders' },
                 { name: '100 Days Work (MGNREGA)', status: 'Taken', date: '2024-12-24', amount: '₹307/day' },
-                { name: 'NTR Vaidya Seva', status: 'Taken', date: '2024-12-13', amount: '₹25 Lakh Coverage' }
+                { name: 'State Health Scheme', status: 'Taken', date: '2024-12-13', amount: '₹25 Lakh Coverage' }
             ]
         },
         {
@@ -40,7 +40,7 @@ const HISTORY_DATA: any = {
                 { name: 'Annadata Sukhibhava', status: 'Taken', date: '2024-11-21', amount: '₹20,000' },
                 { name: 'Deepam 2.0', status: 'Taken', date: '2024-11-09', amount: '3 Cylinders' },
                 { name: '100 Days Work (MGNREGA)', status: 'Taken', date: '2024-11-26', amount: '₹307/day' },
-                { name: 'NTR Vaidya Seva', status: 'Taken', date: '2024-11-21', amount: '₹25 Lakh Coverage' }
+                { name: 'State Health Scheme', status: 'Taken', date: '2024-11-21', amount: '₹25 Lakh Coverage' }
             ]
         },
         {
@@ -49,7 +49,7 @@ const HISTORY_DATA: any = {
                 { name: 'Annadata Sukhibhava', status: 'Taken', date: '2024-10-27', amount: '₹20,000' },
                 { name: 'Deepam 2.0', status: 'Taken', date: '2024-10-04', amount: '3 Cylinders' },
                 { name: '100 Days Work (MGNREGA)', status: 'Taken', date: '2024-10-21', amount: '₹307/day' },
-                { name: 'NTR Vaidya Seva', status: 'Taken', date: '2024-10-01', amount: '₹25 Lakh Coverage' }
+                { name: 'State Health Scheme', status: 'Taken', date: '2024-10-01', amount: '₹25 Lakh Coverage' }
             ]
         }
     ]
