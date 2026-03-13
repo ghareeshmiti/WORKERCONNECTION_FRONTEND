@@ -14,7 +14,7 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const HEALTH_API = "https://workerconnection-backend.vercel.app/api";
 
 const SCHEME_COLORS: Record<string, string> = {
-    "Aarogyasri": "#ea580c",
+    "State Health Scheme": "#ea580c",
     "EHS": "#0284c7",
     "PMJAY": "#9333ea",
     "Paid": "#64748b",
@@ -182,7 +182,7 @@ export default function HospitalEntry() {
     // New record form
     const [form, setForm] = useState({
         service_type: "Consultation",
-        scheme_name: "Aarogyasri",
+        scheme_name: "State Health Scheme",
         diagnosis: "",
         description: "",
         cost: "",
@@ -432,7 +432,7 @@ export default function HospitalEntry() {
             const data = await res.json();
             setRecords(prev => [data.record, ...prev]);
             setShowForm(false);
-            setForm({ service_type: "Consultation", scheme_name: "Aarogyasri", diagnosis: "", description: "", cost: "", govt_paid: "" });
+            setForm({ service_type: "Consultation", scheme_name: "State Health Scheme", diagnosis: "", description: "", cost: "", govt_paid: "" });
             toast({ title: "Record Added", description: `${form.service_type} record saved successfully.` });
         } catch (e: any) {
             toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -482,11 +482,10 @@ export default function HospitalEntry() {
                     <div className="flex items-center justify-center gap-1 mb-6">
                         {steps.map((step, i) => (
                             <div key={step.key} className="flex items-center">
-                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                                    i < currentStepIndex ? "bg-green-100 text-green-700" :
+                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${i < currentStepIndex ? "bg-green-100 text-green-700" :
                                     i === currentStepIndex ? "bg-orange-600 text-white shadow-md" :
-                                    "bg-slate-100 text-slate-400"
-                                }`}>
+                                        "bg-slate-100 text-slate-400"
+                                    }`}>
                                     {i < currentStepIndex ? <CheckCircle2 size={14} /> : <span className="w-4 text-center">{i + 1}</span>}
                                     <span className="hidden sm:inline">{step.label}</span>
                                 </div>
@@ -502,36 +501,35 @@ export default function HospitalEntry() {
                 {opdStep === "scan" && (
                     <Card className="border-2 border-dashed border-orange-200 bg-white shadow-none mb-6">
                         <CardContent className="p-10 flex flex-col items-center gap-6">
-                            <div className={`relative flex items-center justify-center w-24 h-24 rounded-full transition-all duration-500 ${
-                                scanStatus === "scanning" ? "bg-orange-50 animate-pulse" :
+                            <div className={`relative flex items-center justify-center w-24 h-24 rounded-full transition-all duration-500 ${scanStatus === "scanning" ? "bg-orange-50 animate-pulse" :
                                 scanStatus === "success" ? "bg-green-50" :
-                                scanStatus === "failed" ? "bg-red-50" : "bg-slate-50"
-                            }`}>
+                                    scanStatus === "failed" ? "bg-red-50" : "bg-slate-50"
+                                }`}>
                                 {scanStatus === "success" ? <CheckCircle2 className="w-12 h-12 text-green-500" /> :
-                                 scanStatus === "failed" ? <XCircle className="w-12 h-12 text-red-500" /> :
-                                 scanStatus === "scanning" ? <ScanLine className="w-12 h-12 text-orange-500" /> :
-                                 <CreditCard className="w-12 h-12 text-slate-400" />}
+                                    scanStatus === "failed" ? <XCircle className="w-12 h-12 text-red-500" /> :
+                                        scanStatus === "scanning" ? <ScanLine className="w-12 h-12 text-orange-500" /> :
+                                            <CreditCard className="w-12 h-12 text-slate-400" />}
                                 {scanStatus === "scanning" && <span className="absolute inset-0 rounded-full border-4 border-orange-400 animate-ping opacity-30" />}
                             </div>
 
                             <div className="text-center">
                                 <div className="text-lg font-bold text-slate-800 mb-1">
                                     {scanStatus === "scanning" ? "Scanning... Please tap card" :
-                                     scanStatus === "success" ? "Card Verified!" :
-                                     scanStatus === "failed" ? "Scan Failed" : "Patient Health Card"}
+                                        scanStatus === "success" ? "Card Verified!" :
+                                            scanStatus === "failed" ? "Scan Failed" : "Patient Health Card"}
                                 </div>
                                 <div className="text-sm text-slate-500">
                                     {scanStatus === "scanning" ? "Hold the card near the reader" :
-                                     scanStatus === "success" ? "Loading family details..." :
-                                     scanStatus === "failed" ? "Try again or use manual entry below" :
-                                     "Scan the patient's NFC health card to begin"}
+                                        scanStatus === "success" ? "Loading family details..." :
+                                            scanStatus === "failed" ? "Try again or use manual entry below" :
+                                                "Scan the patient's NFC health card to begin"}
                                 </div>
                             </div>
 
                             <Button size="lg" onClick={handleScanCard} disabled={scanning || loading}
                                 className="h-14 px-10 text-base font-bold bg-orange-600 hover:bg-orange-700 text-white shadow-md hover:shadow-lg transition-all gap-3">
                                 {scanning ? <><Loader2 className="w-5 h-5 animate-spin" /> Scanning...</> :
-                                 <><ScanLine className="w-5 h-5" /> Scan Card</>}
+                                    <><ScanLine className="w-5 h-5" /> Scan Card</>}
                             </Button>
 
                         </CardContent>
@@ -561,15 +559,13 @@ export default function HospitalEntry() {
                                 const isHead = member.relation === "SELF";
                                 return (
                                     <Card key={member.id}
-                                        className={`cursor-pointer border-2 transition-all hover:shadow-md hover:border-orange-300 ${
-                                            isHead ? "border-orange-200 bg-orange-50/30" : "border-slate-200"
-                                        }`}
+                                        className={`cursor-pointer border-2 transition-all hover:shadow-md hover:border-orange-300 ${isHead ? "border-orange-200 bg-orange-50/30" : "border-slate-200"
+                                            }`}
                                         onClick={() => handleSelectMember(member)}>
                                         <CardContent className="p-5">
                                             <div className="flex items-center gap-4">
-                                                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0 ${
-                                                    isHead ? "bg-orange-100" : "bg-slate-100"
-                                                }`}>
+                                                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl shrink-0 ${isHead ? "bg-orange-100" : "bg-slate-100"
+                                                    }`}>
                                                     {member.gender === "Female" ? "👩" : member.gender === "Male" ? "👨" : "👤"}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -647,11 +643,10 @@ export default function HospitalEntry() {
                                                 </div>
                                                 <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                                                     <span className="text-xs text-slate-500">Queue Today</span>
-                                                    <Badge variant="outline" className={`${
-                                                        Number(doc.queue_count) > 5 ? "border-red-200 text-red-600 bg-red-50" :
+                                                    <Badge variant="outline" className={`${Number(doc.queue_count) > 5 ? "border-red-200 text-red-600 bg-red-50" :
                                                         Number(doc.queue_count) > 0 ? "border-amber-200 text-amber-600 bg-amber-50" :
-                                                        "border-green-200 text-green-600 bg-green-50"
-                                                    }`}>
+                                                            "border-green-200 text-green-600 bg-green-50"
+                                                        }`}>
                                                         {doc.queue_count} patients
                                                     </Badge>
                                                 </div>
@@ -701,9 +696,8 @@ export default function HospitalEntry() {
 
                                 {/* Doctor Details */}
                                 <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border ${
-                                        SPECIALIZATION_COLORS[selectedDoctor.specialization] || "bg-slate-50 text-slate-700 border-slate-200"
-                                    }`}>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border ${SPECIALIZATION_COLORS[selectedDoctor.specialization] || "bg-slate-50 text-slate-700 border-slate-200"
+                                        }`}>
                                         {SPECIALIZATION_ICONS[selectedDoctor.specialization] || <Stethoscope size={20} />}
                                     </div>
                                     <div>
@@ -870,7 +864,7 @@ export default function HospitalEntry() {
                                             <Select value={form.scheme_name} onValueChange={v => setForm(f => ({ ...f, scheme_name: v }))}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
-                                                    {["NTR Vaidya Seva", "EHS", "PMJAY", "Paid"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                                    {["State Health Scheme", "EHS", "PMJAY", "Paid"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
                                         </div>

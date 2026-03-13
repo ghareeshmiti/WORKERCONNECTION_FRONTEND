@@ -15,7 +15,7 @@ import "leaflet/dist/leaflet.css";
 const API = (import.meta.env.VITE_API_URL || "https://workerconnection-backend.vercel.app").replace(/\/$/, '') + "/api";
 
 const SCHEME_COLORS: Record<string, string> = {
-    "Aarogyasri": "#16a34a",
+    "State Health Scheme": "#16a34a",
     "EHS": "#2563eb",
     "PMJAY": "#9333ea",
     "Paid": "#64748b",
@@ -315,7 +315,7 @@ export default function HealthDeptDashboard() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Schemes</SelectItem>
-                                {["Aarogyasri", "EHS", "PMJAY", "Paid"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                {["State Health Scheme", "EHS", "PMJAY", "Paid"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                             </SelectContent>
                         </Select>
                         <Select value={serviceFilter} onValueChange={setServiceFilter}>
@@ -416,7 +416,7 @@ export default function HealthDeptDashboard() {
                                                     background: h.case_count >= 5 ? "#dc2626" : h.case_count >= 3 ? "#ea580c" : "#f59e0b",
                                                     color: "white",
                                                 }}
-                                                onClick={() => zoomToMandal(h.mandal || h.district)}
+                                                    onClick={() => zoomToMandal(h.mandal || h.district)}
                                                 >
                                                     {h.diagnosis} — {h.mandal || h.district} ({h.case_count} cases)
                                                 </Badge>
