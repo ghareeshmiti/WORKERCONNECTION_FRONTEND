@@ -125,57 +125,41 @@ export default function Landing() {
   const [cmOk, setCmOk] = useState(true);
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Blue Band */}
-      <header className="bg-[#FFFFFF] text-[hsl(222 47% 11%)]">
-
-        {/* <header className="text-primary-foreground bg-[linear-gradient(90deg,#FF7700_0%,#FF7700_50%,#ffcb05_50%,#ffcb05_100%)]"> */}
-        {/* <header className="text-primary-foreground bg-[linear-gradient(to_right,#FF7700_0%,rgba(255,119,0,0)_50%),linear-gradient(to_left,#ffcb05_0%,rgba(255,203,5,0)_50%)]"> */}
-        {/* <header
-          className="text-primary-foreground"
-          style={{
-            backgroundColor: "#ffb200",
-            backgroundImage:
-              "linear-gradient(to right,#FF7700 0%,rgba(255,119,0,0) 55%),linear-gradient(to left,#ffcb05 0%,rgba(255,203,5,0) 55%)",
-          }}
-        > */}
-        <div className="container mx-auto px-4 py-4">
+      {/* Header Orange Gradient Band - Government of India */}
+      <header className="bg-gradient-to-r from-orange-600 via-orange-500 to-red-600 text-white shadow-lg">
+        <div className="container mx-auto px-4 py-5 sm:py-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* Left: Logo + Titles */}
             <div className="flex items-center gap-4">
-              {logoOk ? (
-                <img
-                  src="/opoc/tg-logo.jpg"
-                  alt="Government of Telangana emblem"
-                  className="h-20 w-auto object-contain shrink-0"
-                  fetchPriority="high"
+              <div className="h-20 w-20 flex items-center justify-center rounded-lg overflow-hidden border-2 border-white/30 bg-white/10">
+                <img 
+                  src="/indian-flag.svg" 
+                  alt="India Flag" 
+                  className="w-full h-full object-contain" 
                   onError={() => setLogoOk(false)}
                 />
-              ) : (
-                <div className="h-20 w-20 flex items-center justify-center text-sm font-semibold text-primary">
-                  TG
-                </div>
-              )}
+              </div>
 
               <div className="leading-tight">
-                <div className="text-xs sm:text-sm opacity-90">
-                  Government of Telangana
+                <div className="text-xs sm:text-sm text-orange-50">
+                  Government of India
                 </div>
-                <div className="text-xl sm:text-2xl font-display font-bold">
+                <div className="text-xl sm:text-2xl font-display font-bold text-white">
                   One State - One Card
                 </div>
-                <div className="text-xs sm:text-sm opacity-90">
+                <div className="text-xs sm:text-sm text-orange-100">
                   Official Identity &amp; Access Portal
                 </div>
               </div>
             </div>
 
             {/* Right: Helpdesk */}
-            <div className="text-xs sm:text-sm sm:text-right opacity-95 space-y-1">
+            <div className="text-xs sm:text-sm sm:text-right text-orange-50 space-y-1 font-semibold">
               <div className="whitespace-nowrap">
                 Helpdesk Phone: 1800-XXXX-XXXX
               </div>
               <div className="whitespace-nowrap">
-                Helpdesk Email: support-opoc@telangana.gov.in
+                Helpdesk Email: support-opoc@gov.in
               </div>
             </div>
           </div>
@@ -211,43 +195,29 @@ export default function Landing() {
                   <CardContent className="p-0">
                     <div className="border-b bg-muted/30 px-5 py-3">
                       <div className="text-sm font-semibold text-foreground">
-                        Hon&apos;ble Chief Minister, Telangana
+                        Hon&apos;ble Government of India
                       </div>
                     </div>
 
                     <div className="p-5">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-                        {/* Bigger portrait box (noticeably larger) */}
-                        <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-white flex items-center justify-center shrink-0">
-                          {cmOk ? (
-                            <img
-                              src="/opoc/tgcm.jpg"
-                              alt="Anumula Revanth Reddy"
-                              className="h-full w-full object-cover"
-                              width="192"
-                              height="240"
-                              fetchPriority="high"
-                              onError={() => setCmOk(false)}
-                            />
-                          ) : (
-                            <div className="text-xs text-muted-foreground px-2 text-center">
-                              CM photo missing
-                            </div>
-                          )}
-                        </div>
+                        {/* Bigger portrait box - Full Indian flag */}
+                        {/* <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0">
+                          <div className="text-8xl drop-shadow-lg">🇮🇳</div>
+                        </div> */}
 
                         <div className="text-center sm:text-left">
                           <div className="text-lg sm:text-xl font-semibold text-foreground">
-                            Anumula Revanth Reddy
+                            Government of India
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Chief Minister, Government of Telangana
+                            Universal Digital Identity Portal
                           </div>
 
                           <div className="mt-3 text-sm text-foreground leading-relaxed">
                             Strengthening transparency, security, and efficient
                             governance through a unified identity system for
-                            every individual.
+                            every citizen.
                           </div>
                         </div>
                       </div>
@@ -566,9 +536,12 @@ export default function Landing() {
             </Card>
             <Card className="border-2 border-primary/35 shadow-sm overflow-hidden">
               <CardContent className="p-0">
-                <div className="border-b bg-muted/30 px-5 py-3">
-                  <div className="text-sm font-semibold text-foreground">
-                    TG PASS – OPOC Feature Matrix
+                <div className="border-b bg-gradient-to-r from-orange-600 via-orange-500 to-red-600 px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    {/* <div className="text-2xl">🇮🇳</div> */}
+                    <div className="text-sm font-semibold text-white">
+                      Government of India – OPOC Feature Matrix
+                    </div>
                   </div>
                 </div>
 
@@ -602,7 +575,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="text-sm opacity-95">
-              © Government of Telangana
+              © Government of India
             </div>
 
             <div className="text-[11px] sm:text-sm opacity-95 flex flex-wrap gap-x-2 gap-y-1 justify-start md:justify-center">

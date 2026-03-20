@@ -132,13 +132,15 @@ export default function RTCEstablishmentDashboard() {
             <header className="bg-white border-b sticky top-0 z-30">
                 <div className="container mx-auto px-6 py-3 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
+                        <div className="h-14 w-14 flex items-center justify-center flex-shrink-0 border border-orange-200 rounded">
+                            <img src="/indian-flag.svg" alt="India Flag" className="w-12 h-12 object-contain" />
+                        </div>
                         <div className="flex flex-col">
                             <h1 className="text-xl font-bold flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
-                                {est?.name || "Hyderabad Depot"}
+                                {est?.name || "Transport Depot"}
                             </h1>
                             <p className="text-slate-500 text-xs mt-0.5 font-medium tracking-wide">
-                                Government of Telangana — TG State Road Transport Corp.
+                                Government of India — Transport Services
                             </p>
                         </div>
                     </div>
@@ -281,13 +283,13 @@ export default function RTCEstablishmentDashboard() {
                             {/* Districts */}
                             <Select value={districtFilter} onValueChange={setDistrictFilter}>
                                 <SelectTrigger className="bg-slate-50 border-slate-200">
-                                    <SelectValue placeholder="All Districts" />
+                                    <SelectValue placeholder="All Regions" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Districts</SelectItem>
-                                    <SelectItem value="Hyderabad">Hyderabad</SelectItem>
-                                    <SelectItem value="Warangal">Warangal</SelectItem>
-                                    <SelectItem value="Karimnagar">Karimnagar</SelectItem>
+                                    <SelectItem value="all">All Regions</SelectItem>
+                                    <SelectItem value="Region 1">Region 1</SelectItem>
+                                    <SelectItem value="Region 2">Region 2</SelectItem>
+                                    <SelectItem value="Region 3">Region 3</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -362,7 +364,7 @@ export default function RTCEstablishmentDashboard() {
 
                                                 return (
                                                     <tr key={t.id} className="hover:bg-slate-50 transition-colors bg-white">
-                                                        <td className="px-6 py-4 font-mono text-xs text-slate-600">{t.meta?.bus_no || "TG09-5678"}</td>
+                                                        <td className="px-6 py-4 font-mono text-xs text-slate-600">{t.meta?.bus_no || "GOV-INDIA-001"}</td>
                                                         <td className="px-6 py-4">{t.meta?.route || "—"}</td>
                                                         <td className="px-6 py-4">{t.meta?.from || "—"}</td>
                                                         <td className="px-6 py-4">{t.meta?.to || "—"}</td>

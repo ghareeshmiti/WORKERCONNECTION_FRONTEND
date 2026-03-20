@@ -256,17 +256,18 @@ export default function RTCDepartmentDashboard() {
             <header className="bg-white border-b sticky top-0 z-20 shadow-sm border-t-4 border-t-orange-600">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        {/* Use a placeholder or reliable URL for the logo if local file missing */}
-                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
+                        <div className="h-14 w-14 flex items-center justify-center flex-shrink-0 border border-orange-200 rounded">
+                            <img src="/indian-flag.svg" alt="India Flag" className="w-12 h-12 object-contain" />
+                        </div>
                         <div className="flex flex-col">
-                            <span className="text-2xl font-black text-orange-700 leading-none tracking-tight">TGRTC COMMAND CONTROL</span>
-                            <span className="text-xs text-slate-500 font-bold tracking-widest mt-1">Government of Telangana</span>
+                            <span className="text-2xl font-black text-orange-700 leading-none tracking-tight">GOI TRANSPORT COMMAND</span>
+                            <span className="text-xs text-slate-500 font-bold tracking-widest mt-1">Government of India</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-right hidden md:block">
                             <div className="text-sm font-bold text-slate-700">Administrator</div>
-                            <div className="text-xs text-slate-500">tgrtc@telangana.gov.in</div>
+                            <div className="text-xs text-slate-500">transport@gov.in</div>
                         </div>
                         <Button variant="ghost" size="sm" onClick={signOut} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                             <RefreshCw className="w-4 h-4 mr-2" /> Log Out
@@ -565,7 +566,7 @@ export default function RTCDepartmentDashboard() {
                                 <tbody>
                                     {selectedDepotDetails?.tickets.map((t, index) => (
                                         <tr key={t.id} className="border-b">
-                                            <td className="p-3 font-mono text-xs">{t.bus_number || 'TG39Z-001'}</td>
+                                            <td className="p-3 font-mono text-xs">{t.bus_number || 'GOV-INDIA-001'}</td>
                                             <td className="p-3">{t.route_name}</td>
                                             <td className="p-3 font-mono text-xs">{formatCitigenId(t.establishment_id, index)}</td>
                                             <td className="p-3">{t.workers ? `${t.workers.first_name} ${t.workers.last_name}` : getRandomName(t.id)}</td>
