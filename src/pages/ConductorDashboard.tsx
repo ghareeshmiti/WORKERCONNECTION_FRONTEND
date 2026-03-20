@@ -210,7 +210,7 @@ export default function ConductorDashboard() {
                 <div className="container mx-auto py-3 px-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="h-14 w-14 flex items-center justify-center flex-shrink-0 border border-orange-200 rounded">
-                            <img src="/indian-flag.svg" alt="India Flag" className="w-12 h-12 object-contain" />
+                            <img src="/Emblem_of_India.png" alt="Emblem of India" className="w-12 h-12 object-contain" />
                         </div>
                         <div className="flex flex-col">
                             <h1 className="font-display font-bold text-lg tracking-tight leading-none bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">GOI TRANSPORT</h1>

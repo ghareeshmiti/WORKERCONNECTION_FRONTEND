@@ -133,8 +133,8 @@ export default function Landing() {
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 flex items-center justify-center rounded-lg overflow-hidden border-2 border-white/30 bg-white/10">
                 <img 
-                  src="/indian-flag.svg" 
-                  alt="India Flag" 
+                  src="/Emblem_of_India.png" 
+                  alt="Emblem of India" 
                   className="w-full h-full object-contain" 
                   onError={() => setLogoOk(false)}
                 />
@@ -202,9 +202,9 @@ export default function Landing() {
                     <div className="p-5">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                         {/* Bigger portrait box - Full Indian flag */}
-                        {/* <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0">
-                          <div className="text-8xl drop-shadow-lg">🇮🇳</div>
-                        </div> */}
+                        <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0">
+                          <img src="/Emblem_of_India.png" alt="Emblem of India" className="w-full h-full object-contain" />
+                        </div>
 
                         <div className="text-center sm:text-left">
                           <div className="text-lg sm:text-xl font-semibold text-foreground">

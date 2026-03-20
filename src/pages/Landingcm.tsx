@@ -21,7 +21,7 @@ export default function Landing() {
           {/* Left: India Flag */}
           <div className="flex items-center gap-3">
             <div className="w-16 h-16 md:w-20 md:h-20">
-              <img src="/indian-flag.svg" alt="India Flag" className="w-full h-full object-contain" />
+              <img src="/Emblem_of_India.png" alt="Emblem of India" className="w-full h-full object-contain" />
             </div>
             <div className="hidden md:flex flex-col">
               <h1 className="text-xl md:text-2xl font-black text-white leading-tight">GOVERNMENT OF INDIA</h1>
