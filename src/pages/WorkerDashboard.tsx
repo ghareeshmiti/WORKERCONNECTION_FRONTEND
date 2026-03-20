@@ -36,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { GENERIC_SCHEMES } from "@/data/schemes";
 
 // --- DUMMY DATA ---
 const DUMMY_DATA = {
@@ -171,74 +172,16 @@ const DUMMY_DATA = {
       cost: "25,000", govt_paid: "20,000", category: "Surgery", insurance_type: "Private"
     }
   ],
-  schemes_list: [
-    {
-      id: 1, name: "Pradhan Mantri Shram Yogi Maandhan (PM-SYM)", type: "Central", status: "Eligible",
-      desc: "Pension scheme for unorganized workers providing ₹3,000 per month after age 60.",
-      benefit_type: "Pension", benefit_val: "₹3,000", tags: ["Central"]
-    },
-    {
-      id: 2, name: "BOCW Workers Welfare Fund", type: "Welfare Board", status: "Eligible",
-      desc: "Financial assistance for construction workers including education support for children.",
-      benefit_type: "Cash", benefit_val: "₹25,000", tags: ["Welfare Board"]
-    },
-    {
-      id: 3, name: "ESI Medical Benefits", type: "Central", status: "Eligible",
-      desc: "Comprehensive medical care for workers and dependents through ESI hospitals.",
-      benefit_type: "Insurance", benefit_val: "", tags: ["Central"]
-    },
-    {
-      id: 4, name: "PM Garib Kalyan Yojana", type: "Central", status: "Pending Verification",
-      desc: "Free food grain distribution for workers and families.",
-      benefit_type: "Other", benefit_val: "", tags: ["Central"]
-    },
-    // Telangana State Schemes
-    {
-      id: 5, name: "Mahalakshmi Scheme", type: "State", status: "Active",
-      desc: "Provides free TSRTC bus travel for women, girls, and transgenders, plus ₹500 gas cylinders and monthly financial assistance.",
-      benefit_type: "Service", benefit_val: "Free Travel + ₹500", tags: ["State", "Women", "Transport"]
-    },
-    {
-      id: 6, name: "Gruha Jyothi Scheme", type: "State", status: "Active",
-      desc: "Offers up to 200 units of free electricity per month for eligible households.",
-      benefit_type: "Subsidy", benefit_val: "200 Units Free", tags: ["State", "Household"]
-    },
-    {
-      id: 7, name: "Indiramma Indlu Scheme", type: "State", status: "Eligible",
-      desc: "Provides financial assistance and 100% subsidies for eligible landless/homeless citizens to build homes.",
-      benefit_type: "Cash", benefit_val: "100% Subsidy", tags: ["State", "Housing"]
-    },
-    {
-      id: 8, name: "Cheyutha Scheme (Rajiv Arogyasri)", type: "State", status: "Active",
-      desc: "Offers up to ₹10 lakh in free corporate medical treatment for economically backward sections.",
-      benefit_type: "Insurance", benefit_val: "₹10,00,000", tags: ["State", "Health"]
-    },
-    {
-      id: 9, name: "Rajiv Yuva Vikasam (5 Lakh Scheme)", type: "State", status: "Eligible",
-      desc: "Aims to support 5 lakh youth with financial assistance and opportunities for self-employment.",
-      benefit_type: "Cash", benefit_val: "Financial Aid", tags: ["State", "Youth"]
-    },
-    {
-      id: 10, name: "Indiramma Minority Mahila Yojana", type: "State", status: "Eligible",
-      desc: "Provides financial assistance of ₹50,000 specifically for minority women.",
-      benefit_type: "Cash", benefit_val: "₹50,000", tags: ["State", "Women", "Minority"]
-    },
-    {
-      id: 11, name: "Rythu Bharosa", type: "State", status: "Eligible",
-      desc: "Continued agricultural investment support for farmers.",
-      benefit_type: "Cash", benefit_val: "Investment Support", tags: ["State", "Agriculture"]
-    },
-    {
-      id: 12, name: "Aasara Pensions", type: "State", status: "Active",
-      desc: "Continued welfare pensions for the elderly, widows, and disabled.",
-      benefit_type: "Cash", benefit_val: "Monthly Pension", tags: ["State", "Welfare"]
-    },
-    {
-      id: 13, name: "Kalyana Lakshmi / Shaadi Mubarak", type: "State", status: "Eligible",
-      desc: "Financial assistance for marriage provided to eligible families.",
-      benefit_type: "Cash", benefit_val: "Marriage Aid", tags: ["State", "Women"]
-    },
-  ],
+  schemes_list: GENERIC_SCHEMES.map(scheme => ({
+    id: scheme.id,
+    name: scheme.title,
+    type: scheme.schemeType,
+    status: "Eligible",
+    desc: scheme.description,
+    benefit_type: scheme.category,
+    benefit_val: scheme.benefit,
+    tags: [scheme.schemeType]
+  })),
   grievances_list: [
     {
       id: "GRV-2026-00045", category: "Attendance & Wages", status: "In Progress",
@@ -604,12 +547,14 @@ export default function WorkerDashboard() {
       <header className="bg-white border-b sticky top-0 z-20">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
+            <div className="h-14 w-14 flex items-center justify-center flex-shrink-0 border border-orange-200 rounded">
+                <img src="/indian-flag.svg" alt="India Flag" className="w-12 h-12 object-contain" />
+            </div>
             <div className="flex flex-col">
               <span className="text-lg md:text-xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-none">
                 One State - One Card
               </span>
-              <span className="text-xs text-slate-500 font-medium tracking-wide">Government of Telangana</span>
+              <span className="text-xs text-slate-500 font-medium tracking-wide">Government of India</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -1208,7 +1153,7 @@ export default function WorkerDashboard() {
 
             {/* Type Filters */}
             <div className="flex flex-wrap gap-2 mb-6">
-              {["All", "State", "Central", "Welfare Board"].map(filter => (
+              {["All", "Central", "State"].map(filter => (
                 <button
                   key={filter}
                   onClick={() => setSchemesFilter(filter)}
@@ -1659,7 +1604,7 @@ export default function WorkerDashboard() {
                       </div>
                       <div className="text-sm text-slate-600 space-y-1 pl-11">
                         <p>Toll Free: <span className="font-semibold">155214</span></p>
-                        <p>Email: <a href="mailto:support@worker.tg.gov.in" className="text-blue-600 hover:underline">support@worker.tg.gov.in</a></p>
+                        <p>Email: <a href="mailto:support@worker.gov.in" className="text-blue-600 hover:underline">support@worker.gov.in</a></p>
                       </div>
                     </CardContent>
                   </Card>

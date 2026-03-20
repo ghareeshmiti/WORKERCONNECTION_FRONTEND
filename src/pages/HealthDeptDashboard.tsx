@@ -32,28 +32,92 @@ async function fetchHealthStats() {
     return res.json();
 }
 
-// Approximate coordinates for TG mandals/areas (for map visualization)
-const MANDAL_COORDS: Record<string, [number, number]> = {
-    "Hyderabad": [17.3850, 78.4867],
-    "Secunderabad": [17.4399, 78.4983],
-    "LB Nagar": [17.3436, 78.5536],
-    "Kukatpally": [17.4849, 78.4138],
-    "Uppal": [17.4057, 78.5594],
-    "Warangal": [17.9784, 79.5941],
-    "Karimnagar": [18.4386, 79.1288],
-    "Nizamabad": [18.6725, 78.0941],
-    "Khammam": [17.2473, 80.1514],
-    "Nalgonda": [17.0575, 79.2671],
-    "Mahbubnagar": [16.7374, 77.9846],
-    "Ranga Reddy": [17.3000, 78.4000],
-    "Medchal": [17.6286, 78.4802],
-    "Siddipet": [18.1018, 78.8520],
-    "Adilabad": [19.6640, 78.5320],
-    "Mancherial": [18.8707, 79.4412],
-    "Suryapet": [17.1404, 79.6223],
-    "Yadadri": [17.0830, 78.9980],
-    "Sangareddy": [17.6191, 78.0855],
-    "Bhongir": [17.5119, 78.8931],
+// State-specific coordinates for disease mapping
+const STATE_COORDS: Record<string, [number, number]> = {
+    "AP": [15.9129, 79.7400],
+    "TG": [17.3850, 78.4867],
+    "UP": [26.8467, 80.9462],
+    "MH": [19.7515, 75.7139],
+};
+
+// Comprehensive location coordinates for all states
+const MANDAL_COORDS: Record<string, Record<string, [number, number]>> = {
+    "TG": {
+        "Hyderabad": [17.3850, 78.4867],
+        "Secunderabad": [17.4399, 78.4983],
+        "LB Nagar": [17.3436, 78.5536],
+        "Kukatpally": [17.4849, 78.4138],
+        "Uppal": [17.4057, 78.5594],
+        "Warangal": [17.9784, 79.5941],
+        "Karimnagar": [18.4386, 79.1288],
+        "Nizamabad": [18.6725, 78.0941],
+        "Khammam": [17.2473, 80.1514],
+        "Nalgonda": [17.0575, 79.2671],
+    },
+    "AP": {
+        "Visakhapatnam": [17.6869, 83.2185],
+        "Vijayawada": [16.5062, 80.6480],
+        "Guntur": [16.3067, 80.4365],
+        "Kurnool": [15.8281, 78.8353],
+        "Tirupati": [13.1939, 79.8941],
+        "Kadapa": [14.4676, 78.7475],
+        "Nellore": [14.4426, 79.9864],
+        "Ongole": [15.5057, 80.0508],
+        "Rajahmundry": [17.0011, 81.8050],
+        "Tenali": [16.2392, 80.6479],
+    },
+    "UP": {
+        "Lucknow": [26.8467, 80.9462],
+        "Kanpur": [26.4499, 80.3308],
+        "Varanasi": [25.3200, 82.9789],
+        "Agra": [27.1767, 78.0081],
+        "Allahabad": [25.4358, 81.8463],
+        "Meerut": [28.9845, 77.7064],
+        "Noida": [28.5355, 77.3910],
+        "Ghaziabad": [28.6692, 77.4538],
+        "Bareilly": [28.3670, 79.4304],
+        "Aligarh": [27.8974, 78.0880],
+    },
+    "MH": {
+        "Mumbai": [19.0760, 72.8777],
+        "Pune": [18.5204, 73.8567],
+        "Nagpur": [21.1458, 79.0882],
+        "Thane": [19.2183, 72.9781],
+        "Aurangabad": [19.8762, 75.3433],
+        "Nashik": [19.9975, 73.7898],
+        "Kolhapur": [16.7050, 73.7421],
+        "Satara": [17.6726, 73.9187],
+        "Akola": [20.7100, 77.0069],
+        "Chandrapur": [19.9689, 79.2941],
+    },
+};
+
+// State-specific disease hotspots
+const STATE_DISEASE_HOTSPOTS: Record<string, { area: string; disease: string; color: string }[]> = {
+    "TG": [
+        { area: "Hyderabad", disease: "Dengue Fever", color: "#dc2626" },
+        { area: "Warangal", disease: "Hepatitis B", color: "#ea580c" },
+        { area: "Nizamabad", disease: "Malaria", color: "#dc2626" },
+        { area: "Karimnagar", disease: "Tuberculosis (TB)", color: "#b91c1c" },
+    ],
+    "AP": [
+        { area: "Visakhapatnam", disease: "Dengue Fever", color: "#dc2626" },
+        { area: "Vijayawada", disease: "Typhoid", color: "#ea580c" },
+        { area: "Guntur", disease: "Malaria", color: "#dc2626" },
+        { area: "Tirupati", disease: "Respiratory Infection", color: "#f59e0b" },
+    ],
+    "UP": [
+        { area: "Lucknow", disease: "Dengue Fever", color: "#dc2626" },
+        { area: "Kanpur", disease: "Hepatitis A", color: "#ea580c" },
+        { area: "Varanasi", disease: "Typhoid", color: "#dc2626" },
+        { area: "Agra", disease: "Malaria", color: "#f59e0b" },
+    ],
+    "MH": [
+        { area: "Mumbai", disease: "Dengue Fever", color: "#dc2626" },
+        { area: "Pune", disease: "Respiratory Infection", color: "#ea580c" },
+        { area: "Nagpur", disease: "Malaria", color: "#dc2626" },
+        { area: "Nashik", disease: "Hepatitis B", color: "#b91c1c" },
+    ],
 };
 
 // Seeded random for stable positions
@@ -69,7 +133,7 @@ function jitter(base: [number, number], spread: number, seed: number): [number, 
     ];
 }
 
-// --- Static demo alert data with realistic TG names & serious diseases ---
+// --- Static demo alert data with realistic names & serious diseases ---
 const AP_NAMES_MALE = [
     "Ravi Kumar", "Srinivas Goud", "Mahesh Reddy", "Ramesh Yadav", "Venkat Rao",
     "Kiran Kumar", "Praveen Reddy", "Suresh Naik", "Anil Deshmukh", "Harish Goud",
@@ -83,20 +147,22 @@ const AP_NAMES_FEMALE = [
     "Kavitha Reddy", "Bharathi Rao", "Durga Devi", "Swapna Reddy", "Jyothi Goud",
     "Vasantha Devi", "Manjula Rao", "Saroja Devi", "Tulasi Reddy", "Ratna Kumari",
 ];
-// 4 TG areas, each with a specific disease
-const AREA_DISEASE_MAP: { area: string; disease: string; color: string }[] = [
-    { area: "Hyderabad", disease: "Dengue Fever", color: "#dc2626" },
-    { area: "Warangal", disease: "Hepatitis B", color: "#ea580c" },
-    { area: "Nizamabad", disease: "Malaria", color: "#dc2626" },
-    { area: "Karimnagar", disease: "Tuberculosis (TB)", color: "#b91c1c" },
-];
 
-function generateAlertData() {
+function generateAlertData(state: string) {
     const records: any[] = [];
     let id = 0;
+    const stateDisease = STATE_DISEASE_HOTSPOTS[state] || STATE_DISEASE_HOTSPOTS["TG"];
+    const stateMandals = MANDAL_COORDS[state] || MANDAL_COORDS["TG"];
+    
+    const stateNames: Record<string, string> = {
+        "TG": "Telangana",
+        "AP": "Andhra Pradesh",
+        "UP": "Uttar Pradesh",
+        "MH": "Maharashtra",
+    };
 
-    AREA_DISEASE_MAP.forEach(({ area, disease, color }, areaIdx) => {
-        const base = MANDAL_COORDS[area] || MANDAL_COORDS["Guntur"];
+    stateDisease.forEach(({ area, disease, color }, areaIdx) => {
+        const base = stateMandals[area] || STATE_COORDS[state] || [17.3850, 78.4867];
         // 12 cases per area
         for (let i = 0; i < 12; i++) {
             const seed = areaIdx * 100 + i;
@@ -116,7 +182,7 @@ function generateAlertData() {
                 age,
                 diagnosis: disease,
                 mandal: area,
-                district: "Telangana",
+                district: stateNames[state] || "Telangana",
                 coords,
                 color,
             });
@@ -124,17 +190,18 @@ function generateAlertData() {
     });
 
     // Build hotspots — one per area
-    const hotspots = AREA_DISEASE_MAP.map(({ area, disease }) => ({
+    const hotspots = stateDisease.map(({ area, disease }) => ({
         diagnosis: disease,
         mandal: area,
-        district: "Telangana",
+        district: stateNames[state] || "Telangana",
         case_count: records.filter(r => r.mandal === area).length,
     }));
 
     return { records, hotspots };
 }
 
-const DEMO_ALERTS = generateAlertData();
+// Initialize with TG by default
+let DEMO_ALERTS = generateAlertData("TG");
 
 async function fetchHealthRecords(filters: Record<string, string>) {
     const params = new URLSearchParams(
@@ -148,6 +215,7 @@ async function fetchHealthRecords(filters: Record<string, string>) {
 export default function HealthDeptDashboard() {
     const { userContext, signOut } = useAuth();
 
+    const [selectedState, setSelectedState] = useState("TG");
     const [districtFilter, setDistrictFilter] = useState("all");
     const [hospitalFilter, setHospitalFilter] = useState("all");
     const [schemeFilter, setSchemeFilter] = useState("all");
@@ -169,15 +237,17 @@ export default function HealthDeptDashboard() {
         retry: 2,
     });
 
-    // Demo alert data — static realistic AP data for govt dashboard
-    const alertMarkers = DEMO_ALERTS.records;
-    const alertHotspots = DEMO_ALERTS.hotspots;
+    // Demo alert data — regenerate based on selected state
+    const CURRENT_ALERTS = generateAlertData(selectedState);
+    const alertMarkers = CURRENT_ALERTS.records;
+    const alertHotspots = CURRENT_ALERTS.hotspots;
 
     // Map ref for programmatic zoom
     const mapRef = useRef<any>(null);
 
     const zoomToMandal = (mandal: string) => {
-        const coords = MANDAL_COORDS[mandal];
+        const stateMandals = MANDAL_COORDS[selectedState] || MANDAL_COORDS["TG"];
+        const coords = stateMandals[mandal];
         if (coords && mapRef.current) {
             mapRef.current.setView(coords, 14, { animate: true });
         }
@@ -215,13 +285,15 @@ export default function HealthDeptDashboard() {
             <header className="bg-white border-b sticky top-0 z-20 shadow-sm border-t-4 border-t-orange-600">
                 <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
+                        <div className="h-14 w-14 flex items-center justify-center flex-shrink-0 border border-orange-200 rounded">
+                            <img src="/indian-flag.svg" alt="India Flag" className="w-12 h-12 object-contain" />
+                        </div>
                         <div className="flex flex-col">
                             <span className="text-2xl font-black text-orange-700 leading-none tracking-tight">
-                                TG HEALTH COMMAND CONTROL
+                                HEALTH COMMAND CONTROL
                             </span>
                             <span className="text-xs text-slate-500 font-bold tracking-widest mt-1">
-                                Government of Telangana
+                                Government of India — Health Management Portal
                             </span>
                         </div>
                     </div>
@@ -400,6 +472,21 @@ export default function HealthDeptDashboard() {
                     {/* Alerts Map Tab */}
                     <TabsContent value="alerts">
                         <div className="space-y-4">
+                            {/* State Filter for Alerts */}
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-slate-500">Select State:</span>
+                                <Select value={selectedState} onValueChange={(v) => { setSelectedState(v); }}>
+                                    <SelectTrigger className="w-[180px] font-bold bg-orange-50 border-orange-200">
+                                        <SelectValue placeholder="Select State" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="AP">Andhra Pradesh</SelectItem>
+                                        <SelectItem value="TG">Telangana</SelectItem>
+                                        <SelectItem value="UP">Uttar Pradesh</SelectItem>
+                                        <SelectItem value="MH">Maharashtra</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             {/* Hotspot Summary */}
                             {alertHotspots.length > 0 && (
                                 <Card className="border-l-4 border-l-red-500">
@@ -437,7 +524,7 @@ export default function HealthDeptDashboard() {
                                 <CardContent className="p-0">
                                     <div style={{ height: 550 }}>
                                         <MapContainer
-                                            center={[17.3850, 78.4867]}
+                                            center={STATE_COORDS[selectedState] || STATE_COORDS["TG"]}
                                             zoom={10}
                                             style={{ height: "100%", width: "100%", borderRadius: "0 0 8px 8px" }}
                                             scrollWheelZoom={true}

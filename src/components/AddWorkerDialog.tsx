@@ -27,7 +27,7 @@ export function AddWorkerDialog({ establishmentId, mappedBy }: AddWorkerDialogPr
         workerId: "",
         phone: "",
         state: "Telangana", // Default
-        district: "Hyderabad", // Default
+        district: "Region 1", // Default
     });
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -126,7 +126,7 @@ export function AddWorkerDialog({ establishmentId, mappedBy }: AddWorkerDialogPr
             workerId: "",
             phone: "",
             state: "Telangana",
-            district: "Hyderabad",
+            district: "Region 1",
         });
     };
 

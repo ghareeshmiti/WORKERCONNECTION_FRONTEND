@@ -14,81 +14,66 @@ import { getDashboardPath } from "@/components/ProtectedRoute";
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Banner Header */}
-      {/* Top Banner Header - Reconstructed */}
-      <header className="w-full border-b relative z-30">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/src/assets/header_bg.png"
-            alt="Header Background"
-            className="w-full h-full object-cover"
-          />
-        </div>
+      {/* Top Banner Header - Government of India */}
+      <header className="w-full border-b sticky top-0 z-30 bg-gradient-to-r from-orange-600 via-orange-500 to-red-600 shadow-lg">
+        <div className="container mx-auto px-4 flex items-center justify-between h-24 md:h-28">
 
-        <div className="container mx-auto px-4 flex items-center justify-between h-32 md:h-40 relative z-10">
-
-          {/* Left: CM Image */}
-          <div className="h-full flex items-end relative z-10">
-            <img
-              src="/opoc/tgcm.jpg"
-              alt="Hon'ble Chief Minister Anumula Revanth Reddy"
-              className="h-full w-auto object-contain"
-            />
-          </div>
-
-          {/* Center: Logo & Text */}
-          <div className="flex items-center gap-4 z-20">
-            <img
-              src="/opoc/tg-logo.jpg"
-              alt="Telangana Government Logo"
-              className="h-20 md:h-28 w-auto object-contain"
-            />
-
-            <div className="flex flex-col items-start justify-center">
-              <h1 className="text-2xl md:text-3xl font-display font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent leading-tight">
-                One State - One Card
-              </h1>
-              <div className="w-full h-px bg-slate-300 my-1"></div>
-              <p className="text-sm md:text-lg text-slate-600 font-medium">
-                Government of Telangana
-              </p>
+          {/* Left: India Flag */}
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 md:w-20 md:h-20">
+              <img src="/indian-flag.svg" alt="India Flag" className="w-full h-full object-contain" />
+            </div>
+            <div className="hidden md:flex flex-col">
+              <h1 className="text-xl md:text-2xl font-black text-white leading-tight">GOVERNMENT OF INDIA</h1>
+              <p className="text-xs md:text-sm text-orange-100 font-semibold">One State - One Card Platform</p>
             </div>
           </div>
 
-          {/* Right: Map */}
-          <div className="h-full flex items-center justify-end relative z-10">
-            <img
-              src="/src/assets/ap_map_colorful.png"
-              alt="Telangana Map"
-              className="h-full w-auto object-contain"
-            />
+          {/* Center: Branding */}
+          <div className="flex flex-col items-center justify-center">
+            <h2 className="text-lg md:text-2xl font-bold text-white leading-tight">One State - One Card</h2>
+            <p className="text-xs md:text-sm text-orange-100">Digital Identity Portal</p>
+          </div>
+
+          {/* Right: Empty for balance */}
+          <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/30">
+            <span className="text-2xl">✓</span>
           </div>
 
         </div>
       </header>
 
-      <main className="flex-1 flex justify-center p-4 bg-muted/30 pt-8">
-        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl overflow-hidden grid md:grid-cols-2 min-h-[500px] items-stretch">
+      <main className="flex-1 flex justify-center p-4 bg-gradient-to-b from-orange-50 to-slate-50 pt-10">
+        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden grid md:grid-cols-2 min-h-[550px] items-stretch">
 
-          {/* Left Side: Branding */}
-          <div className="p-8 flex flex-col items-center border-r bg-white/50 space-y-6 pt-12">
-            {/* <img
-              src=" src="/opoc/tg-logo.jpg"
-              alt="Andhra Pradesh Government Seal"
-              className="w-32 h-32 object-contain"
-            /> */}
-            <div className="text-center space-y-4">
-              <p className="text-xl text-slate-600 font-medium">Welcome to</p>
-              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">One State - One Card</h1>
-              <p className="text-sm text-slate-500 leading-relaxed px-4 text-justify">
-                They are local government facilities set up in the Indian state of Telangana to decentralize the administration by making services and welfare services of all government departments available at one place.
+          {/* Left Side: Branding - Orange Theme */}
+          <div className="p-8 flex flex-col items-center justify-center bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 space-y-8 text-white rounded-l-2xl">
+            <div className="text-7xl drop-shadow-lg">🇮🇳</div>
+            <div className="text-center space-y-6">
+              <h2 className="text-3xl md:text-4xl font-black leading-tight">One State - One Card</h2>
+              <div className="w-16 h-1 bg-white/60 mx-auto rounded-full"></div>
+              <p className="text-sm md:text-base leading-relaxed text-orange-50">
+                Unified digital identity & services portal connecting citizens with government benefits and welfare schemes across all states.
               </p>
+              <div className="pt-4 space-y-2">
+                <div className="flex items-center gap-3 text-orange-100 text-sm">
+                  <span className="text-lg">✓</span>
+                  <span>Universal Digital Identity</span>
+                </div>
+                <div className="flex items-center gap-3 text-orange-100 text-sm">
+                  <span className="text-lg">✓</span>
+                  <span>All States & Union Territories</span>
+                </div>
+                <div className="flex items-center gap-3 text-orange-100 text-sm">
+                  <span className="text-lg">✓</span>
+                  <span>Secure & Verified Access</span>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Right Side: Login Form */}
-          <div className="p-8 bg-slate-50 flex flex-col pt-12">
+          <div className="p-8 bg-white flex flex-col justify-center rounded-r-2xl">
             <LoginSection />
           </div>
 
@@ -96,9 +81,11 @@ export default function Landing() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 border-t bg-card text-card-foreground">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
-          <p>© 2026 Government of Telangana. All rights reserved.</p>
+      <footer className="py-8 border-t bg-gradient-to-r from-orange-50 to-red-50 text-slate-600 border-orange-200">
+        <div className="container mx-auto text-center space-y-3">
+          <p className="text-sm font-medium">Government of India | Ministry Services</p>
+          <p className="text-xs text-slate-500">© 2026 One State - One Card Initiative. All rights reserved.</p>
+          <p className="text-xs text-orange-600 font-semibold">🇮🇳 Bharatiya Nagarik Sewa - Indian Citizen Services Portal</p>
         </div>
       </footer>
     </div>

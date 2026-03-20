@@ -301,7 +301,7 @@ export default function PublicWorkerProfile() {
                 </Tabs>
 
                 <div className="text-center text-xs text-gray-400 mt-8">
-                    © {new Date().getFullYear()} Government of Telangana. All Rights Reserved.
+                    © {new Date().getFullYear()} Government of India. All Rights Reserved.
                 </div>
             </div>
         </div>

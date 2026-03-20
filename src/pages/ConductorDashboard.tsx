@@ -12,8 +12,8 @@ import { Loader2, LogOut, CreditCard, Printer, CheckCircle2, Bus, MapPin, Ticket
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
-// Mock Data for Routes/Stations
-const STATIONS = ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"];
+// Mock Data for Routes/Stations - Generic stops
+const STATIONS = ["Stop 1", "Stop 2", "Stop 3", "Stop 4", "Stop 5"];
 
 type TicketState = "IDLE" | "SCANNING" | "VERIFIED" | "ISSUING" | "ISSUED";
 
@@ -37,7 +37,7 @@ export default function ConductorDashboard() {
 
     const [state, setState] = useState<TicketState>("IDLE");
     const [passenger, setPassenger] = useState<PassengerDetails | null>(null);
-    const [source, setSource] = useState("Hyderabad");
+    const [source, setSource] = useState("Stop 1");
     const [destination, setDestination] = useState("");
     const [fare, setFare] = useState(0);
     const [ticketId, setTicketId] = useState("");
@@ -163,14 +163,14 @@ export default function ConductorDashboard() {
                 fare: passenger?.isEligibleFree ? 0 : fare,
                 issuedBy: userContext?.fullName || 'Conductor',
                 paymentMode: passenger?.isEligibleFree ? 'FREE' : 'CASH',
-                busNumber: 'TG09-5678',
+                busNumber: 'GOV-INDIA-001',
 
                 // New Fields
                 workerId: passenger?.id || null,
                 establishmentId: userContext?.establishmentId || null,
                 conductorId: userContext?.authUserId || null,
                 routeId: 'R-101', // Mock Route ID
-                routeName: 'Hyderabad - Warangal Express',
+                routeName: 'Government Transport Route',
                 fromStop: source,
                 toStop: destination,
                 isFree: passenger?.isEligibleFree || false,
@@ -209,20 +209,22 @@ export default function ConductorDashboard() {
             <header className="bg-white/80 backdrop-blur-md border-b border-border/40 sticky top-0 z-50">
                 <div className="container mx-auto py-3 px-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="/opoc/tg-logo.jpg" alt="Government of Telangana emblem" className="h-14 w-auto object-contain shrink-0" />
+                        <div className="h-14 w-14 flex items-center justify-center flex-shrink-0 border border-orange-200 rounded">
+                            <img src="/indian-flag.svg" alt="India Flag" className="w-12 h-12 object-contain" />
+                        </div>
                         <div className="flex flex-col">
-                            <h1 className="font-display font-bold text-lg tracking-tight leading-none bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">TGRTC</h1>
-                            <span className="text-[10px] text-muted-foreground tracking-wide font-medium">Government of Telangana</span>
+                            <h1 className="font-display font-bold text-lg tracking-tight leading-none bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">GOI TRANSPORT</h1>
+                            <span className="text-[10px] text-muted-foreground tracking-wide font-medium">Government of India</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs md:text-sm">
                         <div className="hidden md:block text-right">
                             <div className="text-muted-foreground">Conductor: <span className="text-foreground font-semibold">{userContext?.fullName || "Ramesh Goud"}</span></div>
-                            <div className="text-muted-foreground">Bus: <span className="text-orange-600 font-bold">TG09-5678</span></div>
+                            <div className="text-muted-foreground">Bus: <span className="text-orange-600 font-bold">GOV-INDIA-001</span></div>
                         </div>
                         <div className="text-right">
                             <div className="text-muted-foreground">POS ID: <span className="text-foreground font-semibold">POS-001</span></div>
-                            <div className="text-muted-foreground">Route: <span className="text-foreground">Hyderabad → Warangal</span></div>
+                            <div className="text-muted-foreground">Route: <span className="text-foreground">{source} → {destination || 'Destination'}</span></div>
                         </div>
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
                             <LogOut className="w-5 h-5" />
@@ -306,7 +308,7 @@ export default function ConductorDashboard() {
                                             <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-600 font-medium">{passenger.age} yrs</span>
                                             <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-600 font-medium">{passenger.gender}</span>
                                         </div>
-                                        <p className="text-xs text-slate-400 mt-1">Hyderabad, Telangana</p>
+                                        <p className="text-xs text-slate-400 mt-1">Government of India Route</p>
                                     </div>
                                 </div>
                             </div>
@@ -397,7 +399,7 @@ export default function ConductorDashboard() {
                             {/* Receipt */}
                             <div className="bg-white border rounded-lg p-0 overflow-hidden shadow-sm text-left">
                                 <div className="bg-slate-50 p-3 border-b text-center font-bold text-sm text-slate-700 uppercase tracking-widest">
-                                    TGRTC - Bus Ticket
+                                    GOI - Bus Ticket
                                 </div>
                                 <div className="p-4 space-y-4">
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -407,7 +409,7 @@ export default function ConductorDashboard() {
                                         </div>
                                         <div className="text-right">
                                             <span className="block text-xs text-slate-500 font-semibold">Bus:</span>
-                                            <span className="font-medium text-slate-900">TG09-5678</span>
+                                            <span className="font-medium text-slate-900">GOV-INDIA-001</span>
                                         </div>
                                         <div>
                                             <span className="block text-xs text-slate-500 font-semibold">Route:</span>
