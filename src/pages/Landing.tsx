@@ -202,7 +202,7 @@ export default function Landing() {
                     <div className="p-5">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                         {/* Bigger portrait box - Full Indian flag */}
-                        <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shrink-0">
+                        <div className="h-52 w-44 sm:h-60 sm:w-48 rounded-lg overflow-hidden border bg-gradient-to-br flex items-center justify-center shrink-0">
                           <img src="/Emblem_of_India.png" alt="Emblem of India" className="w-full h-full object-contain" />
                         </div>
 
