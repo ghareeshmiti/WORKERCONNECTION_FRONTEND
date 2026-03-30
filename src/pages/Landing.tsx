@@ -516,7 +516,7 @@ export default function Landing() {
             {/* Registration Flow */}
             <Card className="border-2 border-primary/35 shadow-sm overflow-hidden">
               <CardContent className="p-0">
-                <div className="border-b bg-muted/30 px-5 py-3">
+                <div className="border-b bg-muted/30 bg-gradient-to-r from-orange-600 via-orange-500 to-red-600  px-5 py-3">
                   <div className="text-sm font-semibold text-foreground">
                     Person Registration with Smart Card & Mobile Phone
                   </div>
