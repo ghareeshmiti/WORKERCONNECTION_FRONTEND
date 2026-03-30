@@ -464,7 +464,7 @@ export default function Landing() {
                     <div className="p-5">
                       <div className="w-full overflow-hidden rounded-lg border bg-white">
                         <img
-                          src="/opoc/ubc-benefits.jpg"
+                          src="/opoc/ubc-benefits.png"
                           alt="Universal Benefit Card benefits overview"
                           className="w-full h-auto object-contain"
                           loading="lazy"
@@ -548,7 +548,7 @@ export default function Landing() {
                 <div className="p-5 flex justify-center">
                   <div className="w-full max-w-5xl">
                     <img
-                      src="/opoc/slide2.png"
+                      src="/opoc/slide2.svg"
                       alt="AP PASS OPOC feature matrix"
                       className="w-full h-auto rounded-lg bg-white"
                       loading="lazy"
